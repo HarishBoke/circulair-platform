@@ -270,9 +270,31 @@ export const appRouter = router({
             metadata: { tMax: input.tMax, tPack: input.tPack },
           });
         }
+        // Broadcast live reading to WebSocket subscribers
+        try {
+          const { broadcastTelemetryReading } = await import("./telemetrySocket");
+          broadcastTelemetryReading({
+            bpan: input.bpan,
+            batteryId: input.batteryId,
+            vPack: input.vPack ?? 0,
+            iPack: input.iPack ?? 0,
+            vMin: input.vMin ?? 0,
+            vMax: input.vMax ?? 0,
+            tPack: input.tPack ?? 0,
+            tMax: input.tMax ?? 0,
+            cycleCount: input.cycleCount ?? 0,
+            irPack: input.irPack ?? 0,
+            sohEstimate: input.sohEstimate ?? 0,
+            thermalAnomaly,
+            anomalyType: thermalAnomaly ? `High temperature: ${input.tMax}°C` : undefined,
+            source: "api",
+            recordedAt: new Date().toISOString(),
+          });
+        } catch {
+          // Socket not available — continue without broadcast
+        }
         return { success: true, thermalAnomaly };
       }),
-
     simulate: protectedProcedure
       .input(z.object({ bpan: z.string(), batteryId: z.number(), cycles: z.number().default(1) }))
       .mutation(async ({ input, ctx }) => {

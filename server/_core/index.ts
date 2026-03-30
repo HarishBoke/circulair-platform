@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { attachTelemetrySocket, stopAllSimulations } from "../telemetrySocket";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -57,8 +58,17 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  // Attach Socket.io telemetry namespace
+  attachTelemetrySocket(server);
+
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+  });
+
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    stopAllSimulations();
+    server.close();
   });
 }
 

@@ -111,3 +111,18 @@
 - [x] Responsive design (mobile sidebar, RWD breakpoints)
 - [x] Loading/error/empty states on all pages
 - [x] Final checkpoint and delivery
+
+## Phase 15: Real-Time WebSocket Telemetry
+- [x] Install socket.io server + socket.io-client packages
+- [x] Create server/telemetrySocket.ts — Socket.io server with rooms per BPAN
+- [x] Wire Socket.io into server/_core/index.ts HTTP server
+- [x] Create MQTT-simulation broadcaster that emits live readings every 2s
+- [x] Extend telemetry.ingest tRPC procedure to broadcast via socket
+- [x] Create client/src/hooks/useTelemetrySocket.ts — React hook for live data
+- [x] Create client/src/contexts/TelemetrySocketContext.tsx — shared socket instance
+- [x] Rewrite Telemetry.tsx to use live socket stream + rolling chart buffer
+- [x] Add live connection status indicator (connected/reconnecting/disconnected)
+- [x] Add per-BPAN room subscription (join/leave on monitor start/stop)
+- [x] Add thermal anomaly real-time toast push via socket
+- [x] Update Dashboard.tsx to show live alert badge via socket
+- [x] Write vitest tests for socket event handlers (15 tests passing)
