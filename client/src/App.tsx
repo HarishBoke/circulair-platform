@@ -4,34 +4,55 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import PlatformLayout from "./components/PlatformLayout";
+import Dashboard from "./pages/Dashboard";
+import BpanRegistry from "./pages/BpanRegistry";
+import BpanDetail from "./pages/BpanDetail";
+import BpanRegister from "./pages/BpanRegister";
+import Telemetry from "./pages/Telemetry";
+import AiSoh from "./pages/AiSoh";
+import Marketplace from "./pages/Marketplace";
+import Logistics from "./pages/Logistics";
+import EprCompliance from "./pages/EprCompliance";
+import Analytics from "./pages/Analytics";
+import Alerts from "./pages/Alerts";
+import AiAssistant from "./pages/AiAssistant";
+import Documents from "./pages/Documents";
+import YieldVerification from "./pages/YieldVerification";
+import ServiceHistory from "./pages/ServiceHistory";
 import Home from "./pages/Home";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Home} />
+      <Route path="/dashboard" component={() => <PlatformLayout><Dashboard /></PlatformLayout>} />
+      <Route path="/batteries" component={() => <PlatformLayout><BpanRegistry /></PlatformLayout>} />
+      <Route path="/batteries/register" component={() => <PlatformLayout><BpanRegister /></PlatformLayout>} />
+      <Route path="/batteries/:bpan" component={() => <PlatformLayout><BpanDetail /></PlatformLayout>} />
+      <Route path="/telemetry" component={() => <PlatformLayout><Telemetry /></PlatformLayout>} />
+      <Route path="/ai-soh" component={() => <PlatformLayout><AiSoh /></PlatformLayout>} />
+      <Route path="/marketplace" component={() => <PlatformLayout><Marketplace /></PlatformLayout>} />
+      <Route path="/logistics" component={() => <PlatformLayout><Logistics /></PlatformLayout>} />
+      <Route path="/epr-compliance" component={() => <PlatformLayout><EprCompliance /></PlatformLayout>} />
+      <Route path="/yield-verification" component={() => <PlatformLayout><YieldVerification /></PlatformLayout>} />
+      <Route path="/service-history" component={() => <PlatformLayout><ServiceHistory /></PlatformLayout>} />
+      <Route path="/analytics" component={() => <PlatformLayout><Analytics /></PlatformLayout>} />
+      <Route path="/alerts" component={() => <PlatformLayout><Alerts /></PlatformLayout>} />
+      <Route path="/assistant" component={() => <PlatformLayout><AiAssistant /></PlatformLayout>} />
+      <Route path="/documents" component={() => <PlatformLayout><Documents /></PlatformLayout>} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster />
+          <Toaster richColors position="top-right" />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

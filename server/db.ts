@@ -1,11 +1,23 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, and, like, or, sql, gte, lte, count, sum } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import {
+  InsertUser, users,
+  batteries, InsertBattery,
+  telemetry, InsertTelemetry,
+  sohPredictions,
+  marketplaceListings, InsertMarketplaceListing,
+  logistics, InsertLogistics,
+  eprTokens, InsertEprToken,
+  yieldVerifications,
+  alerts, InsertAlert,
+  documents, InsertDocument,
+  serviceHistory, InsertServiceHistory,
+  chatSessions, chatMessages,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -18,75 +30,350 @@ export async function getDb() {
   return _db;
 }
 
+// ─── USER HELPERS ─────────────────────────────────────────────────────────────
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
+  if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
-
-  try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
-  }
+  if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
+  const values: InsertUser = { openId: user.openId };
+  const updateSet: Record<string, unknown> = {};
+  const textFields = ["name", "email", "loginMethod"] as const;
+  textFields.forEach((field) => {
+    const value = user[field];
+    if (value === undefined) return;
+    const normalized = value ?? null;
+    values[field] = normalized;
+    updateSet[field] = normalized;
+  });
+  if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
+  if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
+  else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
+  if (!values.lastSignedIn) values.lastSignedIn = new Date();
+  if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
+  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
+  if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).orderBy(desc(users.createdAt));
+}
+
+// ─── BATTERY HELPERS ──────────────────────────────────────────────────────────
+export async function createBattery(data: InsertBattery) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(batteries).values(data);
+  const result = await db.select().from(batteries).where(eq(batteries.bpan, data.bpan)).limit(1);
+  return result[0];
+}
+
+export async function getBatteryByBpan(bpan: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(batteries).where(eq(batteries.bpan, bpan)).limit(1);
+  return result[0];
+}
+
+export async function getBatteryById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(batteries).where(eq(batteries.id, id)).limit(1);
+  return result[0];
+}
+
+export async function listBatteries(filters?: { status?: string; chemistry?: string; search?: string; limit?: number; offset?: number }) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  const conditions = [];
+  if (filters?.status) conditions.push(eq(batteries.status, filters.status as any));
+  if (filters?.chemistry) conditions.push(eq(batteries.chemistry, filters.chemistry as any));
+  if (filters?.search) conditions.push(or(like(batteries.bpan, `%${filters.search}%`), like(batteries.vehicleId, `%${filters.search}%`)));
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  const [items, totalResult] = await Promise.all([
+    db.select().from(batteries).where(query).orderBy(desc(batteries.createdAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(batteries).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function updateBatteryStatus(bpan: string, status: string, soh?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, unknown> = { status };
+  if (soh !== undefined) updateData.currentSoh = soh;
+  await db.update(batteries).set(updateData as any).where(eq(batteries.bpan, bpan));
+}
+
+export async function getBatteryStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, operational: 0, secondLife: 0, endOfLife: 0, inTransit: 0 };
+  const stats = await db.select({ status: batteries.status, count: count() }).from(batteries).groupBy(batteries.status);
+  const result = { total: 0, operational: 0, secondLife: 0, endOfLife: 0, inTransit: 0 };
+  stats.forEach((s) => {
+    result.total += s.count;
+    if (s.status === "operational") result.operational = s.count;
+    else if (s.status === "second_life") result.secondLife = s.count;
+    else if (s.status === "end_of_life") result.endOfLife = s.count;
+    else if (s.status === "in_transit") result.inTransit = s.count;
+  });
+  return result;
+}
+
+// ─── TELEMETRY HELPERS ────────────────────────────────────────────────────────
+export async function insertTelemetry(data: InsertTelemetry) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(telemetry).values(data);
+}
+
+export async function getLatestTelemetry(bpan: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(telemetry).where(eq(telemetry.bpan, bpan)).orderBy(desc(telemetry.recordedAt)).limit(1);
+  return result[0];
+}
+
+export async function getTelemetryHistory(bpan: string, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(telemetry).where(eq(telemetry.bpan, bpan)).orderBy(desc(telemetry.recordedAt)).limit(limit);
+}
+
+export async function getThermalAnomalies(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(telemetry).where(eq(telemetry.thermalAnomaly, true)).orderBy(desc(telemetry.recordedAt)).limit(limit);
+}
+
+// ─── SOH PREDICTION HELPERS ───────────────────────────────────────────────────
+export async function saveSohPrediction(data: typeof sohPredictions.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(sohPredictions).values(data);
+  const result = await db.select().from(sohPredictions).where(eq(sohPredictions.bpan, data.bpan)).orderBy(desc(sohPredictions.predictedAt)).limit(1);
+  return result[0];
+}
+
+export async function getLatestSohPrediction(bpan: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(sohPredictions).where(eq(sohPredictions.bpan, bpan)).orderBy(desc(sohPredictions.predictedAt)).limit(1);
+  return result[0];
+}
+
+export async function getSohPredictionHistory(bpan: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sohPredictions).where(eq(sohPredictions.bpan, bpan)).orderBy(desc(sohPredictions.predictedAt)).limit(limit);
+}
+
+// ─── MARKETPLACE HELPERS ──────────────────────────────────────────────────────
+export async function createListing(data: InsertMarketplaceListing) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(marketplaceListings).values(data);
+  const result = await db.select().from(marketplaceListings).where(eq(marketplaceListings.bpan, data.bpan)).orderBy(desc(marketplaceListings.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function listMarketplace(filters?: { listingType?: string; chemistry?: string; minSoh?: number; maxPrice?: number; limit?: number; offset?: number }) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  const conditions = [eq(marketplaceListings.status, "active")];
+  if (filters?.listingType) conditions.push(eq(marketplaceListings.listingType, filters.listingType as any));
+  if (filters?.chemistry) conditions.push(eq(marketplaceListings.chemistry, filters.chemistry));
+  const query = and(...conditions);
+  const [items, totalResult] = await Promise.all([
+    db.select().from(marketplaceListings).where(query).orderBy(desc(marketplaceListings.createdAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(marketplaceListings).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function getMarketplaceStats() {
+  const db = await getDb();
+  if (!db) return { activeListings: 0, totalTransactions: 0, totalValueInr: 0 };
+  const [active, sold] = await Promise.all([
+    db.select({ count: count() }).from(marketplaceListings).where(eq(marketplaceListings.status, "active")),
+    db.select({ count: count(), totalValue: sum(marketplaceListings.finalPriceInr) }).from(marketplaceListings).where(eq(marketplaceListings.status, "sold")),
+  ]);
+  return {
+    activeListings: active[0]?.count ?? 0,
+    totalTransactions: sold[0]?.count ?? 0,
+    totalValueInr: Number(sold[0]?.totalValue ?? 0),
+  };
+}
+
+// ─── LOGISTICS HELPERS ────────────────────────────────────────────────────────
+export async function createShipment(data: InsertLogistics) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(logistics).values(data);
+  const result = await db.select().from(logistics).where(eq(logistics.shipmentId, data.shipmentId)).limit(1);
+  return result[0];
+}
+
+export async function listShipments(filters?: { status?: string; limit?: number; offset?: number }) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  const conditions = [];
+  if (filters?.status) conditions.push(eq(logistics.status, filters.status as any));
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  const [items, totalResult] = await Promise.all([
+    db.select().from(logistics).where(query).orderBy(desc(logistics.requestedAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(logistics).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function updateShipmentStatus(shipmentId: string, status: string, extra?: Record<string, unknown>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(logistics).set({ status: status as any, ...extra } as any).where(eq(logistics.shipmentId, shipmentId));
+}
+
+// ─── EPR HELPERS ──────────────────────────────────────────────────────────────
+export async function createEprToken(data: InsertEprToken) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(eprTokens).values(data);
+  const result = await db.select().from(eprTokens).where(eq(eprTokens.tokenId, data.tokenId)).limit(1);
+  return result[0];
+}
+
+export async function listEprTokens(filters?: { recyclerId?: number; status?: string; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (filters?.recyclerId) conditions.push(eq(eprTokens.recyclerId, filters.recyclerId));
+  if (filters?.status) conditions.push(eq(eprTokens.status, filters.status as any));
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(eprTokens).where(query).orderBy(desc(eprTokens.createdAt)).limit(filters?.limit ?? 50);
+}
+
+export async function getEprStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, verified: 0, pending: 0, totalYieldKg: 0 };
+  const [stats, yieldSum] = await Promise.all([
+    db.select({ status: eprTokens.status, count: count() }).from(eprTokens).groupBy(eprTokens.status),
+    db.select({ total: sum(eprTokens.actualYieldKg) }).from(eprTokens).where(eq(eprTokens.status, "verified")),
+  ]);
+  const result = { total: 0, verified: 0, pending: 0, totalYieldKg: Number(yieldSum[0]?.total ?? 0) };
+  stats.forEach((s) => { result.total += s.count; if (s.status === "verified") result.verified = s.count; else if (s.status === "pending") result.pending = s.count; });
+  return result;
+}
+
+// ─── ALERTS HELPERS ───────────────────────────────────────────────────────────
+export async function createAlert(data: InsertAlert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(alerts).values(data);
+}
+
+export async function listAlerts(userId?: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = userId ? [eq(alerts.userId, userId)] : [];
+  return db.select().from(alerts).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(alerts.createdAt)).limit(limit);
+}
+
+export async function markAlertRead(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(alerts).set({ read: true }).where(eq(alerts.id, id));
+}
+
+export async function getUnreadAlertCount(userId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions = [eq(alerts.read, false)];
+  if (userId) conditions.push(eq(alerts.userId, userId));
+  const result = await db.select({ count: count() }).from(alerts).where(and(...conditions));
+  return result[0]?.count ?? 0;
+}
+
+// ─── DOCUMENT HELPERS ─────────────────────────────────────────────────────────
+export async function createDocument(data: InsertDocument) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(documents).values(data);
+  const result = await db.select().from(documents).where(eq(documents.fileKey, data.fileKey ?? "")).limit(1);
+  return result[0];
+}
+
+export async function listDocuments(filters?: { type?: string; bpan?: string; uploadedById?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (filters?.type) conditions.push(eq(documents.type, filters.type as any));
+  if (filters?.bpan) conditions.push(eq(documents.bpan, filters.bpan));
+  if (filters?.uploadedById) conditions.push(eq(documents.uploadedById, filters.uploadedById));
+  return db.select().from(documents).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(documents.createdAt)).limit(filters?.limit ?? 50);
+}
+
+// ─── SERVICE HISTORY HELPERS ──────────────────────────────────────────────────
+export async function createServiceRecord(data: InsertServiceHistory) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(serviceHistory).values(data);
+}
+
+export async function getServiceHistory(bpan: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceHistory).where(eq(serviceHistory.bpan, bpan)).orderBy(desc(serviceHistory.servicedAt));
+}
+
+// ─── CHAT HELPERS ─────────────────────────────────────────────────────────────
+export async function createChatSession(userId: number, title?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(chatSessions).values({ userId, title: title ?? "New Session" });
+  const result = await db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).orderBy(desc(chatSessions.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getChatSessions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).orderBy(desc(chatSessions.updatedAt)).limit(20);
+}
+
+export async function addChatMessage(sessionId: number, role: "user" | "assistant" | "system", content: string, metadata?: Record<string, unknown>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(chatMessages).values({ sessionId, role, content, metadata: metadata ?? null });
+}
+
+export async function getChatMessages(sessionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatMessages).where(eq(chatMessages.sessionId, sessionId)).orderBy(chatMessages.createdAt);
+}
+
+// ─── PLATFORM ANALYTICS ───────────────────────────────────────────────────────
+export async function getPlatformKpis() {
+  const db = await getDb();
+  if (!db) return null;
+  const [batteryStats, marketStats, eprStats, alertCount] = await Promise.all([
+    getBatteryStats(),
+    getMarketplaceStats(),
+    getEprStats(),
+    getUnreadAlertCount(),
+  ]);
+  return { batteryStats, marketStats, eprStats, alertCount };
+}
