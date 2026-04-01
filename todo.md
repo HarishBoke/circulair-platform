@@ -296,3 +296,11 @@
 - [x] Built LanguageSelector component in PlatformLayout sidebar footer (5 languages)
 - [x] Wrote 26 vitest tests for carbon badge, currency formatting, i18n files, jurisdictions
 - [x] TypeScript: 0 errors, 169 tests passing (10 test files)
+
+## Phase 30: Remove Manus Branding from Meta [COMPLETE]
+- [x] Added proper meta description, og:title, og:description, twitter:card tags with Circul-AI-r branding
+- [x] Added Google Fonts link for Syne + DM Sans + DM Mono in index.html
+- [x] Replaced "Login with Manus" → "Sign In" and "Please login with Manus" → "Please sign in to continue" in ManusDialog.tsx
+- [x] Removed Manus comment from server/storage.ts
+- [x] Verified: no user-facing Manus references remain (only internal _core/test fixtures with loginMethod: "manus")
+- [x] TypeScript: 0 errors, 169 tests passing
