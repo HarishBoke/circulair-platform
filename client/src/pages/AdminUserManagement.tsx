@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -296,15 +297,19 @@ export default function AdminUserManagement() {
 
   const [tab, setTab] = useState<"users" | "audit">("users");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [roleFilter, setRoleFilter] = useState("all");
   const [accessFilter, setAccessFilter] = useState("all");
   const [page, setPage] = useState(0);
+
+  // Reset to page 0 whenever the debounced search term changes
+  useEffect(() => { setPage(0); }, [debouncedSearch]);
   const PAGE_SIZE = 20;
   const [editing, setEditing] = useState<EditUser | null>(null);
 
   const input = useMemo(
     () => ({
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       platformRole: (roleFilter !== "all" ? roleFilter : undefined) as RoleValue | undefined,
       role: (accessFilter !== "all" ? accessFilter : undefined) as "user" | "admin" | undefined,
       limit: PAGE_SIZE,
@@ -327,7 +332,7 @@ export default function AdminUserManagement() {
     );
   }
 
-  const hasFilters = search !== "" || roleFilter !== "all" || accessFilter !== "all";
+  const hasFilters = debouncedSearch !== "" || roleFilter !== "all" || accessFilter !== "all";
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -382,7 +387,7 @@ export default function AdminUserManagement() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
                 <Input
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                  onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name or email…"
                   className="pl-9 h-9 bg-zinc-900 border-zinc-800 text-sm text-white placeholder:text-zinc-600 rounded-lg focus-visible:ring-primary/50"
                 />

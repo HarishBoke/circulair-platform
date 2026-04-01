@@ -219,3 +219,9 @@
 - [x] Audit log: simple two-column timeline, no table overhead
 - [x] Edit dialog: compact card with avatar, 4 fields, 2 action buttons
 - [x] TypeScript: 0 errors, 113 tests passing
+
+## Phase 24: Search Debounce in Admin User Management [COMPLETE]
+- [x] Created reusable useDebounce<T> hook at client/src/hooks/useDebounce.ts
+- [x] Wired 300ms debounce to AdminUserManagement search input
+- [x] Page resets to 0 via useEffect on debouncedSearch change only
+- [x] TypeScript: 0 errors, 113 tests passing
