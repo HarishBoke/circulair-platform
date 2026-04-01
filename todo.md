@@ -225,3 +225,11 @@
 - [x] Wired 300ms debounce to AdminUserManagement search input
 - [x] Page resets to 0 via useEffect on debouncedSearch change only
 - [x] TypeScript: 0 errors, 113 tests passing
+
+## Phase 25: Inline Role Quick-Change Dropdown [COMPLETE]
+- [x] Replaced Edit button with inline platform-role Select dropdown in each row
+- [x] Dropdown saves immediately on change with audit log entry (reason: "Quick role change from admin panel")
+- [x] Compact MoreHorizontal icon button opens full details dialog (org/reason/system-role)
+- [x] Spinner shown inside SelectTrigger while mutation is in flight; dropdown disabled during save
+- [x] UserRow extracted as a separate component with its own mutation instance
+- [x] TypeScript: 0 errors, 113 tests passing

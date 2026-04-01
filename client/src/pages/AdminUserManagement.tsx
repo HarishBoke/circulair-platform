@@ -26,7 +26,7 @@ import {
   RefreshCw,
   Shield,
   ArrowRight,
-  Pencil,
+  MoreHorizontal,
   CheckCircle2,
   Lock,
 } from "lucide-react";
@@ -291,6 +291,125 @@ function AuditLog() {
   );
 }
 
+// ─── User Row Component ───────────────────────────────────────────────────────
+interface UserRowProps {
+  u: {
+    id: number;
+    name: string | null;
+    email: string | null;
+    platformRole: string;
+    role: string;
+    organization: string | null;
+    lastSignedIn: Date | null;
+  };
+  onOpenDetails: () => void;
+}
+
+function UserRow({ u, onOpenDetails }: UserRowProps) {
+  const utils = trpc.useUtils();
+  const [updating, setUpdating] = useState(false);
+
+  const mutation = trpc.admin.updateUserRole.useMutation({
+    onMutate: () => setUpdating(true),
+    onSuccess: () => {
+      toast.success("Role updated");
+      utils.admin.listUsers.invalidate();
+      utils.admin.roleStats.invalidate();
+      utils.admin.auditLog.invalidate();
+      setUpdating(false);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+      setUpdating(false);
+    },
+  });
+
+  const handleRoleChange = (newRole: RoleValue) => {
+    if (newRole === u.platformRole) return;
+    mutation.mutate({
+      userId: u.id,
+      platformRole: newRole,
+      systemRole: u.role as "user" | "admin",
+      organization: u.organization ?? undefined,
+      reason: "Quick role change from admin panel",
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_180px_100px_36px] sm:gap-4 px-3 py-3 rounded-xl hover:bg-zinc-800/40 transition-colors group">
+      {/* User info */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <Initials name={u.name} email={u.email} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-100 truncate leading-tight">
+            {u.name ?? u.email ?? `User #${u.id}`}
+          </p>
+          <p className="text-xs text-zinc-500 truncate mt-0.5">
+            {u.email ?? "No email"}
+            {u.organization ? <span className="text-zinc-600"> · {u.organization}</span> : null}
+            {u.lastSignedIn
+              ? <span className="text-zinc-600 hidden sm:inline"> · {timeAgo(u.lastSignedIn)}</span>
+              : null}
+          </p>
+        </div>
+      </div>
+
+      {/* Platform role dropdown (desktop) */}
+      <div className="hidden sm:flex items-center w-[180px]">
+        <Select
+          value={u.platformRole}
+          onValueChange={handleRoleChange}
+          disabled={updating}
+        >
+          <SelectTrigger className="h-8 bg-zinc-900 border-zinc-800 text-xs text-zinc-200 rounded-lg disabled:opacity-50">
+            {updating ? (
+              <span className="flex items-center gap-1.5">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Saving…
+              </span>
+            ) : (
+              <SelectValue />
+            )}
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
+            {ROLES.map((r) => (
+              <SelectItem
+                key={r.value}
+                value={r.value}
+                className="text-xs text-zinc-200 focus:bg-zinc-800 rounded-lg"
+              >
+                {r.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* System access (desktop) */}
+      <div className="hidden sm:flex items-center w-[100px]">
+        {u.role === "admin" ? (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-red-400">
+            <Shield className="w-3 h-3" /> Admin
+          </span>
+        ) : (
+          <span className="text-xs text-zinc-500">Standard</span>
+        )}
+      </div>
+
+      {/* Details button */}
+      <div className="flex-shrink-0 w-9 flex justify-end">
+        <button
+          onClick={onOpenDetails}
+          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          title="Edit details (org, system role, reason)"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminUserManagement() {
   const { user } = useAuth();
@@ -447,72 +566,29 @@ export default function AdminUserManagement() {
             {!isLoading && !!data?.items.length && (
               <div className="px-5 sm:px-8">
                 {/* Desktop table header — hidden on mobile */}
-                <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-4 px-3 pb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <div className="hidden sm:grid grid-cols-[1fr_180px_100px_36px] gap-4 px-3 pb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
                   <span>User</span>
-                  <span className="w-36 text-left">Role</span>
-                  <span className="w-24 text-left">Access</span>
-                  <span className="w-16" />
+                  <span>Platform Role</span>
+                  <span>Access</span>
+                  <span />
                 </div>
 
                 <div className="space-y-1">
                   {data.items.map((u) => (
-                    <div
+                    <UserRow
                       key={u.id}
-                      className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_auto_auto] sm:gap-4 px-3 py-3 rounded-xl hover:bg-zinc-800/40 transition-colors group"
-                    >
-                      {/* User info */}
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Initials name={u.name} email={u.email} />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-zinc-100 truncate leading-tight">
-                            {u.name ?? u.email ?? `User #${u.id}`}
-                          </p>
-                          <p className="text-xs text-zinc-500 truncate mt-0.5">
-                            {u.email ?? "No email"}
-                            {u.organization ? <span className="text-zinc-600"> · {u.organization}</span> : null}
-                            {(u as any).lastSignedIn
-                              ? <span className="text-zinc-600 hidden sm:inline"> · {timeAgo((u as any).lastSignedIn)}</span>
-                              : null}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Platform role */}
-                      <div className="hidden sm:flex w-36">
-                        <RoleBadge role={u.platformRole} />
-                      </div>
-
-                      {/* System access */}
-                      <div className="hidden sm:flex items-center w-24">
-                        {u.role === "admin" ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-red-400">
-                            <Shield className="w-3 h-3" /> Admin
-                          </span>
-                        ) : (
-                          <span className="text-xs text-zinc-500">Standard</span>
-                        )}
-                      </div>
-
-                      {/* Edit button */}
-                      <div className="flex-shrink-0 w-16 flex justify-end">
-                        <button
-                          onClick={() =>
-                            setEditing({
-                              id: u.id,
-                              name: u.name ?? null,
-                              email: u.email ?? null,
-                              platformRole: u.platformRole,
-                              role: u.role,
-                              organization: u.organization ?? null,
-                            })
-                          }
-                          className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-primary transition-colors py-1 px-2 rounded-lg hover:bg-primary/10"
-                        >
-                          <Pencil className="w-3 h-3" />
-                          <span className="hidden sm:inline">Edit</span>
-                        </button>
-                      </div>
-                    </div>
+                      u={u as any}
+                      onOpenDetails={() =>
+                        setEditing({
+                          id: u.id,
+                          name: u.name ?? null,
+                          email: u.email ?? null,
+                          platformRole: u.platformRole,
+                          role: u.role,
+                          organization: u.organization ?? null,
+                        })
+                      }
+                    />
                   ))}
                 </div>
 
