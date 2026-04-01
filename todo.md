@@ -209,3 +209,13 @@
 - [x] Clean Audit Log tab with timeline dot + role-change arrow entries
 - [x] Edit button appears on row hover (desktop), always visible on mobile
 - [x] TypeScript: 0 errors, 113 tests passing
+
+## Phase 23: Admin User Management — Calm & Readable Redesign [COMPLETE]
+- [x] Removed stat strip — header shows total + admin count only
+- [x] Single Edit button always visible per row (no hover tricks)
+- [x] Improved text contrast: white/zinc-100 for names, zinc-500 for meta
+- [x] Single role badge per row, system access shown as plain text
+- [x] Clean skeleton loading and empty states
+- [x] Audit log: simple two-column timeline, no table overhead
+- [x] Edit dialog: compact card with avatar, 4 fields, 2 action buttons
+- [x] TypeScript: 0 errors, 113 tests passing
