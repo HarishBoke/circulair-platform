@@ -18,6 +18,7 @@ import {
   createChatSession, getChatSessions, addChatMessage, getChatMessages,
   getPlatformKpis, getAllUsers, upsertUser,
 } from "./db";
+import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -259,16 +260,20 @@ export const appRouter = router({
           source: "api",
         });
         if (thermalAnomaly) {
-          await createAlert({
-            userId: ctx.user.id,
-            bpan: input.bpan,
-            batteryId: input.batteryId,
-            type: "thermal_anomaly",
-            severity: "critical",
-            title: "Thermal Anomaly Detected",
-            message: `Battery ${input.bpan} temperature exceeded 51°C. Current: ${input.tMax}°C. Immediate action required.`,
-            metadata: { tMax: input.tMax, tPack: input.tPack },
-          });
+          // 5-minute deduplication cooldown — prevents alert flooding
+          if (await shouldCreateAlert(input.bpan, "thermal_anomaly")) {
+            await createAlert({
+              userId: ctx.user.id,
+              bpan: input.bpan,
+              batteryId: input.batteryId,
+              type: "thermal_anomaly",
+              severity: "critical",
+              title: "Thermal Anomaly Detected",
+              message: `Battery ${input.bpan} temperature exceeded 51°C. Current: ${input.tMax}°C. Immediate action required.`,
+              metadata: { tMax: input.tMax, tPack: input.tPack },
+            });
+            recordAlert(input.bpan, "thermal_anomaly");
+          }
         }
         // Broadcast live reading to WebSocket subscribers
         try {

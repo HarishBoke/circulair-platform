@@ -40,6 +40,7 @@ import { nanoid } from "nanoid";
 import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus } from "./db";
 import { broadcastTelemetryReading, getSocketIO } from "./telemetrySocket";
 import type { TelemetryAnomaly } from "./telemetrySocket";
+import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 
 function broadcastTelemetry(bpan: string, reading: Parameters<typeof broadcastTelemetryReading>[0]): void {
   broadcastTelemetryReading(reading);
@@ -250,7 +251,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
   };
   broadcastTelemetry(bpan, reading);
 
-  // Thermal anomaly — create alert + broadcast anomaly event
+  // Thermal anomaly — create alert + broadcast anomaly event (5-min dedup cooldown)
   if (thermalAnomaly) {
     broadcastAnomaly(bpan, {
       bpan,
@@ -259,36 +260,41 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
       recordedAt: new Date().toISOString(),
       message: `Thermal anomaly: T_max ${payload.tMax?.toFixed(1)}°C exceeds 51°C threshold`,
     });
-
     try {
-      await createAlert({
-        bpan,
-        batteryId,
-        type: "thermal_anomaly",
-        severity: "critical",
-        title: `Thermal Anomaly — ${bpan}`,
-        message: `Pack temperature T_max = ${payload.tMax?.toFixed(1)}°C exceeds 51°C safety threshold. Immediate inspection required.`,
-        metadata: { tMax: payload.tMax, tPack: payload.tPack, source: "mqtt" },
-      });
+      if (await shouldCreateAlert(bpan, "thermal_anomaly")) {
+        await createAlert({
+          bpan,
+          batteryId,
+          type: "thermal_anomaly",
+          severity: "critical",
+          title: `Thermal Anomaly — ${bpan}`,
+          message: `Pack temperature T_max = ${payload.tMax?.toFixed(1)}°C exceeds 51°C safety threshold. Immediate inspection required.`,
+          metadata: { tMax: payload.tMax, tPack: payload.tPack, source: "mqtt" },
+        });
+        recordAlert(bpan, "thermal_anomaly");
+      }
     } catch (err) {
       console.error(`[MQTT] Alert creation failed for BPAN ${bpan}:`, err);
     }
   }
 
-  // SOH below EOL threshold — create alert
+  // SOH below EOL threshold — create alert (5-min dedup cooldown)
   if (sohBelowThreshold) {
     try {
-      await createAlert({
-        bpan,
-        batteryId,
-        type: "eol_detected",
-        severity: "warning",
-        title: `EOL Threshold Reached — ${bpan}`,
-        message: `Battery SOH = ${payload.sohEstimate?.toFixed(1)}% has fallen below 70% EOL threshold. Initiate triage workflow.`,
-        metadata: { soh: payload.sohEstimate, source: "mqtt" },
-      });
-      // Update battery status to end_of_life
-      await updateBatteryStatus(bpan, "end_of_life", payload.sohEstimate);
+      if (await shouldCreateAlert(bpan, "eol_detected")) {
+        await createAlert({
+          bpan,
+          batteryId,
+          type: "eol_detected",
+          severity: "warning",
+          title: `EOL Threshold Reached — ${bpan}`,
+          message: `Battery SOH = ${payload.sohEstimate?.toFixed(1)}% has fallen below 70% EOL threshold. Initiate triage workflow.`,
+          metadata: { soh: payload.sohEstimate, source: "mqtt" },
+        });
+        recordAlert(bpan, "eol_detected");
+        // Update battery status to end_of_life
+        await updateBatteryStatus(bpan, "end_of_life", payload.sohEstimate);
+      }
     } catch (err) {
       console.error(`[MQTT] EOL alert creation failed for BPAN ${bpan}:`, err);
     }

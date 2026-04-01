@@ -153,10 +153,19 @@
 - [x] Tests: 58 passing (19 MQTT + 15 socket + 23 platform + 1 auth)
 
 ## Phase 18: MQTT Flow Tester (Bidirectional Live Testing)
-- [ ] Add mqtt.publish tRPC procedure (server-side broker publish)
-- [ ] Add mqtt.startStream / mqtt.stopStream for continuous publishing
-- [ ] Build MqttFlowTester.tsx — publish form, scenario picker, live log feed, DB confirmation
-- [ ] Show real-time message flow: Publish → Broker → Server → DB → Socket.io
-- [ ] Add sidebar nav link under INTEGRATIONS
-- [ ] Wire /mqtt-flow-tester route in App.tsx
-- [ ] Write tests for mqtt.publish procedure
+- [x] Add mqtt.publish tRPC procedure (server-side broker publish)
+- [x] Add mqtt.startStream / mqtt.stopStream for continuous publishing
+- [x] Build MqttFlowTester.tsx — publish form, scenario picker, live log feed, DB confirmation
+- [x] Show real-time message flow: Publish → Broker → Server → DB → Socket.io
+- [x] Add sidebar nav link under INTEGRATIONS
+- [x] Wire /mqtt-flow-tester route in App.tsx
+- [x] Write tests for mqtt.publish procedure
+
+## Phase 19: Alert Deduplication Cooldown (5 min)
+- [x] Build server/alertCooldown.ts — in-memory cooldown map + DB-backed check
+- [x] Apply cooldown to MQTT subscriber thermal anomaly alert
+- [x] Apply cooldown to MQTT subscriber EOL alert
+- [x] Apply cooldown to tRPC telemetry.ingest thermal anomaly alert
+- [x] Write 17 vitest tests for AlertCooldown module (all passing)
+- [x] TypeScript: 0 errors
+- [x] Tests: 79 passing total (17 cooldown + 19 MQTT + 23 platform + 19 socket + 1 auth)
