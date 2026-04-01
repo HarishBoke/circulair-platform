@@ -3,7 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw, FileDown } from "lucide-react";
+import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw, FileDown, Leaf } from "lucide-react";
+import CarbonFootprintForm from "@/components/CarbonFootprintForm";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -270,6 +271,27 @@ export default function BpanDetail() {
           )}
         </div>
       )}
+
+      {/* Carbon Footprint Declaration */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Leaf className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-display text-sm font-bold">Carbon Footprint Declaration</h3>
+          </div>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            EU Battery Regulation 2023/1542 — Lifecycle CO₂e per kWh · A–E Performance Class
+          </p>
+        </div>
+        <div className="p-5">
+          <CarbonFootprintForm
+            bpan={bpan}
+            batteryId={battery.id}
+            capacityKwh={Number(battery.capacityKwh)}
+            chemistry={battery.chemistry}
+          />
+        </div>
+      </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">

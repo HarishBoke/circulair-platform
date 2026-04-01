@@ -1168,6 +1168,13 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         const { getCarbonFootprintDeclarations } = await import("./db-regulatory");
         return getCarbonFootprintDeclarations(input.batteryId);
       }),
+    /** Get latest carbon footprint declaration by BPAN */
+    getCarbonFootprintByBpan: protectedProcedure
+      .input(z.object({ bpan: z.string().min(1).max(21) }))
+      .query(async ({ input }) => {
+        const { getCarbonFootprintByBpan } = await import("./db-regulatory");
+        return getCarbonFootprintByBpan(input.bpan);
+      }),
   }),
 
   // ─── PLATFORM SETTINGS ───────────────────────────────────────────────────────

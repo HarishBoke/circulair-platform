@@ -99,6 +99,18 @@ export async function getLatestCarbonFootprintDeclaration(batteryId: number) {
   return rows[0] ?? null;
 }
 
+export async function getCarbonFootprintByBpan(bpan: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(carbonFootprintDeclarations)
+    .where(eq(carbonFootprintDeclarations.bpan, bpan))
+    .orderBy(desc(carbonFootprintDeclarations.declaredAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function createCarbonFootprintDeclaration(data: InsertCarbonFootprintDeclaration) {
   const db = await getDb();
   if (!db) return null;

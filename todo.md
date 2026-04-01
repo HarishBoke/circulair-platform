@@ -266,3 +266,20 @@
 - [x] App.tsx — /settings/platform, /compliance, /passport/EU/:localId routes added
 - [x] PlatformLayout.tsx — Compliance Dashboard + Platform Settings added to sidebar
 - [x] TypeScript: 0 errors, 113 tests passing (8 test files)
+
+## Phase 28: Carbon Footprint Declaration Form [COMPLETE]
+- [x] Reviewed carbonFootprintDeclarations table — bpan, 4 stage columns, performanceClass, methodology, certifyingBody
+- [x] Added getCarbonFootprintByBpan db helper in db-regulatory.ts
+- [x] Added regulatory.getCarbonFootprintByBpan tRPC procedure (protected, by BPAN)
+- [x] Added regulatory.declareCarbonFootprint tRPC procedure (protected, creates new declaration)
+- [x] Built shared/carbonClass.ts — A-E class calculator with chemistry-specific thresholds (NMC, LFP, NCA, LCO, LMO, LEAD_ACID, DEFAULT)
+- [x] Built CarbonFootprintForm.tsx — 4 lifecycle stage inputs with auto-sum total
+- [x] Live A-E class badge updates on every keystroke (useMemo on stage values)
+- [x] Visual performance class bar with EU reference marker and this-battery marker
+- [x] Class E warning callout with chemistry-specific threshold explanation
+- [x] Integrated CarbonFootprintForm into BpanDetail.tsx as a dedicated section
+- [x] Read-only passport view when declaration exists; Edit mode via 'Update Declaration' button
+- [x] Prefills form from existing declaration when entering edit mode
+- [x] Placeholder hints show expected values based on capacity × reference intensity × typical stage share
+- [x] Wrote 32 vitest tests for carbonClass.ts (calculatePerformanceClass, getThresholds, getReferenceIntensity, LIFECYCLE_STAGES, CLASS_LABELS, CLASS_COLORS)
+- [x] TypeScript: 0 errors, 145 tests passing (9 test files)
