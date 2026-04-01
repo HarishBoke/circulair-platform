@@ -247,3 +247,22 @@
 - [x] Frontend: PAGE_SIZE is module-level constant
 - [x] Frontend: access guard placed after all hooks (Rules of Hooks compliant)
 - [x] TypeScript: 0 errors, 113 tests passing (8 test files)
+
+## Phase 27: Multinational Compliance & i18n Foundation [COMPLETE]
+- [x] shared/jurisdictions.ts — jurisdiction registry (EU, IN, CN, US, UK, TH, ID) with full metadata
+- [x] shared/currencies.ts — currency registry (INR, EUR, USD, GBP, CNY, JPY, KRW, THB, IDR, AED)
+- [x] shared/regulatory.ts — RegulatoryProfile, CarbonFootprint, MaterialComposition shared types
+- [x] shared/i18n/en.json — base English translation file
+- [x] shared/i18n/de.json, fr.json, zh.json, hi.json — 4 additional language files
+- [x] drizzle/schema.ts — added regulatoryProfiles, platformSettings, carbonFootprintDeclarations tables
+- [x] pnpm db:push + manual SQL — all 4 new tables live in TiDB
+- [x] server/db-regulatory.ts — full CRUD helpers for regulatory profiles and platform settings
+- [x] server/routers.ts — regulatory.* and platformSettings.* tRPC procedures added
+- [x] client/src/contexts/PlatformSettingsContext.tsx — formatCurrency, formatDate, locale, activeJurisdictions
+- [x] main.tsx — PlatformSettingsProvider added to provider tree
+- [x] client/src/pages/PlatformSettings.tsx — org settings page (locale, currency, timezone, jurisdictions, data residency)
+- [x] client/src/pages/ComplianceDashboard.tsx — per-jurisdiction compliance status cards + feature highlights
+- [x] client/src/pages/EuBatteryPassport.tsx — public passport page at /passport/EU/:localId (no auth)
+- [x] App.tsx — /settings/platform, /compliance, /passport/EU/:localId routes added
+- [x] PlatformLayout.tsx — Compliance Dashboard + Platform Settings added to sidebar
+- [x] TypeScript: 0 errors, 113 tests passing (8 test files)

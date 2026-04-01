@@ -1,0 +1,61 @@
+{
+  "common": {
+    "save": "保存", "cancel": "取消", "delete": "删除", "edit": "编辑",
+    "close": "关闭", "back": "返回", "next": "下一步", "loading": "加载中…",
+    "error": "出现错误", "noData": "暂无数据",
+    "search": "搜索", "filter": "筛选", "export": "导出", "import": "导入",
+    "refresh": "刷新", "viewAll": "查看全部", "learnMore": "了解更多",
+    "required": "必填", "optional": "可选", "yes": "是", "no": "否",
+    "status": "状态", "actions": "操作", "createdAt": "创建时间", "updatedAt": "更新时间"
+  },
+  "nav": {
+    "dashboard": "仪表板", "batteries": "电池", "telemetry": "遥测",
+    "marketplace": "市场", "logistics": "物流", "compliance": "合规",
+    "analytics": "分析", "alerts": "警报", "documents": "文档",
+    "settings": "设置", "admin": "管理", "users": "用户",
+    "dataIntegration": "数据集成", "mqttTester": "MQTT测试",
+    "aiAssistant": "AI助手", "passport": "电池护照"
+  },
+  "battery": {
+    "title": "电池注册表", "register": "注册电池",
+    "bpan": "电池ID", "chemistry": "化学成分", "capacity": "容量",
+    "voltage": "电压", "weight": "重量", "manufacturer": "制造商",
+    "status": "状态", "soh": "健康状态", "rul": "剩余使用寿命",
+    "cycleCount": "循环次数", "targetMarkets": "目标市场",
+    "regulatoryProfiles": "监管档案",
+    "statuses": { "operational": "运行中", "second_life": "二次利用", "end_of_life": "寿命终止", "decommissioned": "已退役" }
+  },
+  "compliance": {
+    "title": "合规仪表板", "jurisdiction": "司法管辖区", "status": "合规状态",
+    "lastChecked": "最后检查", "nextDeadline": "下次截止日期", "issues": "问题",
+    "passport": "电池护照", "carbonFootprint": "碳足迹",
+    "recycledContent": "回收成分", "supplyChain": "供应链",
+    "statuses": {
+      "compliant": "合规", "non_compliant": "不合规", "pending": "待审核",
+      "not_applicable": "不适用", "data_incomplete": "数据不完整"
+    },
+    "eu": { "title": "欧盟电池法规", "passportId": "欧盟护照ID", "carbonClass": "碳足迹等级", "ceMarking": "CE认证", "safetyCompliant": "安全合规", "sohAtPlacement": "上市时健康状态", "disassemblyInstructions": "拆解说明", "eolCollection": "报废回收信息" },
+    "in": { "title": "印度BPAN", "bpan": "BPAN编号", "eprRegistration": "EPR注册", "cpcbCompliant": "CPCB合规", "pliEligible": "PLI资格" },
+    "cn": { "title": "中国新能源汽车(工信部)", "miitId": "工信部数字ID", "syncStatus": "同步状态", "lastSync": "最后同步", "recyclingCategory": "回收类别" },
+    "us": { "title": "美国IRA", "iraQualified": "IRA资格", "criticalMineralPct": "关键矿物%", "batteryComponentPct": "电池组件%" }
+  },
+  "passport": {
+    "title": "电池护照", "publicPage": "公开电池护照",
+    "generalInfo": "基本信息", "carbonFootprint": "碳足迹",
+    "recycledContent": "回收成分", "endOfLife": "报废处理",
+    "supplyChain": "供应链", "verifiedBy": "验证方",
+    "generatedAt": "生成时间", "scanQr": "扫描二维码查看此护照",
+    "carbonClasses": { "A": "A级 — 优秀（最低碳足迹）", "B": "B级 — 良好", "C": "C级 — 一般", "D": "D级 — 低于平均", "E": "E级 — 高碳足迹" }
+  },
+  "settings": {
+    "title": "平台设置", "language": "语言", "currency": "货币",
+    "timezone": "时区", "jurisdiction": "启用的司法管辖区",
+    "dataResidency": "数据存储区域", "notifications": "通知",
+    "organisation": "组织", "saved": "设置保存成功"
+  },
+  "marketplace": {
+    "title": "市场", "list": "发布电池", "price": "价格",
+    "currency": "货币", "condition": "状态", "availableFrom": "可用日期",
+    "buyNow": "立即购买", "makeOffer": "出价", "contactSeller": "联系卖家"
+  }
+}

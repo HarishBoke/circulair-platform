@@ -22,6 +22,20 @@
       "when": 1775048130018,
       "tag": "0002_opposite_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1775059934938,
+      "tag": "0003_orange_jigsaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1775059962557,
+      "tag": "0004_dapper_fixer",
+      "breakpoints": true
     }
   ]
 }

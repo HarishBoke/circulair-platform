@@ -24,6 +24,9 @@ import Home from "./pages/Home";
 import DataIntegration from "./pages/DataIntegration";
 import MqttFlowTester from "./pages/MqttFlowTester";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import PlatformSettings from "./pages/PlatformSettings";
+import ComplianceDashboard from "./pages/ComplianceDashboard";
+import EuBatteryPassport from "./pages/EuBatteryPassport";
 
 function Router() {
   return (
@@ -47,6 +50,10 @@ function Router() {
       <Route path="/data-integration" component={DataIntegration} />
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
+      <Route path="/settings/platform" component={() => <PlatformLayout><PlatformSettings /></PlatformLayout>} />
+      <Route path="/compliance" component={() => <PlatformLayout><ComplianceDashboard /></PlatformLayout>} />
+      {/* Public passport pages — no auth, no layout shell */}
+      <Route path="/passport/EU/:localId" component={EuBatteryPassport} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

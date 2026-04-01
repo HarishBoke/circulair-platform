@@ -369,3 +369,75 @@ export const chatMessages = mysqlTable("chat_messages", {
 
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+// ─── REGULATORY PROFILES ──────────────────────────────────────────────────────
+// Stores jurisdiction-specific compliance data for each battery.
+// One battery can have multiple profiles (one per target market).
+export const regulatoryProfiles = mysqlTable("regulatory_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  batteryId: int("batteryId").notNull(),
+  jurisdiction: varchar("jurisdiction", { length: 10 }).notNull(),
+  localId: varchar("localId", { length: 128 }),
+  status: mysqlEnum("status", ["compliant", "non_compliant", "pending", "not_applicable", "data_incomplete"]).default("pending").notNull(),
+  profileData: json("profileData").notNull(),
+  govSyncStatus: mysqlEnum("govSyncStatus", ["synced", "pending", "failed", "not_required"]).default("not_required").notNull(),
+  lastGovSyncAt: timestamp("lastGovSyncAt"),
+  lastCheckedAt: timestamp("lastCheckedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RegulatoryProfile = typeof regulatoryProfiles.$inferSelect;
+export type InsertRegulatoryProfile = typeof regulatoryProfiles.$inferInsert;
+
+// ─── CARBON FOOTPRINT DECLARATIONS ───────────────────────────────────────────
+export const carbonFootprintDeclarations = mysqlTable("carbon_footprint_declarations", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  batteryId: int("batteryId").notNull(),
+  totalKgCo2e: decimal("totalKgCo2e", { precision: 10, scale: 3 }).notNull(),
+  rawMaterialKgCo2e: decimal("rawMaterialKgCo2e", { precision: 10, scale: 3 }),
+  productionKgCo2e: decimal("productionKgCo2e", { precision: 10, scale: 3 }),
+  distributionKgCo2e: decimal("distributionKgCo2e", { precision: 10, scale: 3 }),
+  endOfLifeKgCo2e: decimal("endOfLifeKgCo2e", { precision: 10, scale: 3 }),
+  performanceClass: mysqlEnum("performanceClass", ["A", "B", "C", "D", "E"]),
+  methodology: mysqlEnum("methodology", ["GHG_PROTOCOL", "ISO_14067", "EU_PEF", "GBA"]).default("GHG_PROTOCOL").notNull(),
+  certifyingBody: varchar("certifyingBody", { length: 255 }),
+  declaredById: int("declaredById").notNull(),
+  declaredAt: timestamp("declaredAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CarbonFootprintDeclaration = typeof carbonFootprintDeclarations.$inferSelect;
+export type InsertCarbonFootprintDeclaration = typeof carbonFootprintDeclarations.$inferInsert;
+
+// ─── PLATFORM SETTINGS ────────────────────────────────────────────────────────
+export const platformSettings = mysqlTable("platform_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  locale: varchar("locale", { length: 20 }).default("en-IN").notNull(),
+  displayCurrency: varchar("displayCurrency", { length: 10 }).default("INR").notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("Asia/Kolkata").notNull(),
+  activeJurisdictions: json("activeJurisdictions").$type<string[]>().notNull(),
+  dataResidencyRegion: mysqlEnum("dataResidencyRegion", ["in", "eu", "cn", "us", "global"]).default("in").notNull(),
+  organisationName: varchar("organisationName", { length: 255 }),
+  organisationCountry: varchar("organisationCountry", { length: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PlatformSettings = typeof platformSettings.$inferSelect;
+export type InsertPlatformSettings = typeof platformSettings.$inferInsert;
+
+// ─── MARKETPLACE LISTINGS CURRENCY EXTENSION ─────────────────────────────────
+export const marketplaceListingsCurrency = mysqlTable("marketplace_listings_currency", {
+  id: int("id").autoincrement().primaryKey(),
+  listingId: int("listingId").notNull().unique(),
+  priceUsd: decimal("priceUsd", { precision: 14, scale: 4 }),
+  listingCurrency: varchar("listingCurrency", { length: 10 }).default("INR").notNull(),
+  listingCurrencyAmount: decimal("listingCurrencyAmount", { precision: 14, scale: 4 }),
+  exchangeRateAtListing: decimal("exchangeRateAtListing", { precision: 14, scale: 6 }),
+  targetMarkets: json("targetMarkets").$type<string[]>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MarketplaceListingCurrency = typeof marketplaceListingsCurrency.$inferSelect;
+export type InsertMarketplaceListingCurrency = typeof marketplaceListingsCurrency.$inferInsert;

@@ -1,0 +1,62 @@
+{
+  "common": {
+    "save": "Enregistrer", "cancel": "Annuler", "delete": "Supprimer", "edit": "Modifier",
+    "close": "Fermer", "back": "Retour", "next": "Suivant", "loading": "Chargement…",
+    "error": "Une erreur s'est produite", "noData": "Aucune donnée disponible",
+    "search": "Rechercher", "filter": "Filtrer", "export": "Exporter", "import": "Importer",
+    "refresh": "Actualiser", "viewAll": "Tout afficher", "learnMore": "En savoir plus",
+    "required": "Obligatoire", "optional": "Optionnel", "yes": "Oui", "no": "Non",
+    "status": "Statut", "actions": "Actions", "createdAt": "Créé le", "updatedAt": "Mis à jour"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord", "batteries": "Batteries", "telemetry": "Télémétrie",
+    "marketplace": "Marché", "logistics": "Logistique", "compliance": "Conformité",
+    "analytics": "Analytique", "alerts": "Alertes", "documents": "Documents",
+    "settings": "Paramètres", "admin": "Admin", "users": "Utilisateurs",
+    "dataIntegration": "Intégration de données", "mqttTester": "Testeur MQTT",
+    "aiAssistant": "Assistant IA", "passport": "Passeport batterie"
+  },
+  "battery": {
+    "title": "Registre des batteries", "register": "Enregistrer une batterie",
+    "bpan": "ID de la batterie", "chemistry": "Chimie", "capacity": "Capacité",
+    "voltage": "Tension", "weight": "Poids", "manufacturer": "Fabricant",
+    "status": "Statut", "soh": "État de santé", "rul": "Durée de vie restante",
+    "cycleCount": "Nombre de cycles", "targetMarkets": "Marchés cibles",
+    "regulatoryProfiles": "Profils réglementaires",
+    "statuses": { "operational": "Opérationnel", "second_life": "Seconde vie", "end_of_life": "Fin de vie", "decommissioned": "Hors service" }
+  },
+  "compliance": {
+    "title": "Tableau de bord de conformité", "jurisdiction": "Juridiction",
+    "status": "Statut de conformité", "lastChecked": "Dernière vérification",
+    "nextDeadline": "Prochaine échéance", "issues": "Problèmes",
+    "passport": "Passeport batterie", "carbonFootprint": "Empreinte carbone",
+    "recycledContent": "Contenu recyclé", "supplyChain": "Chaîne d'approvisionnement",
+    "statuses": {
+      "compliant": "Conforme", "non_compliant": "Non conforme", "pending": "En attente",
+      "not_applicable": "Non applicable", "data_incomplete": "Données incomplètes"
+    },
+    "eu": { "title": "Règlement UE sur les batteries", "passportId": "ID passeport UE", "carbonClass": "Classe d'empreinte carbone", "ceMarking": "Marquage CE", "safetyCompliant": "Conforme sécurité", "sohAtPlacement": "SoH à la mise sur le marché", "disassemblyInstructions": "Instructions de démontage", "eolCollection": "Collecte fin de vie" },
+    "in": { "title": "Inde BPAN", "bpan": "Numéro BPAN", "eprRegistration": "Enregistrement EPR", "cpcbCompliant": "Conforme CPCB", "pliEligible": "Éligible PLI" },
+    "cn": { "title": "Chine NEV (MIIT)", "miitId": "ID numérique MIIT", "syncStatus": "Statut sync", "lastSync": "Dernière sync", "recyclingCategory": "Catégorie recyclage" },
+    "us": { "title": "IRA États-Unis", "iraQualified": "Qualifié IRA", "criticalMineralPct": "% minéraux critiques", "batteryComponentPct": "% composants batterie" }
+  },
+  "passport": {
+    "title": "Passeport batterie", "publicPage": "Passeport batterie public",
+    "generalInfo": "Informations générales", "carbonFootprint": "Empreinte carbone",
+    "recycledContent": "Contenu recyclé", "endOfLife": "Fin de vie",
+    "supplyChain": "Chaîne d'approvisionnement", "verifiedBy": "Vérifié par",
+    "generatedAt": "Généré le", "scanQr": "Scannez le QR code pour voir ce passeport",
+    "carbonClasses": { "A": "Classe A — Excellent", "B": "Classe B — Bien", "C": "Classe C — Moyen", "D": "Classe D — Insuffisant", "E": "Classe E — Empreinte élevée" }
+  },
+  "settings": {
+    "title": "Paramètres de la plateforme", "language": "Langue", "currency": "Devise",
+    "timezone": "Fuseau horaire", "jurisdiction": "Juridictions actives",
+    "dataResidency": "Région de résidence des données", "notifications": "Notifications",
+    "organisation": "Organisation", "saved": "Paramètres enregistrés avec succès"
+  },
+  "marketplace": {
+    "title": "Marché", "list": "Mettre en vente", "price": "Prix",
+    "currency": "Devise", "condition": "État", "availableFrom": "Disponible à partir du",
+    "buyNow": "Acheter maintenant", "makeOffer": "Faire une offre", "contactSeller": "Contacter le vendeur"
+  }
+}

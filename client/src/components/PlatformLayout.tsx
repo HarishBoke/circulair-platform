@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
-  User, Settings, Zap, Menu, X, Search, Database, Radio, Users
+  User, Settings, Zap, Menu, X, Search, Database, Radio, Users, Globe, Settings2
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
     items: [
       { icon: Shield, label: "EPR Compliance", href: "/epr-compliance" },
       { icon: FlaskConical, label: "Yield Verification", href: "/yield-verification" },
+      { icon: Globe, label: "Compliance Dashboard", href: "/compliance" },
     ],
   },
   {
@@ -67,6 +68,7 @@ const NAV_SECTIONS = [
     label: "ADMIN",
     items: [
       { icon: Users, label: "User Management", href: "/admin/users" },
+      { icon: Settings2, label: "Platform Settings", href: "/settings/platform" },
     ],
   },
 ];

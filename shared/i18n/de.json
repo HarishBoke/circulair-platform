@@ -1,0 +1,61 @@
+{
+  "common": {
+    "save": "Speichern", "cancel": "Abbrechen", "delete": "Löschen", "edit": "Bearbeiten",
+    "close": "Schließen", "back": "Zurück", "next": "Weiter", "loading": "Wird geladen…",
+    "error": "Ein Fehler ist aufgetreten", "noData": "Keine Daten verfügbar",
+    "search": "Suchen", "filter": "Filtern", "export": "Exportieren", "import": "Importieren",
+    "refresh": "Aktualisieren", "viewAll": "Alle anzeigen", "learnMore": "Mehr erfahren",
+    "required": "Erforderlich", "optional": "Optional", "yes": "Ja", "no": "Nein",
+    "status": "Status", "actions": "Aktionen", "createdAt": "Erstellt", "updatedAt": "Aktualisiert"
+  },
+  "nav": {
+    "dashboard": "Dashboard", "batteries": "Batterien", "telemetry": "Telemetrie",
+    "marketplace": "Marktplatz", "logistics": "Logistik", "compliance": "Compliance",
+    "analytics": "Analytik", "alerts": "Alarme", "documents": "Dokumente",
+    "settings": "Einstellungen", "admin": "Admin", "users": "Benutzer",
+    "dataIntegration": "Datenintegration", "mqttTester": "MQTT-Tester",
+    "aiAssistant": "KI-Assistent", "passport": "Batteriepass"
+  },
+  "battery": {
+    "title": "Batterieregister", "register": "Batterie registrieren",
+    "bpan": "Batterie-ID", "chemistry": "Chemie", "capacity": "Kapazität",
+    "voltage": "Spannung", "weight": "Gewicht", "manufacturer": "Hersteller",
+    "status": "Status", "soh": "Gesundheitszustand", "rul": "Verbleibende Nutzungsdauer",
+    "cycleCount": "Zyklenanzahl", "targetMarkets": "Zielmärkte",
+    "regulatoryProfiles": "Regulatorische Profile",
+    "statuses": { "operational": "Betriebsbereit", "second_life": "Zweites Leben", "end_of_life": "Lebensende", "decommissioned": "Außer Betrieb" }
+  },
+  "compliance": {
+    "title": "Compliance-Dashboard", "jurisdiction": "Rechtsgebiet", "status": "Compliance-Status",
+    "lastChecked": "Zuletzt geprüft", "nextDeadline": "Nächste Frist", "issues": "Probleme",
+    "passport": "Batteriepass", "carbonFootprint": "CO₂-Fußabdruck",
+    "recycledContent": "Recycelter Anteil", "supplyChain": "Lieferkette",
+    "statuses": {
+      "compliant": "Konform", "non_compliant": "Nicht konform", "pending": "Ausstehend",
+      "not_applicable": "Nicht anwendbar", "data_incomplete": "Daten unvollständig"
+    },
+    "eu": { "title": "EU-Batterieverordnung", "passportId": "EU-Pass-ID", "carbonClass": "CO₂-Klasse", "ceMarking": "CE-Kennzeichnung", "safetyCompliant": "Sicherheitskonform", "sohAtPlacement": "SoH bei Markteinführung", "disassemblyInstructions": "Demontageanleitung", "eolCollection": "Entsorgungsinfos" },
+    "in": { "title": "Indien BPAN", "bpan": "BPAN-Nummer", "eprRegistration": "EPR-Registrierung", "cpcbCompliant": "CPCB-konform", "pliEligible": "PLI-berechtigt" },
+    "cn": { "title": "China NEV (MIIT)", "miitId": "MIIT Digital-ID", "syncStatus": "Sync-Status", "lastSync": "Letzter Sync", "recyclingCategory": "Recyclingkategorie" },
+    "us": { "title": "US IRA", "iraQualified": "IRA-qualifiziert", "criticalMineralPct": "Kritische Mineralien %", "batteryComponentPct": "Batteriekomponenten %" }
+  },
+  "passport": {
+    "title": "Batteriepass", "publicPage": "Öffentlicher Batteriepass",
+    "generalInfo": "Allgemeine Informationen", "carbonFootprint": "CO₂-Fußabdruck",
+    "recycledContent": "Recycelter Anteil", "endOfLife": "Lebensende",
+    "supplyChain": "Lieferkette", "verifiedBy": "Verifiziert von",
+    "generatedAt": "Erstellt am", "scanQr": "QR-Code scannen um diesen Pass anzuzeigen",
+    "carbonClasses": { "A": "Klasse A — Ausgezeichnet", "B": "Klasse B — Gut", "C": "Klasse C — Durchschnittlich", "D": "Klasse D — Unterdurchschnittlich", "E": "Klasse E — Hoher Fußabdruck" }
+  },
+  "settings": {
+    "title": "Plattformeinstellungen", "language": "Sprache", "currency": "Währung",
+    "timezone": "Zeitzone", "jurisdiction": "Aktive Rechtsgebiete",
+    "dataResidency": "Datenspeicherregion", "notifications": "Benachrichtigungen",
+    "organisation": "Organisation", "saved": "Einstellungen erfolgreich gespeichert"
+  },
+  "marketplace": {
+    "title": "Marktplatz", "list": "Batterie anbieten", "price": "Preis",
+    "currency": "Währung", "condition": "Zustand", "availableFrom": "Verfügbar ab",
+    "buyNow": "Sofort kaufen", "makeOffer": "Angebot machen", "contactSeller": "Verkäufer kontaktieren"
+  }
+}

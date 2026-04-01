@@ -1,0 +1,61 @@
+{
+  "common": {
+    "save": "सहेजें", "cancel": "रद्द करें", "delete": "हटाएं", "edit": "संपादित करें",
+    "close": "बंद करें", "back": "वापस", "next": "अगला", "loading": "लोड हो रहा है…",
+    "error": "कुछ गलत हो गया", "noData": "कोई डेटा उपलब्ध नहीं",
+    "search": "खोजें", "filter": "फ़िल्टर", "export": "निर्यात", "import": "आयात",
+    "refresh": "ताज़ा करें", "viewAll": "सभी देखें", "learnMore": "और जानें",
+    "required": "आवश्यक", "optional": "वैकल्पिक", "yes": "हाँ", "no": "नहीं",
+    "status": "स्थिति", "actions": "क्रियाएं", "createdAt": "बनाया गया", "updatedAt": "अपडेट किया गया"
+  },
+  "nav": {
+    "dashboard": "डैशबोर्ड", "batteries": "बैटरियां", "telemetry": "टेलीमेट्री",
+    "marketplace": "बाज़ार", "logistics": "लॉजिस्टिक्स", "compliance": "अनुपालन",
+    "analytics": "विश्लेषण", "alerts": "अलर्ट", "documents": "दस्तावेज़",
+    "settings": "सेटिंग्स", "admin": "व्यवस्थापक", "users": "उपयोगकर्ता",
+    "dataIntegration": "डेटा एकीकरण", "mqttTester": "MQTT परीक्षक",
+    "aiAssistant": "AI सहायक", "passport": "बैटरी पासपोर्ट"
+  },
+  "battery": {
+    "title": "बैटरी रजिस्ट्री", "register": "बैटरी पंजीकृत करें",
+    "bpan": "बैटरी ID", "chemistry": "रसायन", "capacity": "क्षमता",
+    "voltage": "वोल्टेज", "weight": "वजन", "manufacturer": "निर्माता",
+    "status": "स्थिति", "soh": "स्वास्थ्य स्थिति", "rul": "शेष उपयोगी जीवन",
+    "cycleCount": "चक्र गणना", "targetMarkets": "लक्षित बाज़ार",
+    "regulatoryProfiles": "नियामक प्रोफाइल",
+    "statuses": { "operational": "चालू", "second_life": "द्वितीय जीवन", "end_of_life": "जीवन समाप्त", "decommissioned": "सेवामुक्त" }
+  },
+  "compliance": {
+    "title": "अनुपालन डैशबोर्ड", "jurisdiction": "न्यायक्षेत्र", "status": "अनुपालन स्थिति",
+    "lastChecked": "अंतिम जांच", "nextDeadline": "अगली समय सीमा", "issues": "समस्याएं",
+    "passport": "बैटरी पासपोर्ट", "carbonFootprint": "कार्बन फुटप्रिंट",
+    "recycledContent": "पुनर्चक्रित सामग्री", "supplyChain": "आपूर्ति श्रृंखला",
+    "statuses": {
+      "compliant": "अनुपालन में", "non_compliant": "अनुपालन में नहीं", "pending": "समीक्षाधीन",
+      "not_applicable": "लागू नहीं", "data_incomplete": "डेटा अधूरा"
+    },
+    "eu": { "title": "EU बैटरी विनियमन", "passportId": "EU पासपोर्ट ID", "carbonClass": "कार्बन फुटप्रिंट वर्ग", "ceMarking": "CE मार्किंग", "safetyCompliant": "सुरक्षा अनुपालन", "sohAtPlacement": "बाज़ार में रखने पर SoH", "disassemblyInstructions": "विघटन निर्देश", "eolCollection": "जीवन-अंत संग्रह" },
+    "in": { "title": "भारत BPAN", "bpan": "BPAN नंबर", "eprRegistration": "EPR पंजीकरण", "cpcbCompliant": "CPCB अनुपालन", "pliEligible": "PLI पात्र" },
+    "cn": { "title": "चीन NEV (MIIT)", "miitId": "MIIT डिजिटल ID", "syncStatus": "सिंक स्थिति", "lastSync": "अंतिम सिंक", "recyclingCategory": "पुनर्चक्रण श्रेणी" },
+    "us": { "title": "US IRA", "iraQualified": "IRA योग्य", "criticalMineralPct": "महत्वपूर्ण खनिज %", "batteryComponentPct": "बैटरी घटक %" }
+  },
+  "passport": {
+    "title": "बैटरी पासपोर्ट", "publicPage": "सार्वजनिक बैटरी पासपोर्ट",
+    "generalInfo": "सामान्य जानकारी", "carbonFootprint": "कार्बन फुटप्रिंट",
+    "recycledContent": "पुनर्चक्रित सामग्री", "endOfLife": "जीवन समाप्ति",
+    "supplyChain": "आपूर्ति श्रृंखला", "verifiedBy": "सत्यापित",
+    "generatedAt": "बनाया गया", "scanQr": "यह पासपोर्ट देखने के लिए QR कोड स्कैन करें",
+    "carbonClasses": { "A": "वर्ग A — उत्कृष्ट", "B": "वर्ग B — अच्छा", "C": "वर्ग C — औसत", "D": "वर्ग D — औसत से नीचे", "E": "वर्ग E — उच्च फुटप्रिंट" }
+  },
+  "settings": {
+    "title": "प्लेटफ़ॉर्म सेटिंग्स", "language": "भाषा", "currency": "मुद्रा",
+    "timezone": "समय क्षेत्र", "jurisdiction": "सक्रिय न्यायक्षेत्र",
+    "dataResidency": "डेटा निवास क्षेत्र", "notifications": "सूचनाएं",
+    "organisation": "संगठन", "saved": "सेटिंग्स सफलतापूर्वक सहेजी गईं"
+  },
+  "marketplace": {
+    "title": "बाज़ार", "list": "बैटरी सूचीबद्ध करें", "price": "मूल्य",
+    "currency": "मुद्रा", "condition": "स्थिति", "availableFrom": "उपलब्ध",
+    "buyNow": "अभी खरीदें", "makeOffer": "प्रस्ताव दें", "contactSeller": "विक्रेता से संपर्क करें"
+  }
+}

@@ -1077,5 +1077,155 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }),
   }),
 
+  // ─── REGULATORY / MULTINATIONAL ────────────────────────────────────────────────
+  regulatory: router({
+    /** Get all regulatory profiles for a battery */
+    getProfiles: protectedProcedure
+      .input(z.object({ batteryId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getRegulatoryProfilesForBattery } = await import("./db-regulatory");
+        return getRegulatoryProfilesForBattery(input.batteryId);
+      }),
+
+    /** Get a single profile for a battery + jurisdiction */
+    getProfile: protectedProcedure
+      .input(z.object({
+        batteryId: z.number().int().positive(),
+        jurisdiction: z.string().min(2).max(10),
+      }))
+      .query(async ({ input }) => {
+        const { getRegulatoryProfile } = await import("./db-regulatory");
+        return getRegulatoryProfile(input.batteryId, input.jurisdiction);
+      }),
+
+    /** Upsert a regulatory profile */
+    upsertProfile: protectedProcedure
+      .input(z.object({
+        batteryId: z.number().int().positive(),
+        bpan: z.string().min(1).max(21),
+        jurisdiction: z.string().min(2).max(10),
+        localId: z.string().max(128).optional(),
+        status: z.enum(["compliant","non_compliant","pending","not_applicable","data_incomplete"]).default("pending"),
+        profileData: z.record(z.string(), z.unknown()),
+        govSyncStatus: z.enum(["synced","pending","failed","not_required"]).default("not_required"),
+      }))
+      .mutation(async ({ input }) => {
+        const { upsertRegulatoryProfile } = await import("./db-regulatory");
+        return upsertRegulatoryProfile(input.batteryId, input.jurisdiction, {
+          bpan: input.bpan,
+          localId: input.localId ?? null,
+          status: input.status,
+          profileData: input.profileData,
+          govSyncStatus: input.govSyncStatus,
+        });
+      }),
+
+    /** Get EU Battery Passport by localId — PUBLIC, no auth required */
+    getEuPassport: publicProcedure
+      .input(z.object({ localId: z.string().min(1).max(128) }))
+      .query(async ({ input }) => {
+        const { getRegulatoryProfileByLocalId } = await import("./db-regulatory");
+        const profile = await getRegulatoryProfileByLocalId("EU", input.localId);
+        if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "EU Battery Passport not found" });
+        return profile;
+      }),
+
+    /** Declare carbon footprint for a battery */
+    declareCarbonFootprint: protectedProcedure
+      .input(z.object({
+        batteryId: z.number().int().positive(),
+        bpan: z.string().min(1).max(21),
+        totalKgCo2e: z.number().positive(),
+        rawMaterialKgCo2e: z.number().optional(),
+        productionKgCo2e: z.number().optional(),
+        distributionKgCo2e: z.number().optional(),
+        endOfLifeKgCo2e: z.number().optional(),
+        performanceClass: z.enum(["A","B","C","D","E"]).optional(),
+        methodology: z.enum(["GHG_PROTOCOL","ISO_14067","EU_PEF","GBA"]).default("GHG_PROTOCOL"),
+        certifyingBody: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { createCarbonFootprintDeclaration } = await import("./db-regulatory");
+        return createCarbonFootprintDeclaration({
+          batteryId: input.batteryId,
+          bpan: input.bpan,
+          totalKgCo2e: String(input.totalKgCo2e),
+          rawMaterialKgCo2e: input.rawMaterialKgCo2e != null ? String(input.rawMaterialKgCo2e) : null,
+          productionKgCo2e: input.productionKgCo2e != null ? String(input.productionKgCo2e) : null,
+          distributionKgCo2e: input.distributionKgCo2e != null ? String(input.distributionKgCo2e) : null,
+          endOfLifeKgCo2e: input.endOfLifeKgCo2e != null ? String(input.endOfLifeKgCo2e) : null,
+          performanceClass: input.performanceClass ?? null,
+          methodology: input.methodology,
+          certifyingBody: input.certifyingBody ?? null,
+          declaredById: ctx.user!.id,
+        });
+      }),
+
+    /** Get carbon footprint declarations for a battery */
+    getCarbonFootprint: protectedProcedure
+      .input(z.object({ batteryId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getCarbonFootprintDeclarations } = await import("./db-regulatory");
+        return getCarbonFootprintDeclarations(input.batteryId);
+      }),
+  }),
+
+  // ─── PLATFORM SETTINGS ───────────────────────────────────────────────────────
+  platformSettings: router({
+    /** Get current user's platform settings (falls back to global default) */
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const { getPlatformSettings } = await import("./db-regulatory");
+      const settings = await getPlatformSettings(ctx.user!.id);
+      return settings ?? {
+        locale: "en-IN",
+        displayCurrency: "INR",
+        timezone: "Asia/Kolkata",
+        activeJurisdictions: ["IN"],
+        dataResidencyRegion: "in",
+        organisationName: null,
+        organisationCountry: null,
+      };
+    }),
+
+    /** Save current user's platform settings */
+    save: protectedProcedure
+      .input(z.object({
+        locale: z.string().min(2).max(20).optional(),
+        displayCurrency: z.string().min(3).max(10).optional(),
+        timezone: z.string().min(1).max(64).optional(),
+        activeJurisdictions: z.array(z.string()).min(1).optional(),
+        dataResidencyRegion: z.enum(["in","eu","cn","us","global"]).optional(),
+        organisationName: z.string().max(255).optional(),
+        organisationCountry: z.string().length(2).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { upsertPlatformSettings } = await import("./db-regulatory");
+        return upsertPlatformSettings(ctx.user!.id, input);
+      }),
+
+    /** Admin: get global platform defaults */
+    getGlobal: adminProcedure.query(async () => {
+      const { getGlobalPlatformSettings } = await import("./db-regulatory");
+      return getGlobalPlatformSettings();
+    }),
+
+    /** Admin: set global platform defaults */
+    saveGlobal: adminProcedure
+      .input(z.object({
+        locale: z.string().min(2).max(20).optional(),
+        displayCurrency: z.string().min(3).max(10).optional(),
+        timezone: z.string().min(1).max(64).optional(),
+        activeJurisdictions: z.array(z.string()).min(1).optional(),
+        dataResidencyRegion: z.enum(["in","eu","cn","us","global"]).optional(),
+        organisationName: z.string().max(255).optional(),
+        organisationCountry: z.string().length(2).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { upsertGlobalPlatformSettings } = await import("./db-regulatory");
+        return upsertGlobalPlatformSettings(input);
+      }),
+  }),
+
 });
 export type AppRouter = typeof appRouter;
+

@@ -1,0 +1,159 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "noData": "No data available",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "viewAll": "View all",
+    "learnMore": "Learn more",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "status": "Status",
+    "actions": "Actions",
+    "createdAt": "Created",
+    "updatedAt": "Updated"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "batteries": "Batteries",
+    "telemetry": "Telemetry",
+    "marketplace": "Marketplace",
+    "logistics": "Logistics",
+    "compliance": "Compliance",
+    "analytics": "Analytics",
+    "alerts": "Alerts",
+    "documents": "Documents",
+    "settings": "Settings",
+    "admin": "Admin",
+    "users": "Users",
+    "dataIntegration": "Data Integration",
+    "mqttTester": "MQTT Tester",
+    "aiAssistant": "AI Assistant",
+    "passport": "Battery Passport"
+  },
+  "battery": {
+    "title": "Battery Registry",
+    "register": "Register Battery",
+    "bpan": "Battery Pack ID",
+    "chemistry": "Chemistry",
+    "capacity": "Capacity",
+    "voltage": "Voltage",
+    "weight": "Weight",
+    "manufacturer": "Manufacturer",
+    "status": "Status",
+    "soh": "State of Health",
+    "rul": "Remaining Useful Life",
+    "cycleCount": "Cycle Count",
+    "targetMarkets": "Target Markets",
+    "regulatoryProfiles": "Regulatory Profiles",
+    "statuses": {
+      "operational": "Operational",
+      "second_life": "Second Life",
+      "end_of_life": "End of Life",
+      "decommissioned": "Decommissioned"
+    }
+  },
+  "compliance": {
+    "title": "Compliance Dashboard",
+    "jurisdiction": "Jurisdiction",
+    "status": "Compliance Status",
+    "lastChecked": "Last Checked",
+    "nextDeadline": "Next Deadline",
+    "issues": "Issues",
+    "passport": "Battery Passport",
+    "carbonFootprint": "Carbon Footprint",
+    "recycledContent": "Recycled Content",
+    "supplyChain": "Supply Chain",
+    "statuses": {
+      "compliant": "Compliant",
+      "non_compliant": "Non-Compliant",
+      "pending": "Pending Review",
+      "not_applicable": "Not Applicable",
+      "data_incomplete": "Data Incomplete"
+    },
+    "eu": {
+      "title": "EU Battery Regulation",
+      "passportId": "EU Passport ID",
+      "carbonClass": "Carbon Footprint Class",
+      "ceMarking": "CE Marking",
+      "safetyCompliant": "Safety Compliant",
+      "sohAtPlacement": "SoH at Market Placement",
+      "disassemblyInstructions": "Disassembly Instructions",
+      "eolCollection": "End-of-Life Collection"
+    },
+    "in": {
+      "title": "India BPAN",
+      "bpan": "BPAN Number",
+      "eprRegistration": "EPR Registration",
+      "cpcbCompliant": "CPCB Compliant",
+      "pliEligible": "PLI Eligible"
+    },
+    "cn": {
+      "title": "China NEV (MIIT)",
+      "miitId": "MIIT Digital ID",
+      "syncStatus": "Sync Status",
+      "lastSync": "Last Sync",
+      "recyclingCategory": "Recycling Category"
+    },
+    "us": {
+      "title": "US IRA",
+      "iraQualified": "IRA Qualified",
+      "criticalMineralPct": "Critical Mineral %",
+      "batteryComponentPct": "Battery Component %"
+    }
+  },
+  "passport": {
+    "title": "Battery Passport",
+    "publicPage": "Public Battery Passport",
+    "generalInfo": "General Information",
+    "carbonFootprint": "Carbon Footprint",
+    "recycledContent": "Recycled Content",
+    "endOfLife": "End of Life",
+    "supplyChain": "Supply Chain",
+    "verifiedBy": "Verified by",
+    "generatedAt": "Generated",
+    "scanQr": "Scan QR code to view this passport",
+    "carbonClasses": {
+      "A": "Class A — Excellent (lowest footprint)",
+      "B": "Class B — Good",
+      "C": "Class C — Average",
+      "D": "Class D — Below average",
+      "E": "Class E — High footprint"
+    }
+  },
+  "settings": {
+    "title": "Platform Settings",
+    "language": "Language",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "jurisdiction": "Active Jurisdictions",
+    "dataResidency": "Data Residency Region",
+    "notifications": "Notifications",
+    "organisation": "Organisation",
+    "saved": "Settings saved successfully"
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "list": "List Battery",
+    "price": "Price",
+    "currency": "Currency",
+    "condition": "Condition",
+    "availableFrom": "Available From",
+    "buyNow": "Buy Now",
+    "makeOffer": "Make Offer",
+    "contactSeller": "Contact Seller"
+  }
+}
