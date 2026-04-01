@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
-  User, Settings, Zap, Menu, X, Search
+  User, Settings, Zap, Menu, X, Search, Database
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -54,6 +54,12 @@ const NAV_SECTIONS = [
       { icon: BarChart3, label: "Analytics", href: "/analytics" },
       { icon: FileText, label: "Documents", href: "/documents" },
       { icon: Bell, label: "Alerts", href: "/alerts", badge: true },
+    ],
+  },
+  {
+    label: "INTEGRATIONS",
+    items: [
+      { icon: Database, label: "Data Integration", href: "/data-integration" },
     ],
   },
 ];

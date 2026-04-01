@@ -126,3 +126,14 @@
 - [x] Add thermal anomaly real-time toast push via socket
 - [x] Update Dashboard.tsx to show live alert badge via socket
 - [x] Write vitest tests for socket event handlers (15 tests passing)
+
+## Phase 16: Dummy Data & Real Data Integration Hub
+- [x] Audit schema for all tables and plan seed data coverage
+- [x] Write seed.mjs — 40 batteries (NMC/LFP/NCA/LCO/LMO), 480 telemetry readings, 25 SOH predictions, 18 marketplace listings, 20 logistics orders, 22 EPR tokens, 35 alerts, 89 service records
+- [x] Fix all enum values to match DB schema (chemistry, status, listingType, logistics status, shipmentId length)
+- [x] Optimize seed with bulk inserts for telemetry and alerts
+- [x] Build DataIntegration.tsx — MQTT, REST API, CSV import, Webhooks, SDK, Direct DB tabs
+- [x] Add Data Integration route to App.tsx (/data-integration)
+- [x] Add Database icon + Data Integration nav item to PlatformLayout sidebar (INTEGRATIONS section)
+- [x] TypeScript: 0 errors
+- [x] Tests: 39 passing (auth + platform + telemetrySocket)
