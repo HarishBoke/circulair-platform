@@ -169,3 +169,17 @@
 - [x] Write 17 vitest tests for AlertCooldown module (all passing)
 - [x] TypeScript: 0 errors
 - [x] Tests: 79 passing total (17 cooldown + 19 MQTT + 23 platform + 19 socket + 1 auth)
+
+## Phase 20: PDF Export — Health Passports & CPCB Reports [COMPLETE]
+- [x] Evaluated PDF libraries — chose puppeteer-core + system Chromium for pixel-perfect rendering
+- [x] Installed puppeteer-core; uses /usr/bin/chromium-browser (no binary download needed)
+- [x] Built server/pdfGenerator.ts — health passport HTML template with SOH gauge, telemetry, service history
+- [x] Built CPCB Form BW-3 HTML template with all regulatory fields (EPR tokens, yield, mineral recovery)
+- [x] Added tRPC pdf.healthPassport (bpan) → S3 URL + documents table record
+- [x] Added tRPC pdf.cpcbReport (year, month) → S3 URL + documents table record
+- [x] Wired "Export Health Passport" button in BpanDetail.tsx (opens PDF in new tab)
+- [x] Wired "Export CPCB BW-3" button in EprCompliance.tsx (opens PDF in new tab)
+- [x] Stored PDF metadata in documents table (S3 key, URL, bpan, type, fileSize)
+- [x] Wrote 14 vitest tests for pdfGenerator (all passing)
+- [x] TypeScript: 0 errors
+- [x] Tests: 90 passing total

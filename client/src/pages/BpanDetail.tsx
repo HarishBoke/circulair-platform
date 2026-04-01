@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw } from "lucide-react";
+import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw, FileDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -32,6 +32,13 @@ export default function BpanDetail() {
   const simulateMutation = trpc.telemetry.simulate.useMutation({
     onSuccess: (d) => { toast.success(`Simulated ${d.records} telemetry records`); refetch(); },
     onError: (e) => toast.error(e.message),
+  });
+  const pdfMutation = trpc.pdf.healthPassport.useMutation({
+    onSuccess: (d) => {
+      toast.success("Health Passport PDF ready!", { description: "Opening in new tab..." });
+      window.open(d.url, "_blank");
+    },
+    onError: (e) => toast.error("PDF generation failed", { description: e.message }),
   });
 
   if (isLoading) {
@@ -96,6 +103,16 @@ export default function BpanDetail() {
           >
             <Activity className="w-3.5 h-3.5 mr-1.5" />
             {simulateMutation.isPending ? "Simulating..." : "Simulate Telemetry"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-border h-8 text-xs"
+            disabled={pdfMutation.isPending}
+            onClick={() => pdfMutation.mutate({ bpan })}
+          >
+            <FileDown className="w-3.5 h-3.5 mr-1.5" />
+            {pdfMutation.isPending ? "Generating PDF..." : "Health Passport"}
           </Button>
           <Button
             size="sm"

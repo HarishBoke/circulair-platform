@@ -19,6 +19,8 @@ import {
   getPlatformKpis, getAllUsers, upsertUser,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
+import { generateHealthPassportPdf, generateCpcbReportPdf } from "./pdfGenerator";
+import { storagePut } from "./storage";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -885,5 +887,120 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       return { success: true, message: "Stream stopped" };
     }),
   }),
+  // PDF EXPORT ROUTER
+  pdf: router({
+    healthPassport: protectedProcedure
+      .input(z.object({ bpan: z.string().length(21) }))
+      .mutation(async ({ input, ctx }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new Error("Battery not found");
+        const [latestTelemetry, latestPrediction, serviceHistory] = await Promise.all([
+          getLatestTelemetry(input.bpan),
+          getLatestSohPrediction(input.bpan),
+          getServiceHistory(input.bpan),
+        ]);
+        const pdfBuffer = await generateHealthPassportPdf({
+          battery: battery as any,
+          latestTelemetry: latestTelemetry as any,
+          latestPrediction: latestPrediction as any,
+          serviceHistory: (serviceHistory ?? []) as any,
+          generatedAt: new Date(),
+          generatedBy: ctx.user?.name ?? "Platform System",
+        });
+        const fileKey = `health-passports/${input.bpan}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+        await createDocument({
+          name: `Health Passport — ${input.bpan}`,
+          type: "health_passport",
+          bpan: input.bpan,
+          batteryId: battery.id,
+          uploadedById: ctx.user!.id,
+          fileUrl: url,
+          fileKey,
+          fileSizeBytes: pdfBuffer.length,
+          mimeType: "application/pdf",
+          accessLevel: "organization",
+        });
+        return { url, fileKey, sizeBytes: pdfBuffer.length };
+      }),
+
+    cpcbReport: protectedProcedure
+      .input(z.object({
+        year: z.number().int().min(2020).max(2099),
+        month: z.number().int().min(1).max(12),
+        organizationName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const [eprTokens, stats, batteryStats] = await Promise.all([
+          listEprTokens({ limit: 500 }),
+          getEprStats(),
+          getBatteryStats(),
+        ]);
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        let yieldData: any[] = [];
+        if (db) {
+          const { yieldVerifications } = await import("../drizzle/schema");
+          yieldData = await db.select().from(yieldVerifications).limit(100);
+        }
+        const pdfBuffer = await generateCpcbReportPdf({
+          reportPeriod: { year: input.year, month: input.month },
+          organization: { name: input.organizationName ?? ctx.user?.name ?? "Circul-AI-r Platform" },
+          eprTokens: eprTokens.map((t) => ({
+            tokenId: t.tokenId,
+            bpan: t.bpan,
+            weightKg: t.actualYieldKg ?? 0,
+            chemistry: null,
+            status: t.status,
+            issuedAt: t.createdAt,
+          })),
+          yieldVerifications: yieldData.map((v: any) => ({
+            bpan: Array.isArray(v.bpanList) ? (v.bpanList as string[])[0] ?? null : null,
+            blackMassKg: v.blackMassYieldKg ?? 0,
+            lithiumRecoveredKg: v.lithiumYieldKg,
+            cobaltRecoveredKg: v.cobaltYieldKg,
+            nickelRecoveredKg: v.nickelYieldKg,
+            verifiedAt: v.completedAt ?? v.createdAt,
+          })),
+          stats: {
+            totalBatteries: batteryStats.total,
+            operationalCount: batteryStats.operational,
+            secondLifeCount: batteryStats.secondLife,
+            endOfLifeCount: batteryStats.endOfLife,
+            totalEprTokens: stats.total,
+            totalWeightKg: stats.totalYieldKg,
+            totalYieldKg: yieldData.reduce((s: number, v: any) => s + parseFloat(String(v.totalActualYieldKg ?? 0)), 0),
+          },
+          generatedAt: new Date(),
+          generatedBy: ctx.user?.name ?? "Platform System",
+        });
+        const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const fileKey = `cpcb-reports/BW3-${input.year}-${String(input.month).padStart(2,"0")}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+        await createDocument({
+          name: `CPCB Form BW-3 — ${MONTHS[input.month - 1]} ${input.year}`,
+          type: "cpcb_form",
+          uploadedById: ctx.user!.id,
+          fileUrl: url,
+          fileKey,
+          fileSizeBytes: pdfBuffer.length,
+          mimeType: "application/pdf",
+          accessLevel: "government",
+        });
+        return { url, fileKey, sizeBytes: pdfBuffer.length };
+      }),
+
+    listReports: protectedProcedure
+      .input(z.object({
+        type: z.enum(["health_passport", "cpcb_form", "all"]).default("all"),
+        limit: z.number().int().min(1).max(100).default(20),
+      }))
+      .query(async ({ input }) => {
+        const filters: { type?: string; limit?: number } = { limit: input.limit };
+        if (input.type !== "all") filters.type = input.type;
+        return listDocuments(filters);
+      }),
+  }),
+
 });
 export type AppRouter = typeof appRouter;

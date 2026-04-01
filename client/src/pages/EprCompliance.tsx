@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, Plus, CheckCircle2, Clock, RefreshCw, FileText, Coins } from "lucide-react";
+import { Shield, Plus, CheckCircle2, Clock, RefreshCw, FileText, Coins, FileDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -40,6 +40,15 @@ export default function EprCompliance() {
     onError: (e: { message: string }) => toast.error(e.message),
   });
 
+  const [reportYear] = useState(() => new Date().getFullYear());
+  const [reportMonth] = useState(() => new Date().getMonth() + 1);
+  const pdfMutation = trpc.pdf.cpcbReport.useMutation({
+    onSuccess: (d) => {
+      toast.success("CPCB Form BW-3 PDF ready!", { description: "Opening in new tab..." });
+      window.open(d.url, "_blank");
+    },
+    onError: (e: { message: string }) => toast.error("PDF generation failed", { description: e.message }),
+  });
   const records = data ?? [];
 
   return (
@@ -160,9 +169,21 @@ export default function EprCompliance() {
             <h3 className="font-display text-sm font-bold">EPR Token Records</h3>
             <p className="font-mono text-[10px] text-muted-foreground mt-0.5">{records.length} total tokens</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-8">
-            <RefreshCw className="w-3.5 h-3.5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border h-8 text-xs"
+              disabled={pdfMutation.isPending}
+              onClick={() => pdfMutation.mutate({ year: reportYear, month: reportMonth })}
+            >
+              <FileDown className="w-3.5 h-3.5 mr-1.5" />
+              {pdfMutation.isPending ? "Generating..." : "Export CPCB BW-3"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-8">
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
