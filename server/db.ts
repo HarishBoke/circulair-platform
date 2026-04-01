@@ -13,6 +13,7 @@ import {
   documents, InsertDocument,
   serviceHistory, InsertServiceHistory,
   chatSessions, chatMessages,
+  roleAuditLog, InsertRoleAuditLog,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -376,4 +377,88 @@ export async function getPlatformKpis() {
     getUnreadAlertCount(),
   ]);
   return { batteryStats, marketStats, eprStats, alertCount };
+}
+
+// ─── USER MANAGEMENT HELPERS (ADMIN) ─────────────────────────────────────────
+export async function listUsersAdmin(filters?: {
+  search?: string;
+  platformRole?: string;
+  role?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (filters?.platformRole) conditions.push(eq(users.platformRole, filters.platformRole as any));
+  if (filters?.role) conditions.push(eq(users.role, filters.role as any));
+  if (filters?.search) {
+    conditions.push(
+      or(
+        like(users.name, `%${filters.search}%`),
+        like(users.email, `%${filters.search}%`),
+        like(users.organization, `%${filters.search}%`),
+      ) as any
+    );
+  }
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  const [items, totalResult] = await Promise.all([
+    db.select().from(users).where(query).orderBy(desc(users.createdAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(users).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function getUserRoleStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, byPlatformRole: {} as Record<string, number>, byRole: {} as Record<string, number> };
+  const [byPlatformRole, byRole] = await Promise.all([
+    db.select({ platformRole: users.platformRole, count: count() }).from(users).groupBy(users.platformRole),
+    db.select({ role: users.role, count: count() }).from(users).groupBy(users.role),
+  ]);
+  const platformRoleMap: Record<string, number> = {};
+  byPlatformRole.forEach((r) => { platformRoleMap[r.platformRole] = r.count; });
+  const roleMap: Record<string, number> = {};
+  byRole.forEach((r) => { roleMap[r.role] = r.count; });
+  return {
+    total: byRole.reduce((sum, r) => sum + r.count, 0),
+    byPlatformRole: platformRoleMap,
+    byRole: roleMap,
+  };
+}
+
+export async function updateUserRoleById(
+  userId: number,
+  platformRole: string,
+  systemRole: "user" | "admin",
+  organization?: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, unknown> = {
+    platformRole,
+    role: systemRole,
+  };
+  if (organization !== undefined) updateData.organization = organization;
+  await db.update(users).set(updateData as any).where(eq(users.id, userId));
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result[0];
+}
+
+export async function createRoleAuditEntry(data: InsertRoleAuditLog) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(roleAuditLog).values(data);
+}
+
+export async function getRoleAuditLog(filters?: { targetUserId?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = filters?.limit ?? 50;
+  const conditions = [];
+  if (filters?.targetUserId) conditions.push(eq(roleAuditLog.targetUserId, filters.targetUserId));
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(roleAuditLog).where(query).orderBy(desc(roleAuditLog.createdAt)).limit(limit);
 }

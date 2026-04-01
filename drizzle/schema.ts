@@ -39,6 +39,25 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── ROLE AUDIT LOG ───────────────────────────────────────────────────────────
+export const roleAuditLog = mysqlTable("roleAuditLog", {
+  id: int("id").autoincrement().primaryKey(),
+  targetUserId: int("targetUserId").notNull(),
+  targetUserName: text("targetUserName"),
+  targetUserEmail: varchar("targetUserEmail", { length: 320 }),
+  changedByUserId: int("changedByUserId").notNull(),
+  changedByName: text("changedByName"),
+  previousPlatformRole: varchar("previousPlatformRole", { length: 64 }),
+  newPlatformRole: varchar("newPlatformRole", { length: 64 }).notNull(),
+  previousRole: varchar("previousRole", { length: 32 }),
+  newRole: varchar("newRole", { length: 32 }),
+  reason: text("reason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoleAuditLog = typeof roleAuditLog.$inferSelect;
+export type InsertRoleAuditLog = typeof roleAuditLog.$inferInsert;
+
 // ─── BATTERIES (BPAN REGISTRY) ────────────────────────────────────────────────
 export const batteries = mysqlTable("batteries", {
   id: int("id").autoincrement().primaryKey(),

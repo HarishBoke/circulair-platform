@@ -183,3 +183,20 @@
 - [x] Wrote 14 vitest tests for pdfGenerator (all passing)
 - [x] TypeScript: 0 errors
 - [x] Tests: 90 passing total
+
+## Phase 21: Admin User Role Management UI [COMPLETE]
+- [x] Extend users table with platformRole enum (7 roles) and roleAuditLog table
+- [x] Schema already had platformRole — verified roleAuditLog table in DB
+- [x] Add listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog db helpers
+- [x] Add admin.listUsers tRPC procedure (search, filter by role, pagination)
+- [x] Add admin.roleStats tRPC procedure (counts by platformRole and systemRole)
+- [x] Add admin.updateUserRole tRPC procedure with full audit logging
+- [x] Add admin.auditLog tRPC procedure (paginated role change history)
+- [x] Build AdminUserManagement.tsx — user table with role badges, search, filter, pagination
+- [x] Role distribution stats bar (7 platform roles with count and % bar)
+- [x] Edit Role Dialog with platformRole, systemRole, organization, reason fields
+- [x] Audit trail tab showing full role change history
+- [x] Wire /admin/users route in App.tsx
+- [x] Add Users nav item under ADMIN section in PlatformLayout sidebar
+- [x] Write 23 vitest tests for admin user management procedures
+- [x] TypeScript: 0 errors, 113 tests passing

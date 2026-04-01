@@ -17,6 +17,7 @@ import {
   createServiceRecord, getServiceHistory,
   createChatSession, getChatSessions, addChatMessage, getChatMessages,
   getPlatformKpis, getAllUsers, upsertUser,
+  listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { generateHealthPassportPdf, generateCpcbReportPdf } from "./pdfGenerator";
@@ -800,17 +801,73 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
 
   // ─── ADMIN ──────────────────────────────────────────────────────────────────
   admin: router({
+    /** Legacy: get all users (no pagination) */
     users: protectedProcedure.query(() => getAllUsers()),
+
+    /** Paginated, searchable, filterable user list */
+    listUsers: protectedProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        platformRole: z.enum(["admin", "oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government"]).optional(),
+        role: z.enum(["user", "admin"]).optional(),
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(async ({ input }) => listUsersAdmin(input)),
+
+    /** Role distribution statistics */
+    roleStats: protectedProcedure.query(() => getUserRoleStats()),
+
+    /** Update a user's platform role and system role with audit logging */
     updateUserRole: protectedProcedure
-      .input(z.object({ userId: z.number(), platformRole: z.enum(["admin", "oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government"]) }))
-      .mutation(async ({ input }) => {
+      .input(z.object({
+        userId: z.number(),
+        platformRole: z.enum(["admin", "oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government"]),
+        systemRole: z.enum(["user", "admin"]).default("user"),
+        organization: z.string().optional(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Fetch current user state for audit log
         const db = await import("./db").then((m) => m.getDb());
         if (!db) throw new Error("Database not available");
         const { users } = await import("../drizzle/schema");
         const { eq } = await import("drizzle-orm");
-        await db.update(users).set({ platformRole: input.platformRole }).where(eq(users.id, input.userId));
-        return { success: true };
+        const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+        if (!targetUser) throw new Error("User not found");
+
+        // Apply the role update
+        const updated = await updateUserRoleById(
+          input.userId,
+          input.platformRole,
+          input.systemRole,
+          input.organization,
+        );
+
+        // Write audit log entry
+        await createRoleAuditEntry({
+          targetUserId: input.userId,
+          targetUserName: targetUser.name ?? null,
+          targetUserEmail: targetUser.email ?? null,
+          changedByUserId: ctx.user.id,
+          changedByName: ctx.user.name ?? null,
+          previousPlatformRole: targetUser.platformRole,
+          newPlatformRole: input.platformRole,
+          previousRole: targetUser.role,
+          newRole: input.systemRole,
+          reason: input.reason ?? null,
+        });
+
+        return { success: true, user: updated };
       }),
+
+    /** Fetch role change audit log */
+    auditLog: protectedProcedure
+      .input(z.object({
+        targetUserId: z.number().optional(),
+        limit: z.number().min(1).max(200).default(50),
+      }))
+      .query(async ({ input }) => getRoleAuditLog(input)),
   }),
   // ─── MQTT MANAGEMENT ───────────────────────────────────────────────────────
   mqtt: router({

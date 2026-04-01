@@ -23,6 +23,7 @@ import ServiceHistory from "./pages/ServiceHistory";
 import Home from "./pages/Home";
 import DataIntegration from "./pages/DataIntegration";
 import MqttFlowTester from "./pages/MqttFlowTester";
+import AdminUserManagement from "./pages/AdminUserManagement";
 
 function Router() {
   return (
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/documents" component={() => <PlatformLayout><Documents /></PlatformLayout>} />
       <Route path="/data-integration" component={DataIntegration} />
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
+      <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

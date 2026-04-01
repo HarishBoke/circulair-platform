@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
-  User, Settings, Zap, Menu, X, Search, Database, Radio
+  User, Settings, Zap, Menu, X, Search, Database, Radio, Users
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -61,6 +61,12 @@ const NAV_SECTIONS = [
     items: [
       { icon: Database, label: "Data Integration", href: "/data-integration" },
       { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
+    ],
+  },
+  {
+    label: "ADMIN",
+    items: [
+      { icon: Users, label: "User Management", href: "/admin/users" },
     ],
   },
 ];
