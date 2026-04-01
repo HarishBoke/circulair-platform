@@ -283,3 +283,16 @@
 - [x] Placeholder hints show expected values based on capacity × reference intensity × typical stage share
 - [x] Wrote 32 vitest tests for carbonClass.ts (calculatePerformanceClass, getThresholds, getReferenceIntensity, LIFECYCLE_STAGES, CLASS_LABELS, CLASS_COLORS)
 - [x] TypeScript: 0 errors, 145 tests passing (9 test files)
+
+## Phase 29: Carbon Badge + Multi-Currency + i18n [COMPLETE]
+- [x] Add A–E carbon class badge column to BpanRegistry battery table
+- [x] Backend: batchGetCarbonClasses db helper + joined in bpan.list procedure
+- [x] Multi-currency marketplace: priceCurrency stored in marketplace_listings_currency table
+- [x] Multi-currency marketplace: currency selector (10 currencies) in listing creation form
+- [x] Multi-currency marketplace: prices displayed with Intl.NumberFormat + currency symbol
+- [x] Installed react-i18next, i18next, html-parse-stringify, use-sync-external-store, void-elements
+- [x] Created client/src/lib/i18n.ts — i18next config with browser language detection + fallback
+- [x] Wired i18n import into main.tsx
+- [x] Built LanguageSelector component in PlatformLayout sidebar footer (5 languages)
+- [x] Wrote 26 vitest tests for carbon badge, currency formatting, i18n files, jurisdictions
+- [x] TypeScript: 0 errors, 169 tests passing (10 test files)

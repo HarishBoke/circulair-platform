@@ -11,6 +11,7 @@ import {
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Zap, Menu, X, Search, Database, Radio, Users, Globe, Settings2
 } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const NAV_SECTIONS = [
   {
@@ -210,6 +211,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                 {ROLE_LABELS[platformRole] ?? platformRole}
               </div>
             </div>
+          </div>
+        )}
+        {!collapsed && (
+          <div className="px-1">
+            <LanguageSelector />
           </div>
         )}
         <button

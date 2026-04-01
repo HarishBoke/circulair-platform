@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Battery, Plus, Search, QrCode, ChevronRight, RefreshCw } from "lucide-react";
+import { Battery, Plus, Search, QrCode, ChevronRight, RefreshCw, Leaf } from "lucide-react";
+import { CLASS_COLORS, type PerformanceClass } from "@shared/carbonClass";
 
 const STATUS_STYLES: Record<string, string> = {
   operational: "bg-primary/10 text-primary border-primary/20",
@@ -14,6 +15,27 @@ const STATUS_STYLES: Record<string, string> = {
   in_transit: "bg-chart-4/10 text-chart-4 border-chart-4/20",
   recycling: "bg-chart-3/10 text-chart-3 border-chart-3/20",
 };
+
+function CarbonBadge({ carbonClass }: { carbonClass: string | null }) {
+  if (!carbonClass) {
+    return (
+      <span className="font-mono text-[9px] text-muted-foreground/50">—</span>
+    );
+  }
+  const cls = carbonClass as PerformanceClass;
+  const colors = CLASS_COLORS[cls];
+  if (!colors) {
+    return <span className="font-mono text-[9px] text-muted-foreground">{carbonClass}</span>;
+  }
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-6 h-6 rounded font-mono text-xs font-bold ${colors.bg} ${colors.text} ${colors.border} border`}
+      title={`Carbon Class ${cls}`}
+    >
+      {cls}
+    </span>
+  );
+}
 
 export default function BpanRegistry() {
   const [search, setSearch] = useState("");
@@ -96,8 +118,15 @@ export default function BpanRegistry() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
-                {["BPAN", "Chemistry", "Capacity", "SOH", "Status", "Origin", "Mfg Date", ""].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-mono text-[10px] text-muted-foreground uppercase tracking-widest">{h}</th>
+                {["BPAN", "Chemistry", "Capacity", "SOH", "CO₂", "Status", "Origin", "Mfg Date", ""].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 font-mono text-[10px] text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                    {h === "CO₂" ? (
+                      <span className="flex items-center gap-1">
+                        <Leaf className="w-3 h-3" />
+                        CO₂
+                      </span>
+                    ) : h}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -105,14 +134,14 @@ export default function BpanRegistry() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-border/50">
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><div className="h-4 bg-secondary/50 rounded animate-pulse w-20" /></td>
                     ))}
                   </tr>
                 ))
               ) : batteries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center">
+                  <td colSpan={9} className="px-4 py-16 text-center">
                     <Battery className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-muted-foreground text-sm">No batteries found.</p>
                     <Link href="/batteries/register">
@@ -141,6 +170,9 @@ export default function BpanRegistry() {
                           </div>
                           <span className={`font-mono text-xs ${sohColor}`}>{soh.toFixed(1)}%</span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <CarbonBadge carbonClass={b.carbonClass} />
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={`font-mono text-[9px] capitalize ${STATUS_STYLES[b.status] ?? ""}`}>

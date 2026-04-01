@@ -21,6 +21,7 @@ import {
   listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
+import { batchGetCarbonClasses } from "./db-regulatory";
 import { generateHealthPassportPdf, generateCpcbReportPdf } from "./pdfGenerator";
 import { storagePut } from "./storage";
 
@@ -200,7 +201,16 @@ export const appRouter = router({
         limit: z.number().default(20),
         offset: z.number().default(0),
       }))
-      .query(async ({ input }) => listBatteries(input)),
+      .query(async ({ input }) => {
+        const result = await listBatteries(input);
+        const bpans = result.items.map((b) => b.bpan);
+        const carbonClasses = await batchGetCarbonClasses(bpans);
+        const itemsWithCarbon = result.items.map((b) => ({
+          ...b,
+          carbonClass: carbonClasses.get(b.bpan) ?? null,
+        }));
+        return { items: itemsWithCarbon, total: result.total };
+      }),
 
     get: protectedProcedure
       .input(z.object({ bpan: z.string() }))
@@ -461,8 +471,10 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         bpan: z.string(),
         batteryId: z.number(),
         listingType: z.enum(["direct_reuse", "module_repurposing", "black_mass", "second_life_pack"]),
-        askingPriceInr: z.number().optional(),
+        askingPrice: z.number().optional(),
+        currency: z.string().default("INR"),
         description: z.string().optional(),
+        targetMarkets: z.array(z.string()).default(["IN"]),
       }))
       .mutation(async ({ input, ctx }) => {
         const [battery, latestSoh] = await Promise.all([
@@ -472,12 +484,14 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         if (!battery) throw new Error("Battery not found");
         const soh = Number(latestSoh?.predictedSoh ?? battery.currentSoh ?? 80);
         const spotPrice = calculateSpotPrice(soh, Number(battery.capacityKwh), battery.chemistry);
+        // Store the original INR price for backward compat
+        const askingPriceInr = input.currency === "INR" ? input.askingPrice : null;
         const listing = await createListing({
           bpan: input.bpan,
           batteryId: input.batteryId,
           sellerId: ctx.user.id,
           listingType: input.listingType,
-          askingPriceInr: input.askingPriceInr ? String(input.askingPriceInr) : null,
+          askingPriceInr: askingPriceInr ? String(askingPriceInr) : null,
           spotPriceInr: String(spotPrice),
           sohAtListing: latestSoh?.predictedSoh ?? battery.currentSoh,
           rulAtListing: latestSoh?.rulCycles,
@@ -485,6 +499,21 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
           chemistry: battery.chemistry,
           description: input.description,
         });
+        // Also save to the currency table for multi-currency support
+        if (listing && input.askingPrice) {
+          try {
+            const db = await import("./db").then((m) => m.getDb());
+            if (db) {
+              const { marketplaceListingsCurrency } = await import("../drizzle/schema");
+              await db.insert(marketplaceListingsCurrency).values({
+                listingId: listing.id,
+                listingCurrency: input.currency,
+                listingCurrencyAmount: String(input.askingPrice),
+                targetMarkets: input.targetMarkets,
+              });
+            }
+          } catch { /* currency record is supplementary */ }
+        }
         return { listing, spotPrice };
       }),
 
@@ -497,7 +526,35 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         limit: z.number().default(20),
         offset: z.number().default(0),
       }))
-      .query(({ input }) => listMarketplace(input)),
+      .query(async ({ input }) => {
+        const result = await listMarketplace(input);
+        // Enrich with currency data
+        if (result.items.length === 0) return result;
+        try {
+          const db = await import("./db").then((m) => m.getDb());
+          if (db) {
+            const { marketplaceListingsCurrency } = await import("../drizzle/schema");
+            const { inArray } = await import("drizzle-orm");
+            const ids = result.items.map((i) => i.id);
+            const currencyRows = await db.select().from(marketplaceListingsCurrency).where(inArray(marketplaceListingsCurrency.listingId, ids));
+            const currencyMap = new Map(currencyRows.map((r) => [r.listingId, r]));
+            const enriched = result.items.map((item) => {
+              const cur = currencyMap.get(item.id);
+              return {
+                ...item,
+                listingCurrency: cur?.listingCurrency ?? "INR",
+                listingCurrencyAmount: cur?.listingCurrencyAmount ?? item.askingPriceInr,
+                targetMarkets: cur?.targetMarkets ?? ["IN"],
+              };
+            });
+            return { items: enriched, total: result.total };
+          }
+        } catch { /* fallback to INR */ }
+        return {
+          items: result.items.map((i) => ({ ...i, listingCurrency: "INR" as string, listingCurrencyAmount: i.askingPriceInr, targetMarkets: ["IN"] as string[] })),
+          total: result.total,
+        };
+      }),
 
     stats: protectedProcedure.query(() => getMarketplaceStats()),
 

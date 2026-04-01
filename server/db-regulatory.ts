@@ -6,7 +6,7 @@
  * - Platform settings (locale, currency, active jurisdictions)
  */
 import { getDb } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import {
   regulatoryProfiles,
   carbonFootprintDeclarations,
@@ -109,6 +109,33 @@ export async function getCarbonFootprintByBpan(bpan: string) {
     .orderBy(desc(carbonFootprintDeclarations.declaredAt))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * Batch-fetch the latest carbon footprint performance class for multiple BPANs.
+ * Returns a Map<bpan, performanceClass> for efficient lookup.
+ */
+export async function batchGetCarbonClasses(bpans: string[]): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (bpans.length === 0) return result;
+  const db = await getDb();
+  if (!db) return result;
+  // Get the latest declaration per BPAN using a subquery approach
+  const rows = await db
+    .select({
+      bpan: carbonFootprintDeclarations.bpan,
+      performanceClass: carbonFootprintDeclarations.performanceClass,
+    })
+    .from(carbonFootprintDeclarations)
+    .where(inArray(carbonFootprintDeclarations.bpan, bpans))
+    .orderBy(desc(carbonFootprintDeclarations.declaredAt));
+  // Keep only the first (latest) per BPAN
+  for (const row of rows) {
+    if (!result.has(row.bpan)) {
+      result.set(row.bpan, row.performanceClass ?? "—");
+    }
+  }
+  return result;
 }
 
 export async function createCarbonFootprintDeclaration(data: InsertCarbonFootprintDeclaration) {

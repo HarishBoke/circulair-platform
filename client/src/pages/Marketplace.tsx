@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { usePlatformSettings } from "@/contexts/PlatformSettingsContext";
+import { CURRENCIES } from "@shared/currencies";
 
 const LISTING_STATUS_STYLES: Record<string, string> = {
   active: "bg-primary/10 text-primary border-primary/20",
@@ -16,17 +18,37 @@ const LISTING_STATUS_STYLES: Record<string, string> = {
   reserved: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
 
+const CURRENCY_OPTIONS = Object.values(CURRENCIES).slice(0, 8); // Top 8 currencies
+
+function formatPrice(amount: number | string | null | undefined, currency: string): string {
+  const num = Number(amount ?? 0);
+  if (!num) return "—";
+  const meta = CURRENCIES[currency];
+  if (!meta) return `${currency} ${num.toLocaleString()}`;
+  try {
+    return new Intl.NumberFormat(meta.locale, {
+      style: "currency",
+      currency: meta.code,
+      maximumFractionDigits: meta.decimals,
+    }).format(num);
+  } catch {
+    return `${meta.symbol}${num.toLocaleString()}`;
+  }
+}
+
 export default function Marketplace() {
   const [search, setSearch] = useState("");
   const [listingType, setListingType] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { displayCurrency } = usePlatformSettings();
   const [createForm, setCreateForm] = useState({
     bpan: "",
     batteryId: 0,
     listingType: "second_life_pack" as "second_life_pack" | "direct_reuse" | "module_repurposing" | "black_mass",
-    askingPriceInr: 50000,
-
+    askingPrice: 50000,
+    currency: displayCurrency || "INR",
     description: "",
+    targetMarkets: ["IN"] as string[],
   });
 
   const { data, isLoading, refetch } = trpc.marketplace.list.useQuery({
@@ -48,6 +70,8 @@ export default function Marketplace() {
 
   const listings = data?.items ?? [];
   const total = data?.total ?? 0;
+
+  const selectedCurrencyMeta = CURRENCIES[createForm.currency];
 
   return (
     <div className="p-6 space-y-5 animate-fade-up">
@@ -79,26 +103,45 @@ export default function Marketplace() {
               </div>
               <div>
                 <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Listing Type</Label>
-                <Select value={createForm.listingType} onValueChange={(v) => setCreateForm({ ...createForm, listingType: v as "second_life_pack" | "direct_reuse" | "module_repurposing" | "black_mass" })}>
+                <Select value={createForm.listingType} onValueChange={(v) => setCreateForm({ ...createForm, listingType: v as typeof createForm.listingType })}>
                   <SelectTrigger className="bg-secondary/30 border-border h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     <SelectItem value="second_life_pack">Second Life Pack</SelectItem>
-                    <SelectItem value="module_sale">Module Sale</SelectItem>
-                    <SelectItem value="recycling_tender">Recycling Tender</SelectItem>
+                    <SelectItem value="direct_reuse">Direct Reuse</SelectItem>
+                    <SelectItem value="module_repurposing">Module Repurposing</SelectItem>
                     <SelectItem value="black_mass">Black Mass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Asking Price (INR)</Label>
-                <Input
-                  type="number"
-                  value={createForm.askingPriceInr}
-                  onChange={(e) => setCreateForm({ ...createForm, askingPriceInr: parseInt(e.target.value) })}
-                  className="bg-secondary/30 border-border font-mono text-sm h-9"
-                />
+                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Asking Price</Label>
+                <div className="flex gap-2">
+                  <Select value={createForm.currency} onValueChange={(v) => setCreateForm({ ...createForm, currency: v })}>
+                    <SelectTrigger className="w-28 bg-secondary/30 border-border h-9 text-sm shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      {CURRENCY_OPTIONS.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          <span className="font-mono">{c.symbol}</span> {c.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    value={createForm.askingPrice}
+                    onChange={(e) => setCreateForm({ ...createForm, askingPrice: parseInt(e.target.value) || 0 })}
+                    className="bg-secondary/30 border-border font-mono text-sm h-9 flex-1"
+                    placeholder={`Amount in ${createForm.currency}`}
+                  />
+                </div>
+                {selectedCurrencyMeta && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Price will be listed in {selectedCurrencyMeta.name} ({selectedCurrencyMeta.code})
+                  </p>
+                )}
               </div>
-
               <div>
                 <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Description</Label>
                 <Input
@@ -111,7 +154,15 @@ export default function Marketplace() {
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={createMutation.isPending}
-                onClick={() => createMutation.mutate({ bpan: createForm.bpan, batteryId: createForm.batteryId, listingType: createForm.listingType, askingPriceInr: createForm.askingPriceInr, description: createForm.description })}
+                onClick={() => createMutation.mutate({
+                  bpan: createForm.bpan,
+                  batteryId: createForm.batteryId,
+                  listingType: createForm.listingType,
+                  askingPrice: createForm.askingPrice,
+                  currency: createForm.currency,
+                  description: createForm.description,
+                  targetMarkets: createForm.targetMarkets,
+                })}
               >
                 {createMutation.isPending ? "Creating..." : "Create Listing"}
               </Button>
@@ -153,10 +204,10 @@ export default function Marketplace() {
           <SelectTrigger className="w-44 bg-card border-border h-9 text-sm"><SelectValue placeholder="Listing Type" /></SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="second_life_pack">Second Life Pack</SelectItem>
-            <SelectItem value="module_sale">Module Sale</SelectItem>
-            <SelectItem value="recycling_tender">Recycling Tender</SelectItem>
-                <SelectItem value="black_mass">Black Mass</SelectItem>
+            <SelectItem value="second_life_pack">Second Life Pack</SelectItem>
+            <SelectItem value="direct_reuse">Direct Reuse</SelectItem>
+            <SelectItem value="module_repurposing">Module Repurposing</SelectItem>
+            <SelectItem value="black_mass">Black Mass</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-9">
@@ -181,6 +232,8 @@ export default function Marketplace() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((listing) => {
             const soh = Number(listing.sohAtListing ?? 0);
+            const currency = (listing as any).listingCurrency ?? "INR";
+            const amount = (listing as any).listingCurrencyAmount ?? listing.askingPriceInr;
             return (
               <div key={listing.id} className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all hover:-translate-y-0.5 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -204,12 +257,15 @@ export default function Marketplace() {
                   <div>
                     <div className="font-mono text-[9px] text-muted-foreground mb-0.5">Asking Price</div>
                     <div className="font-display text-lg font-bold">
-                      ₹{Number(listing.askingPriceInr ?? 0).toLocaleString()}
+                      {formatPrice(amount, currency)}
                     </div>
+                    {currency !== "INR" && (
+                      <div className="font-mono text-[9px] text-muted-foreground">
+                        {currency}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-
 
                 {listing.description && (
                   <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{listing.description}</p>
