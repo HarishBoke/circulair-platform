@@ -163,6 +163,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
   _status.messagesReceived++;
   _status.lastMessageAt = new Date().toISOString();
   _status.messagesPerMinute = calcMessagesPerMinute();
+  console.log(`[MQTT] ← Message received on topic: ${topic} (${rawPayload.length} bytes, total: ${_status.messagesReceived})`);
 
   // Parse JSON
   let parsed: unknown;
