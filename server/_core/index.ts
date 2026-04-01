@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { attachTelemetrySocket, stopAllSimulations } from "../telemetrySocket";
+import { startMqttSubscriber, stopMqttSubscriber } from "../mqttSubscriber";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,10 +66,20 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
   });
 
+  // Start real MQTT subscriber if MQTT_BROKER_URL is configured
+  startMqttSubscriber();
+
   // Graceful shutdown
   process.on("SIGTERM", () => {
     stopAllSimulations();
+    stopMqttSubscriber();
     server.close();
+  });
+  process.on("SIGINT", () => {
+    stopAllSimulations();
+    stopMqttSubscriber();
+    server.close();
+    process.exit(0);
   });
 }
 

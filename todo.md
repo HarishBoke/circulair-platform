@@ -137,3 +137,17 @@
 - [x] Add Database icon + Data Integration nav item to PlatformLayout sidebar (INTEGRATIONS section)
 - [x] TypeScript: 0 errors
 - [x] Tests: 39 passing (auth + platform + telemetrySocket)
+
+## Phase 17: Real MQTT Broker Integration
+- [x] Install mqtt npm package (mqtt v5)
+- [x] Build server/mqttSubscriber.ts — full MQTT client with reconnect, TLS, auth
+- [x] Bridge MQTT messages → insertTelemetry (DB) → Socket.io broadcast
+- [x] Handle thermal anomaly detection and alert creation in MQTT handler
+- [x] Wire mqttSubscriber into server/_core/index.ts startup
+- [x] Add mqtt tRPC router (status, connect, disconnect, testPublish)
+- [x] Build MqttBrokerPanel.tsx — live broker status, message rate, connect form, test publish
+- [x] Add MqttBrokerPanel to Data Integration Hub MQTT tab
+- [x] Add MQTT connection status to Telemetry page header (via existing socket indicator)
+- [x] Write 19 vitest tests for MQTT subscriber logic (all passing)
+- [x] TypeScript: 0 errors
+- [x] Tests: 58 passing (19 MQTT + 15 socket + 23 platform + 1 auth)

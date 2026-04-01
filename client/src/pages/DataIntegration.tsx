@@ -13,6 +13,7 @@ import {
   Copy, Terminal, Zap, AlertTriangle, Info,
   ChevronRight, Code2, Server, Shield, RefreshCw,
 } from "lucide-react";
+import MqttBrokerPanel from "@/components/MqttBrokerPanel";
 
 function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
   const copy = () => { navigator.clipboard.writeText(code); toast.success("Copied to clipboard"); };
@@ -143,7 +144,19 @@ export default function DataIntegration() {
 
           {/* MQTT */}
           <TabsContent value="mqtt" className="space-y-4 mt-4">
-            <ConnectorCard icon={Wifi} title="MQTT Broker — Real-Time IoT Telemetry" description="Connect BMS/IoT devices to stream live voltage, temperature, current, and SOH data." status="demo">
+            {/* Live Broker Connection Manager */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <h3 className="text-sm font-semibold text-foreground">Live Broker Connection</h3>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">Real-Time</Badge>
+              </div>
+              <MqttBrokerPanel />
+            </div>
+            <div className="border-t border-white/10 pt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Device Integration Guides</h3>
+            </div>
+            <ConnectorCard icon={Wifi} title="MQTT Broker — Real-Time IoT Telemetry" description="Connect BMS/IoT devices to stream live voltage, temperature, current, and SOH data." status="live">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Broker Host</Label><Input value={mqttHost} onChange={e=>setMqttHost(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
                 <div className="space-y-2"><Label>Port (TLS)</Label><Input value={mqttPort} onChange={e=>setMqttPort(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>

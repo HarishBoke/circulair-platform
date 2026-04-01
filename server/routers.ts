@@ -805,6 +805,40 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         return { success: true };
       }),
   }),
+  // ─── MQTT MANAGEMENT ───────────────────────────────────────────────────────
+  mqtt: router({
+    /** Get current MQTT broker connection status */
+    status: protectedProcedure.query(async () => {
+      const { getMqttStatus } = await import("./mqttSubscriber");
+      return getMqttStatus();
+    }),
+    /** (Re)connect to MQTT broker — optionally override config */
+    connect: protectedProcedure
+      .input(z.object({
+        brokerUrl: z.string().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+        topicPrefix: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { startMqttSubscriber } = await import("./mqttSubscriber");
+        startMqttSubscriber(input);
+        return { success: true, message: "MQTT subscriber (re)started" };
+      }),
+    /** Disconnect from MQTT broker */
+    disconnect: protectedProcedure.mutation(async () => {
+      const { stopMqttSubscriber } = await import("./mqttSubscriber");
+      stopMqttSubscriber();
+      return { success: true, message: "MQTT subscriber stopped" };
+    }),
+    /** Publish a test message to verify connectivity */
+    testPublish: protectedProcedure
+      .input(z.object({ bpan: z.string().length(21) }))
+      .mutation(async ({ input }) => {
+        const { publishTestMessage } = await import("./mqttSubscriber");
+        await publishTestMessage(input.bpan);
+        return { success: true, message: `Test message published for BPAN ${input.bpan}` };
+      }),
+  }),
 });
-
 export type AppRouter = typeof appRouter;
