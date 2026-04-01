@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import OnboardingWizard from "@/components/OnboardingWizard";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,16 @@ const MOCK_TRIAGE = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+
+  return (
+    <>
+      <OnboardingWizard />
+      <DashboardContent user={user} />
+    </>
+  );
+}
+
+function DashboardContent({ user }: { user: any }) {
   const { data: kpis, isLoading: kpisLoading, refetch } = trpc.analytics.kpis.useQuery();
   const { data: alerts } = trpc.alerts.list.useQuery({ limit: 5 });
 

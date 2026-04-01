@@ -5,6 +5,7 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
@@ -13,66 +14,77 @@ import {
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
-const NAV_SECTIONS = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    ],
-  },
-  {
-    label: "BATTERY MANAGEMENT",
-    items: [
-      { icon: Battery, label: "BPAN Registry", href: "/batteries" },
-      { icon: Activity, label: "IoT Telemetry", href: "/telemetry" },
-      { icon: Wrench, label: "Service History", href: "/service-history" },
-    ],
-  },
-  {
-    label: "AI & INTELLIGENCE",
-    items: [
-      { icon: Brain, label: "AI SOH Prediction", href: "/ai-soh" },
-      { icon: MessageSquare, label: "AI Assistant", href: "/assistant" },
-    ],
-  },
-  {
-    label: "MARKETPLACE",
-    items: [
-      { icon: ShoppingCart, label: "Marketplace", href: "/marketplace" },
-      { icon: Truck, label: "Logistics", href: "/logistics" },
-    ],
-  },
-  {
-    label: "COMPLIANCE",
-    items: [
-      { icon: Shield, label: "EPR Compliance", href: "/epr-compliance" },
-      { icon: FlaskConical, label: "Yield Verification", href: "/yield-verification" },
-      { icon: Globe, label: "Compliance Dashboard", href: "/compliance" },
-    ],
-  },
-  {
-    label: "REPORTING",
-    items: [
-      { icon: BarChart3, label: "Analytics", href: "/analytics" },
-      { icon: FileText, label: "Documents", href: "/documents" },
-      { icon: Bell, label: "Alerts", href: "/alerts", badge: true },
-    ],
-  },
-  {
-    label: "INTEGRATIONS",
-    items: [
-      { icon: Database, label: "Data Integration", href: "/data-integration" },
-      { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
-    ],
-  },
-  {
-    label: "ADMIN",
-    items: [
-      { icon: Users, label: "User Management", href: "/admin/users" },
-      { icon: Settings2, label: "Platform Settings", href: "/settings/platform" },
-    ],
-  },
-];
+function useNavSections() {
+  const { t } = useTranslation();
+  return [
+    {
+      label: t("nav.dashboard", "OVERVIEW"),
+      sectionKey: "OVERVIEW",
+      items: [
+        { icon: LayoutDashboard, label: t("nav.dashboard", "Dashboard"), href: "/dashboard" },
+      ],
+    },
+    {
+      label: t("battery.title", "BATTERY MANAGEMENT"),
+      sectionKey: "BATTERY_MGMT",
+      items: [
+        { icon: Battery, label: t("nav.batteries", "BPAN Registry"), href: "/batteries" },
+        { icon: Activity, label: t("nav.telemetry", "IoT Telemetry"), href: "/telemetry" },
+        { icon: Wrench, label: t("common.actions", "Service History"), href: "/service-history" },
+      ],
+    },
+    {
+      label: "AI & " + t("nav.aiAssistant", "INTELLIGENCE").split(" ")[0],
+      sectionKey: "AI",
+      items: [
+        { icon: Brain, label: t("battery.soh", "AI SOH Prediction"), href: "/ai-soh" },
+        { icon: MessageSquare, label: t("nav.aiAssistant", "AI Assistant"), href: "/assistant" },
+      ],
+    },
+    {
+      label: t("nav.marketplace", "MARKETPLACE"),
+      sectionKey: "MARKETPLACE",
+      items: [
+        { icon: ShoppingCart, label: t("nav.marketplace", "Marketplace"), href: "/marketplace" },
+        { icon: Truck, label: t("nav.logistics", "Logistics"), href: "/logistics" },
+      ],
+    },
+    {
+      label: t("nav.compliance", "COMPLIANCE"),
+      sectionKey: "COMPLIANCE",
+      items: [
+        { icon: Shield, label: t("compliance.title", "EPR Compliance"), href: "/epr-compliance" },
+        { icon: FlaskConical, label: t("common.actions", "Yield Verification"), href: "/yield-verification" },
+        { icon: Globe, label: t("compliance.title", "Compliance Dashboard"), href: "/compliance" },
+      ],
+    },
+    {
+      label: t("nav.analytics", "REPORTING"),
+      sectionKey: "REPORTING",
+      items: [
+        { icon: BarChart3, label: t("nav.analytics", "Analytics"), href: "/analytics" },
+        { icon: FileText, label: t("nav.documents", "Documents"), href: "/documents" },
+        { icon: Bell, label: t("nav.alerts", "Alerts"), href: "/alerts", badge: true },
+      ],
+    },
+    {
+      label: t("nav.dataIntegration", "INTEGRATIONS"),
+      sectionKey: "INTEGRATIONS",
+      items: [
+        { icon: Database, label: t("nav.dataIntegration", "Data Integration"), href: "/data-integration" },
+        { icon: Radio, label: t("nav.mqttTester", "MQTT Flow Tester"), href: "/mqtt-flow-tester" },
+      ],
+    },
+    {
+      label: t("nav.admin", "ADMIN"),
+      sectionKey: "ADMIN",
+      items: [
+        { icon: Users, label: t("nav.users", "User Management"), href: "/admin/users" },
+        { icon: Settings2, label: t("nav.settings", "Platform Settings"), href: "/settings/platform" },
+      ],
+    },
+  ];
+}
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Platform Admin",
@@ -89,6 +101,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
+  const NAV_SECTIONS = useNavSections();
 
   const { data: unreadCount } = trpc.alerts.unreadCount.useQuery(undefined, {
     refetchInterval: 30000,
@@ -106,7 +120,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
             <Zap className="w-6 h-6 text-primary-foreground" />
           </div>
-          <p className="text-muted-foreground font-mono text-sm">Loading Circul-AI-r...</p>
+          <p className="text-muted-foreground font-mono text-sm">{t("common.loading", "Loading Circul-AI-r...")}</p>
         </div>
       </div>
     );
@@ -163,10 +177,10 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
         {NAV_SECTIONS.map((section) => (
-          <div key={section.label} className="mb-2">
+          <div key={section.sectionKey} className="mb-2">
             {!collapsed && (
               <div className="font-mono text-[9px] text-muted-foreground/60 tracking-widest uppercase px-2 py-1.5">
-                {section.label}
+                {section.sectionKey}
               </div>
             )}
             {section.items.map((item) => {
@@ -182,12 +196,12 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                     {!collapsed && (
                       <span className="truncate">{item.label}</span>
                     )}
-                    {!collapsed && item.badge && (unreadCount ?? 0) > 0 && (
+                    {!collapsed && (item as any).badge && (unreadCount ?? 0) > 0 && (
                       <Badge className="ml-auto bg-destructive text-destructive-foreground text-[9px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center">
                         {unreadCount}
                       </Badge>
                     )}
-                    {collapsed && item.badge && (unreadCount ?? 0) > 0 && (
+                    {collapsed && (item as any).badge && (unreadCount ?? 0) > 0 && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
                     )}
                   </div>
@@ -223,7 +237,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ${collapsed ? "justify-center" : ""}`}
         >
           <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>{t("common.actions", "Sign Out")}</span>}
         </button>
       </div>
     </div>
@@ -270,7 +284,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             <div className="hidden sm:flex items-center gap-2 bg-secondary/50 border border-border rounded-lg px-3 py-1.5 w-64">
               <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
               <input
-                placeholder="Search BPAN, battery..."
+                placeholder={t("common.search", "Search BPAN, battery...")}
                 className="bg-transparent text-xs outline-none w-full text-foreground placeholder:text-muted-foreground font-mono"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {

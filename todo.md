@@ -304,3 +304,18 @@
 - [x] Removed Manus comment from server/storage.ts
 - [x] Verified: no user-facing Manus references remain (only internal _core/test fixtures with loginMethod: "manus")
 - [x] TypeScript: 0 errors, 169 tests passing
+
+## Phase 31: Production-Grade Gap Fixes [COMPLETE]
+- [x] Wire useTranslation() into PlatformLayout sidebar — all nav labels, section headers, and role badge use i18n keys
+- [x] Fix NotFound page — dark theme with zinc-900 bg, animated 404, back-to-dashboard link
+- [x] Add recycledContentDeclarations table to schema + SQL migration
+- [x] Add recycled content db helpers (getRecycledContentByBpan, createRecycledContentDeclaration) + tRPC procedures (declareRecycledContent, getRecycledContentByBpan)
+- [x] Build RecycledContentForm component with Co/Li/Ni/Pb percentage inputs, EU threshold bars, compliance summary
+- [x] Integrate RecycledContentForm into BpanDetail page as dedicated section
+- [x] Build reusable CSV export utility (client/src/lib/csvExport.ts) with typed columns
+- [x] Add CSV export buttons to BpanRegistry, Marketplace, Admin Users
+- [x] Add helmet middleware for security headers (CSP relaxed for Vite HMR)
+- [x] Add express-rate-limit — 120 req/min on /api/, 20 req/15min on /api/oauth/
+- [x] Add pagination to Marketplace (12 per page with Previous/Next controls)
+- [x] Build first-login onboarding wizard — 7-step walkthrough (Welcome, Registry, Telemetry, Marketplace, Carbon/Recycled, Compliance, Roles), localStorage persistence, progress bar, dot navigation
+- [x] TypeScript: 0 errors, 169 tests passing (10 test files)

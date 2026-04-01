@@ -29,7 +29,9 @@ import {
   MoreHorizontal,
   CheckCircle2,
   Lock,
+  Download,
 } from "lucide-react";
+import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -535,14 +537,37 @@ export default function AdminUserManagement() {
             )}
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          title="Refresh user list"
-          aria-label="Refresh"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              const items = data?.items ?? [];
+              if (!items.length) return;
+              const cols: CsvColumn<typeof items[0]>[] = [
+                { key: "name", header: "Name" },
+                { key: "email", header: "Email" },
+                { key: "platformRole", header: "Platform Role" },
+                { key: "role", header: "System Role" },
+                { key: "organization", header: "Organization", format: (r) => r.organization ?? "" },
+                { key: "lastSignedIn", header: "Last Sign-In", format: (r) => r.lastSignedIn ? new Date(r.lastSignedIn).toLocaleDateString() : "Never" },
+                { key: "createdAt", header: "Joined", format: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "" },
+              ];
+              downloadCsv(items, cols, `users-${new Date().toISOString().slice(0, 10)}`);
+            }}
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            title="Export users to CSV"
+            aria-label="Export CSV"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => refetch()}
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            title="Refresh user list"
+            aria-label="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ── Tab bar ────────────────────────────────────────────────────── */}

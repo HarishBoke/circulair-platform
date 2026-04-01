@@ -86,7 +86,9 @@
     "react-i18next": "^17.0.2",
     "html-parse-stringify": "^3.0.1",
     "use-sync-external-store": "^1.6.0",
-    "void-elements": "^3.1.0"
+    "void-elements": "^3.1.0",
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^7.5.0"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",

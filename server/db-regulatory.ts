@@ -237,3 +237,61 @@ export async function upsertGlobalPlatformSettings(
   }
   return getGlobalPlatformSettings();
 }
+
+// ─── RECYCLED CONTENT DECLARATIONS ──────────────────────────────────────────
+
+import {
+  recycledContentDeclarations,
+  InsertRecycledContentDeclaration,
+} from "../drizzle/schema";
+
+export async function getRecycledContentByBpan(bpan: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(recycledContentDeclarations)
+    .where(eq(recycledContentDeclarations.bpan, bpan))
+    .orderBy(desc(recycledContentDeclarations.declaredAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getRecycledContentDeclarations(batteryId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(recycledContentDeclarations)
+    .where(eq(recycledContentDeclarations.batteryId, batteryId))
+    .orderBy(desc(recycledContentDeclarations.declaredAt));
+}
+
+export async function createRecycledContentDeclaration(data: InsertRecycledContentDeclaration) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(recycledContentDeclarations).values(data);
+  const rows = await db
+    .select()
+    .from(recycledContentDeclarations)
+    .where(eq(recycledContentDeclarations.batteryId, data.batteryId))
+    .orderBy(desc(recycledContentDeclarations.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function batchGetRecycledContentStatus(bpans: string[]): Promise<Map<string, boolean>> {
+  const result = new Map<string, boolean>();
+  if (bpans.length === 0) return result;
+  const db = await getDb();
+  if (!db) return result;
+  const rows = await db
+    .select({ bpan: recycledContentDeclarations.bpan })
+    .from(recycledContentDeclarations)
+    .where(inArray(recycledContentDeclarations.bpan, bpans));
+  const declared = new Set(rows.map(r => r.bpan));
+  for (const bpan of bpans) {
+    result.set(bpan, declared.has(bpan));
+  }
+  return result;
+}

@@ -3,8 +3,9 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw, FileDown, Leaf } from "lucide-react";
+import { ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer, Zap, RefreshCw, FileDown, Leaf, Recycle } from "lucide-react";
 import CarbonFootprintForm from "@/components/CarbonFootprintForm";
+import RecycledContentForm from "@/components/RecycledContentForm";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -290,6 +291,22 @@ export default function BpanDetail() {
             capacityKwh={Number(battery.capacityKwh)}
             chemistry={battery.chemistry}
           />
+        </div>
+      </div>
+
+      {/* Recycled Content Declaration */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Recycle className="w-4 h-4 text-teal-400" />
+            <h3 className="font-display text-sm font-bold">Recycled Content Declaration</h3>
+          </div>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            EU Battery Regulation Art. 8 — Co, Li, Ni, Pb recycled content · 2031 & 2036 targets
+          </p>
+        </div>
+        <div className="p-5">
+          <RecycledContentForm bpan={bpan} batteryId={battery.id} />
         </div>
       </div>
 

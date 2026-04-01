@@ -441,3 +441,24 @@ export const marketplaceListingsCurrency = mysqlTable("marketplace_listings_curr
 });
 export type MarketplaceListingCurrency = typeof marketplaceListingsCurrency.$inferSelect;
 export type InsertMarketplaceListingCurrency = typeof marketplaceListingsCurrency.$inferInsert;
+
+// ─── RECYCLED CONTENT DECLARATIONS ────────────────────────────────────────────
+export const recycledContentDeclarations = mysqlTable("recycled_content_declarations", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  batteryId: int("batteryId").notNull(),
+  cobaltPct: decimal("cobaltPct", { precision: 5, scale: 2 }),
+  lithiumPct: decimal("lithiumPct", { precision: 5, scale: 2 }),
+  nickelPct: decimal("nickelPct", { precision: 5, scale: 2 }),
+  leadPct: decimal("leadPct", { precision: 5, scale: 2 }),
+  totalRecycledPct: decimal("totalRecycledPct", { precision: 5, scale: 2 }),
+  verificationMethod: mysqlEnum("verificationMethod", ["SELF_DECLARED", "THIRD_PARTY_AUDIT", "CERTIFIED_LAB"]).default("SELF_DECLARED").notNull(),
+  certifyingBody: varchar("certifyingBody", { length: 255 }),
+  certificateRef: varchar("certificateRef", { length: 255 }),
+  notes: text("notes"),
+  declaredById: int("declaredById").notNull(),
+  declaredAt: timestamp("declaredAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type RecycledContentDeclaration = typeof recycledContentDeclarations.$inferSelect;
+export type InsertRecycledContentDeclaration = typeof recycledContentDeclarations.$inferInsert;

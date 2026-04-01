@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Battery, Plus, Search, QrCode, ChevronRight, RefreshCw, Leaf } from "lucide-react";
+import { Battery, Plus, Search, QrCode, ChevronRight, RefreshCw, Leaf, Download } from "lucide-react";
+import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
 import { CLASS_COLORS, type PerformanceClass } from "@shared/carbonClass";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -67,6 +68,27 @@ export default function BpanRegistry() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border">
             <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border gap-1.5"
+            disabled={batteries.length === 0}
+            onClick={() => {
+              const cols: CsvColumn<typeof batteries[0]>[] = [
+                { key: "bpan", header: "BPAN" },
+                { key: "chemistry", header: "Chemistry" },
+                { key: "capacityKwh", header: "Capacity (kWh)" },
+                { key: "currentSoh", header: "SOH (%)" },
+                { key: "carbonClass", header: "Carbon Class" },
+                { key: "status", header: "Status", format: (r) => r.status?.replace("_", " ") ?? "" },
+                { key: "cellOriginCountry", header: "Origin" },
+                { key: "mfgYear", header: "Mfg Date", format: (r) => `${r.mfgYear}-${String(r.mfgMonth).padStart(2, "0")}-${String(r.mfgDay).padStart(2, "0")}` },
+              ];
+              downloadCsv(batteries, cols, `bpan-registry-${new Date().toISOString().slice(0, 10)}`);
+            }}
+          >
+            <Download className="w-3.5 h-3.5" /> CSV
           </Button>
           <Link href="/batteries/register">
             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">

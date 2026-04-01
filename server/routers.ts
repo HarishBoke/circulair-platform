@@ -1232,6 +1232,48 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         const { getCarbonFootprintByBpan } = await import("./db-regulatory");
         return getCarbonFootprintByBpan(input.bpan);
       }),
+
+    // ─── RECYCLED CONTENT ────────────────────────────────────────────────────
+    declareRecycledContent: protectedProcedure
+      .input(z.object({
+        bpan: z.string().min(1).max(21),
+        batteryId: z.number().int().positive(),
+        cobaltPct: z.number().min(0).max(100).optional(),
+        lithiumPct: z.number().min(0).max(100).optional(),
+        nickelPct: z.number().min(0).max(100).optional(),
+        leadPct: z.number().min(0).max(100).optional(),
+        totalRecycledPct: z.number().min(0).max(100).optional(),
+        verificationMethod: z.enum(["SELF_DECLARED", "THIRD_PARTY_AUDIT", "CERTIFIED_LAB"]).default("SELF_DECLARED"),
+        certifyingBody: z.string().max(255).optional(),
+        certificateRef: z.string().max(255).optional(),
+        notes: z.string().max(2000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createRecycledContentDeclaration } = await import("./db-regulatory");
+        return createRecycledContentDeclaration({
+          ...input,
+          cobaltPct: input.cobaltPct?.toString(),
+          lithiumPct: input.lithiumPct?.toString(),
+          nickelPct: input.nickelPct?.toString(),
+          leadPct: input.leadPct?.toString(),
+          totalRecycledPct: input.totalRecycledPct?.toString(),
+          declaredById: ctx.user!.id,
+        });
+      }),
+
+    getRecycledContentByBpan: protectedProcedure
+      .input(z.object({ bpan: z.string().min(1).max(21) }))
+      .query(async ({ input }) => {
+        const { getRecycledContentByBpan } = await import("./db-regulatory");
+        return getRecycledContentByBpan(input.bpan);
+      }),
+
+    getRecycledContentHistory: protectedProcedure
+      .input(z.object({ batteryId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getRecycledContentDeclarations } = await import("./db-regulatory");
+        return getRecycledContentDeclarations(input.batteryId);
+      }),
   }),
 
   // ─── PLATFORM SETTINGS ───────────────────────────────────────────────────────

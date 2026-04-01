@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign } from "lucide-react";
+import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign, Download } from "lucide-react";
+import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { usePlatformSettings } from "@/contexts/PlatformSettingsContext";
@@ -39,6 +40,8 @@ function formatPrice(amount: number | string | null | undefined, currency: strin
 export default function Marketplace() {
   const [search, setSearch] = useState("");
   const [listingType, setListingType] = useState("all");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 12;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { displayCurrency } = usePlatformSettings();
   const [createForm, setCreateForm] = useState({
@@ -53,8 +56,8 @@ export default function Marketplace() {
 
   const { data, isLoading, refetch } = trpc.marketplace.list.useQuery({
     listingType: listingType !== "all" ? listingType : undefined,
-    limit: 20,
-    offset: 0,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
   });
 
   const { data: stats } = trpc.marketplace.stats.useQuery();
@@ -213,6 +216,25 @@ export default function Marketplace() {
         <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-9">
           <RefreshCw className="w-3.5 h-3.5" />
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-border h-9 gap-1.5"
+          disabled={listings.length === 0}
+          onClick={() => {
+            const cols: CsvColumn<typeof listings[0]>[] = [
+              { key: "bpan", header: "BPAN" },
+              { key: "listingType", header: "Type", format: (r) => r.listingType?.replace(/_/g, " ") ?? "" },
+              { key: "askingPriceInr", header: "Price", format: (r) => formatPrice(r.askingPriceInr, (r as any).currency?.listingCurrency ?? "INR") },
+              { key: "status", header: "Status" },
+              { key: "description", header: "Description" },
+              { key: "createdAt", header: "Listed", format: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "" },
+            ];
+            downloadCsv(listings, cols, `marketplace-${new Date().toISOString().slice(0, 10)}`);
+          }}
+        >
+          <Download className="w-3.5 h-3.5" /> CSV
+        </Button>
       </div>
 
       {/* Listings Grid */}
@@ -284,6 +306,31 @@ export default function Marketplace() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-muted-foreground">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+          </p>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={(page + 1) * PAGE_SIZE >= total}
+              className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
