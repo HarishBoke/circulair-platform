@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -32,30 +32,53 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// ─── Role config ──────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
 const ROLES = [
-  { value: "admin",            label: "Admin",            color: "text-red-400",    bg: "bg-red-400/10" },
-  { value: "oem",              label: "OEM",              color: "text-sky-400",    bg: "bg-sky-400/10" },
-  { value: "manufacturer",     label: "Manufacturer",     color: "text-violet-400", bg: "bg-violet-400/10" },
-  { value: "recycler",         label: "Recycler",         color: "text-emerald-400",bg: "bg-emerald-400/10" },
-  { value: "bess_developer",   label: "BESS Developer",   color: "text-amber-400",  bg: "bg-amber-400/10" },
-  { value: "service_provider", label: "Service Provider", color: "text-cyan-400",   bg: "bg-cyan-400/10" },
-  { value: "government",       label: "Government",       color: "text-orange-400", bg: "bg-orange-400/10" },
+  { value: "admin",            label: "Admin",            color: "text-red-400",     bg: "bg-red-400/10" },
+  { value: "oem",              label: "OEM",              color: "text-sky-400",     bg: "bg-sky-400/10" },
+  { value: "manufacturer",     label: "Manufacturer",     color: "text-violet-400",  bg: "bg-violet-400/10" },
+  { value: "recycler",         label: "Recycler",         color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  { value: "bess_developer",   label: "BESS Developer",   color: "text-amber-400",   bg: "bg-amber-400/10" },
+  { value: "service_provider", label: "Service Provider", color: "text-cyan-400",    bg: "bg-cyan-400/10" },
+  { value: "government",       label: "Government",       color: "text-orange-400",  bg: "bg-orange-400/10" },
 ] as const;
 
 type RoleValue = (typeof ROLES)[number]["value"];
 
+// ─── Pure helpers ─────────────────────────────────────────────────────────────
 function getRoleCfg(role: string) {
-  return ROLES.find((r) => r.value === role) ?? {
-    value: role, label: role, color: "text-zinc-400", bg: "bg-zinc-400/10",
-  };
+  return (
+    ROLES.find((r) => r.value === role) ?? {
+      value: role,
+      label: role,
+      color: "text-zinc-400",
+      bg: "bg-zinc-400/10",
+    }
+  );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function timeAgo(date: Date | string | null | undefined): string | null {
+  if (!date) return null;
+  const ms = Date.now() - new Date(date).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string }) {
   const cfg = getRoleCfg(role);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${cfg.bg} ${cfg.color}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${cfg.bg} ${cfg.color}`}
+    >
       {cfg.label}
     </span>
   );
@@ -70,19 +93,6 @@ function Initials({ name, email }: { name?: string | null; email?: string | null
   );
 }
 
-function timeAgo(date: Date | string | null | undefined) {
-  if (!date) return null;
-  const ms = Date.now() - new Date(date).getTime();
-  const m = Math.floor(ms / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
-
 // ─── Edit dialog ──────────────────────────────────────────────────────────────
 interface EditUser {
   id: number;
@@ -93,26 +103,28 @@ interface EditUser {
   organization: string | null;
 }
 
-function EditDialog({
-  user,
-  onClose,
-}: {
-  user: EditUser | null;
-  onClose: () => void;
-}) {
+function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => void }) {
   const utils = trpc.useUtils();
-  const [platformRole, setPlatformRole] = useState<RoleValue>(
-    (user?.platformRole as RoleValue) ?? "oem"
-  );
-  const [systemRole, setSystemRole] = useState<"user" | "admin">(
-    (user?.role as "user" | "admin") ?? "user"
-  );
-  const [org, setOrg] = useState(user?.organization ?? "");
+
+  // Re-initialise local state whenever the target user changes (key prop handles unmount,
+  // but we also guard here so stale state is never shown if the dialog stays mounted).
+  const [platformRole, setPlatformRole] = useState<RoleValue>("oem");
+  const [systemRole, setSystemRole] = useState<"user" | "admin">("user");
+  const [org, setOrg] = useState("");
   const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setPlatformRole((user.platformRole as RoleValue) ?? "oem");
+      setSystemRole((user.role as "user" | "admin") ?? "user");
+      setOrg(user.organization ?? "");
+      setReason("");
+    }
+  }, [user?.id]); // re-sync only when the target user changes
 
   const mutation = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
-      toast.success("Role updated");
+      toast.success("User updated successfully");
       utils.admin.listUsers.invalidate();
       utils.admin.roleStats.invalidate();
       utils.admin.auditLog.invalidate();
@@ -123,24 +135,36 @@ function EditDialog({
 
   if (!user) return null;
 
+  const handleSave = () => {
+    mutation.mutate({
+      userId: user.id,
+      platformRole,
+      systemRole,
+      organization: org.trim() || undefined,
+      reason: reason.trim() || undefined,
+    });
+  };
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[360px] bg-zinc-950 border border-zinc-800 rounded-2xl p-0 gap-0 shadow-2xl">
-        <DialogHeader className="px-6 pt-6 pb-5">
-          <div className="flex items-center gap-3 mb-1">
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3">
             <Initials name={user.name} email={user.email} />
             <div className="min-w-0">
               <DialogTitle className="text-sm font-semibold text-white leading-tight truncate">
                 {user.name ?? user.email ?? `User #${user.id}`}
               </DialogTitle>
-              <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+              {user.email && (
+                <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+              )}
             </div>
           </div>
         </DialogHeader>
 
-        <div className="px-6 pb-6 space-y-5">
+        <div className="px-6 pb-6 space-y-4">
           {/* Platform role */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="text-xs text-zinc-400 font-medium">Platform Role</Label>
             <Select value={platformRole} onValueChange={(v) => setPlatformRole(v as RoleValue)}>
               <SelectTrigger className="h-9 bg-zinc-900 border-zinc-800 text-sm text-white rounded-lg">
@@ -148,7 +172,11 @@ function EditDialog({
               </SelectTrigger>
               <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
                 {ROLES.map((r) => (
-                  <SelectItem key={r.value} value={r.value} className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg">
+                  <SelectItem
+                    key={r.value}
+                    value={r.value}
+                    className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg"
+                  >
                     {r.label}
                   </SelectItem>
                 ))}
@@ -157,23 +185,27 @@ function EditDialog({
           </div>
 
           {/* System access */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="text-xs text-zinc-400 font-medium">System Access</Label>
             <Select value={systemRole} onValueChange={(v) => setSystemRole(v as "user" | "admin")}>
               <SelectTrigger className="h-9 bg-zinc-900 border-zinc-800 text-sm text-white rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                <SelectItem value="user" className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg">Standard User</SelectItem>
+                <SelectItem value="user" className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg">
+                  Standard User
+                </SelectItem>
                 <SelectItem value="admin" className="text-sm text-red-400 focus:bg-zinc-800 rounded-lg">
-                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Administrator</span>
+                  <span className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" /> Administrator
+                  </span>
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Organization */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="text-xs text-zinc-400 font-medium">Organization</Label>
             <Input
               value={org}
@@ -184,9 +216,10 @@ function EditDialog({
           </div>
 
           {/* Reason */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="text-xs text-zinc-400 font-medium">
-              Reason <span className="text-zinc-600 font-normal">(optional)</span>
+              Reason{" "}
+              <span className="text-zinc-600 font-normal">(optional)</span>
             </Label>
             <Textarea
               value={reason}
@@ -203,26 +236,22 @@ function EditDialog({
               variant="ghost"
               className="flex-1 h-9 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg"
               onClick={onClose}
+              disabled={mutation.isPending}
             >
               Cancel
             </Button>
             <Button
               className="flex-1 h-9 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
               disabled={mutation.isPending}
-              onClick={() =>
-                mutation.mutate({
-                  userId: user.id,
-                  platformRole,
-                  systemRole,
-                  organization: org || undefined,
-                  reason: reason || undefined,
-                })
-              }
+              onClick={handleSave}
             >
               {mutation.isPending ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <><CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />Save</>
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                  Save
+                </>
               )}
             </Button>
           </div>
@@ -232,11 +261,11 @@ function EditDialog({
   );
 }
 
-// ─── Audit log ────────────────────────────────────────────────────────────────
+// ─── Audit log tab ────────────────────────────────────────────────────────────
 function AuditLog() {
   const { data, isLoading } = trpc.admin.auditLog.useQuery({ limit: 100 });
 
-  if (isLoading)
+  if (isLoading) {
     return (
       <div className="p-6 space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -244,13 +273,15 @@ function AuditLog() {
         ))}
       </div>
     );
+  }
 
-  if (!data?.length)
+  if (!data?.length) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-zinc-600">
-        <p className="text-sm">No role changes yet.</p>
+        <p className="text-sm">No role changes recorded yet.</p>
       </div>
     );
+  }
 
   return (
     <div className="px-4 sm:px-6 py-4 space-y-1">
@@ -259,7 +290,7 @@ function AuditLog() {
           key={entry.id}
           className="flex items-start gap-4 py-3 border-b border-zinc-800/50 last:border-0"
         >
-          {/* Left: names */}
+          {/* Left: target user + role change */}
           <div className="flex-1 min-w-0">
             <p className="text-sm text-zinc-200 font-medium truncate">
               {entry.targetUserName ?? `User #${entry.targetUserId}`}
@@ -274,11 +305,13 @@ function AuditLog() {
               <RoleBadge role={entry.newPlatformRole} />
             </div>
             {entry.reason && (
-              <p className="text-xs text-zinc-500 mt-1 italic truncate">"{entry.reason}"</p>
+              <p className="text-xs text-zinc-500 mt-1 italic truncate">
+                "{entry.reason}"
+              </p>
             )}
           </div>
 
-          {/* Right: meta */}
+          {/* Right: changed-by + timestamp */}
           <div className="text-right flex-shrink-0">
             <p className="text-xs text-zinc-500">
               {entry.changedByName ?? `User #${entry.changedByUserId}`}
@@ -291,52 +324,49 @@ function AuditLog() {
   );
 }
 
-// ─── User Row Component ───────────────────────────────────────────────────────
-interface UserRowProps {
-  u: {
-    id: number;
-    name: string | null;
-    email: string | null;
-    platformRole: string;
-    role: string;
-    organization: string | null;
-    lastSignedIn: Date | null;
-  };
-  onOpenDetails: () => void;
+// ─── User row ─────────────────────────────────────────────────────────────────
+interface UserRowUser {
+  id: number;
+  name: string | null;
+  email: string | null;
+  platformRole: string;
+  role: string;
+  organization: string | null;
+  lastSignedIn: Date | null;
 }
 
-function UserRow({ u, onOpenDetails }: UserRowProps) {
+function UserRow({
+  u,
+  onOpenDetails,
+}: {
+  u: UserRowUser;
+  onOpenDetails: () => void;
+}) {
   const utils = trpc.useUtils();
-  const [updating, setUpdating] = useState(false);
 
   const mutation = trpc.admin.updateUserRole.useMutation({
-    onMutate: () => setUpdating(true),
     onSuccess: () => {
       toast.success("Role updated");
       utils.admin.listUsers.invalidate();
       utils.admin.roleStats.invalidate();
       utils.admin.auditLog.invalidate();
-      setUpdating(false);
     },
-    onError: (err) => {
-      toast.error(err.message);
-      setUpdating(false);
-    },
+    onError: (err) => toast.error(err.message),
   });
 
   const handleRoleChange = (newRole: RoleValue) => {
-    if (newRole === u.platformRole) return;
+    if (newRole === u.platformRole || mutation.isPending) return;
     mutation.mutate({
       userId: u.id,
       platformRole: newRole,
       systemRole: u.role as "user" | "admin",
       organization: u.organization ?? undefined,
-      reason: "Quick role change from admin panel",
+      reason: "Quick role change via admin panel",
     });
   };
 
   return (
-    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_180px_100px_36px] sm:gap-4 px-3 py-3 rounded-xl hover:bg-zinc-800/40 transition-colors group">
+    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_180px_100px_36px] sm:gap-4 px-3 py-3 rounded-xl hover:bg-zinc-800/40 transition-colors">
       {/* User info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <Initials name={u.name} email={u.email} />
@@ -346,24 +376,38 @@ function UserRow({ u, onOpenDetails }: UserRowProps) {
           </p>
           <p className="text-xs text-zinc-500 truncate mt-0.5">
             {u.email ?? "No email"}
-            {u.organization ? <span className="text-zinc-600"> · {u.organization}</span> : null}
-            {u.lastSignedIn
-              ? <span className="text-zinc-600 hidden sm:inline"> · {timeAgo(u.lastSignedIn)}</span>
-              : null}
+            {u.organization ? (
+              <span className="text-zinc-600"> · {u.organization}</span>
+            ) : null}
+            {u.lastSignedIn ? (
+              <span className="text-zinc-600 hidden sm:inline">
+                {" "}
+                · {timeAgo(u.lastSignedIn)}
+              </span>
+            ) : null}
           </p>
+          {/* Mobile-only: role badge below name */}
+          <div className="flex items-center gap-2 mt-1 sm:hidden">
+            <RoleBadge role={u.platformRole} />
+            {u.role === "admin" && (
+              <span className="inline-flex items-center gap-0.5 text-xs font-medium text-red-400">
+                <Shield className="w-3 h-3" /> Admin
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Platform role dropdown (desktop) */}
+      {/* Platform role dropdown — desktop only */}
       <div className="hidden sm:flex items-center w-[180px]">
         <Select
           value={u.platformRole}
           onValueChange={handleRoleChange}
-          disabled={updating}
+          disabled={mutation.isPending}
         >
-          <SelectTrigger className="h-8 bg-zinc-900 border-zinc-800 text-xs text-zinc-200 rounded-lg disabled:opacity-50">
-            {updating ? (
-              <span className="flex items-center gap-1.5">
+          <SelectTrigger className="h-8 bg-zinc-900 border-zinc-800 text-xs text-zinc-200 rounded-lg disabled:opacity-50 w-full">
+            {mutation.isPending ? (
+              <span className="flex items-center gap-1.5 text-zinc-400">
                 <RefreshCw className="w-3 h-3 animate-spin" />
                 Saving…
               </span>
@@ -385,7 +429,7 @@ function UserRow({ u, onOpenDetails }: UserRowProps) {
         </Select>
       </div>
 
-      {/* System access (desktop) */}
+      {/* System access — desktop only */}
       <div className="hidden sm:flex items-center w-[100px]">
         {u.role === "admin" ? (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-red-400">
@@ -397,11 +441,12 @@ function UserRow({ u, onOpenDetails }: UserRowProps) {
       </div>
 
       {/* Details button */}
-      <div className="flex-shrink-0 w-9 flex justify-end">
+      <div className="flex-shrink-0 sm:w-9 flex justify-end">
         <button
           onClick={onOpenDetails}
           className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           title="Edit details (org, system role, reason)"
+          aria-label="Edit user details"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
@@ -410,7 +455,7 @@ function UserRow({ u, onOpenDetails }: UserRowProps) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminUserManagement() {
   const { user } = useAuth();
 
@@ -420,28 +465,34 @@ export default function AdminUserManagement() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [accessFilter, setAccessFilter] = useState("all");
   const [page, setPage] = useState(0);
-
-  // Reset to page 0 whenever the debounced search term changes
-  useEffect(() => { setPage(0); }, [debouncedSearch]);
-  const PAGE_SIZE = 20;
   const [editing, setEditing] = useState<EditUser | null>(null);
 
-  const input = useMemo(
+  // Reset to page 0 only when the debounced search value changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch]);
+
+  // Stable query input — depends on debouncedSearch (not raw search)
+  const queryInput = useMemo(
     () => ({
       search: debouncedSearch || undefined,
-      platformRole: (roleFilter !== "all" ? roleFilter : undefined) as RoleValue | undefined,
-      role: (accessFilter !== "all" ? accessFilter : undefined) as "user" | "admin" | undefined,
+      platformRole:
+        roleFilter !== "all" ? (roleFilter as RoleValue) : undefined,
+      role:
+        accessFilter !== "all"
+          ? (accessFilter as "user" | "admin")
+          : undefined,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     }),
-    [search, roleFilter, accessFilter, page]
+    [debouncedSearch, roleFilter, accessFilter, page],
   );
 
-  const { data, isLoading, refetch } = trpc.admin.listUsers.useQuery(input);
+  const { data, isLoading, refetch } = trpc.admin.listUsers.useQuery(queryInput);
   const { data: stats } = trpc.admin.roleStats.useQuery();
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
-  // Access guard
+  // Access guard — rendered after all hooks to satisfy Rules of Hooks
   if (user && user.role !== "admin") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
@@ -451,24 +502,44 @@ export default function AdminUserManagement() {
     );
   }
 
-  const hasFilters = debouncedSearch !== "" || roleFilter !== "all" || accessFilter !== "all";
+  const hasFilters =
+    debouncedSearch !== "" || roleFilter !== "all" || accessFilter !== "all";
+
+  const openEditDialog = (u: UserRowUser) =>
+    setEditing({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      platformRole: u.platformRole,
+      role: u.role,
+      organization: u.organization,
+    });
 
   return (
     <div className="flex flex-col h-full min-h-0">
-
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 sm:px-8 py-5 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-semibold text-white tracking-tight">User Management</h1>
+          <h1 className="text-lg font-semibold text-white tracking-tight">
+            User Management
+          </h1>
           <p className="text-sm text-zinc-500 mt-0.5">
-            {stats?.total ?? "—"} users &nbsp;·&nbsp;
-            {stats?.byRole?.admin ?? 0} admins
+            {stats ? (
+              <>
+                {stats.total} user{stats.total !== 1 ? "s" : ""}&nbsp;·&nbsp;
+                {stats.byRole?.admin ?? 0} admin
+                {(stats.byRole?.admin ?? 0) !== 1 ? "s" : ""}
+              </>
+            ) : (
+              "Loading…"
+            )}
           </p>
         </div>
         <button
           onClick={() => refetch()}
           className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          title="Refresh"
+          title="Refresh user list"
+          aria-label="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -491,7 +562,6 @@ export default function AdminUserManagement() {
         ))}
       </div>
 
-      {/* ── Divider ────────────────────────────────────────────────────── */}
       <div className="h-px bg-zinc-800 mx-5 sm:mx-8 mt-3 flex-shrink-0" />
 
       {/* ── Content ────────────────────────────────────────────────────── */}
@@ -507,38 +577,62 @@ export default function AdminUserManagement() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name or email…"
+                  placeholder="Search by name, email or org…"
                   className="pl-9 h-9 bg-zinc-900 border-zinc-800 text-sm text-white placeholder:text-zinc-600 rounded-lg focus-visible:ring-primary/50"
                 />
               </div>
 
-              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
+              <Select
+                value={roleFilter}
+                onValueChange={(v) => {
+                  setRoleFilter(v);
+                  setPage(0);
+                }}
+              >
                 <SelectTrigger className="h-9 w-full sm:w-44 bg-zinc-900 border-zinc-800 text-sm text-zinc-300 rounded-lg">
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">All roles</SelectItem>
+                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                    All roles
+                  </SelectItem>
                   {ROLES.map((r) => (
-                    <SelectItem key={r.value} value={r.value} className="text-sm text-zinc-300 focus:bg-zinc-800">
+                    <SelectItem
+                      key={r.value}
+                      value={r.value}
+                      className="text-sm text-zinc-300 focus:bg-zinc-800"
+                    >
                       {r.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={accessFilter} onValueChange={(v) => { setAccessFilter(v); setPage(0); }}>
+              <Select
+                value={accessFilter}
+                onValueChange={(v) => {
+                  setAccessFilter(v);
+                  setPage(0);
+                }}
+              >
                 <SelectTrigger className="h-9 w-full sm:w-36 bg-zinc-900 border-zinc-800 text-sm text-zinc-300 rounded-lg">
                   <SelectValue placeholder="All access" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">All access</SelectItem>
-                  <SelectItem value="user" className="text-sm text-zinc-300 focus:bg-zinc-800">Standard</SelectItem>
-                  <SelectItem value="admin" className="text-sm text-zinc-300 focus:bg-zinc-800">Admin only</SelectItem>
+                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                    All access
+                  </SelectItem>
+                  <SelectItem value="user" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                    Standard
+                  </SelectItem>
+                  <SelectItem value="admin" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                    Admin only
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Loading */}
+            {/* Loading skeleton */}
             {isLoading && (
               <div className="px-5 sm:px-8 space-y-2">
                 {Array.from({ length: 8 }).map((_, i) => (
@@ -547,14 +641,19 @@ export default function AdminUserManagement() {
               </div>
             )}
 
-            {/* Empty */}
+            {/* Empty state */}
             {!isLoading && !data?.items.length && (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-zinc-600">
                 <p className="text-sm">No users found.</p>
                 {hasFilters && (
                   <button
                     className="text-xs text-primary hover:underline"
-                    onClick={() => { setSearch(""); setRoleFilter("all"); setAccessFilter("all"); setPage(0); }}
+                    onClick={() => {
+                      setSearch("");
+                      setRoleFilter("all");
+                      setAccessFilter("all");
+                      setPage(0);
+                    }}
                   >
                     Clear filters
                   </button>
@@ -562,10 +661,10 @@ export default function AdminUserManagement() {
               </div>
             )}
 
-            {/* User list — single unified layout for all sizes */}
+            {/* User list */}
             {!isLoading && !!data?.items.length && (
               <div className="px-5 sm:px-8">
-                {/* Desktop table header — hidden on mobile */}
+                {/* Column headers — desktop only */}
                 <div className="hidden sm:grid grid-cols-[1fr_180px_100px_36px] gap-4 px-3 pb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
                   <span>User</span>
                   <span>Platform Role</span>
@@ -577,17 +676,8 @@ export default function AdminUserManagement() {
                   {data.items.map((u) => (
                     <UserRow
                       key={u.id}
-                      u={u as any}
-                      onOpenDetails={() =>
-                        setEditing({
-                          id: u.id,
-                          name: u.name ?? null,
-                          email: u.email ?? null,
-                          platformRole: u.platformRole,
-                          role: u.role,
-                          organization: u.organization ?? null,
-                        })
-                      }
+                      u={u as UserRowUser}
+                      onOpenDetails={() => openEditDialog(u as UserRowUser)}
                     />
                   ))}
                 </div>
@@ -596,7 +686,9 @@ export default function AdminUserManagement() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between py-4 mt-2">
                     <p className="text-xs text-zinc-600">
-                      {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, data.total)} of {data.total}
+                      {page * PAGE_SIZE + 1}–
+                      {Math.min((page + 1) * PAGE_SIZE, data.total)} of{" "}
+                      {data.total}
                     </p>
                     <div className="flex items-center gap-1">
                       <Button
@@ -605,16 +697,20 @@ export default function AdminUserManagement() {
                         disabled={page === 0}
                         onClick={() => setPage((p) => p - 1)}
                         className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 rounded-lg"
+                        aria-label="Previous page"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <span className="text-xs text-zinc-500 px-2">{page + 1} / {totalPages}</span>
+                      <span className="text-xs text-zinc-500 px-2">
+                        {page + 1} / {totalPages}
+                      </span>
                       <Button
                         size="sm"
                         variant="ghost"
                         disabled={page >= totalPages - 1}
                         onClick={() => setPage((p) => p + 1)}
                         className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 rounded-lg"
+                        aria-label="Next page"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </Button>
@@ -630,8 +726,12 @@ export default function AdminUserManagement() {
         {tab === "audit" && <AuditLog />}
       </div>
 
-      {/* Edit dialog */}
-      <EditDialog user={editing} onClose={() => setEditing(null)} />
+      {/* Edit dialog — key forces full remount when target user changes */}
+      <EditDialog
+        key={editing?.id ?? "none"}
+        user={editing}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }

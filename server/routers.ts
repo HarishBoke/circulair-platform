@@ -2,7 +2,8 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
 import {
@@ -801,13 +802,13 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
 
   // ─── ADMIN ──────────────────────────────────────────────────────────────────
   admin: router({
-    /** Legacy: get all users (no pagination) */
-    users: protectedProcedure.query(() => getAllUsers()),
+    /** Legacy: get all users (no pagination) — admin only */
+    users: adminProcedure.query(() => getAllUsers()),
 
-    /** Paginated, searchable, filterable user list */
-    listUsers: protectedProcedure
+    /** Paginated, searchable, filterable user list — admin only */
+    listUsers: adminProcedure
       .input(z.object({
-        search: z.string().optional(),
+        search: z.string().max(200).optional(),
         platformRole: z.enum(["admin", "oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government"]).optional(),
         role: z.enum(["user", "admin"]).optional(),
         limit: z.number().min(1).max(100).default(20),
@@ -815,26 +816,43 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }))
       .query(async ({ input }) => listUsersAdmin(input)),
 
-    /** Role distribution statistics */
-    roleStats: protectedProcedure.query(() => getUserRoleStats()),
+    /** Role distribution statistics — admin only */
+    roleStats: adminProcedure.query(() => getUserRoleStats()),
 
-    /** Update a user's platform role and system role with audit logging */
-    updateUserRole: protectedProcedure
+    /** Update a user's platform role and system role with audit logging — admin only */
+    updateUserRole: adminProcedure
       .input(z.object({
-        userId: z.number(),
+        userId: z.number().int().positive(),
         platformRole: z.enum(["admin", "oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government"]),
         systemRole: z.enum(["user", "admin"]).default("user"),
-        organization: z.string().optional(),
-        reason: z.string().optional(),
+        organization: z.string().max(255).optional(),
+        reason: z.string().max(1000).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Fetch current user state for audit log
         const db = await import("./db").then((m) => m.getDb());
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { users } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
+        const { eq, and, ne, sql: drizzleSql } = await import("drizzle-orm");
+
+        // Fetch current state of the target user
         const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
-        if (!targetUser) throw new Error("User not found");
+        if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+
+        // Guard: prevent self-demotion from admin
+        if (targetUser.id === ctx.user.id && input.systemRole !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "You cannot remove your own administrator access." });
+        }
+
+        // Guard: ensure at least one admin remains after this change
+        if (targetUser.role === "admin" && input.systemRole !== "admin") {
+          const [countRow] = await db
+            .select({ count: drizzleSql<number>`count(*)` })
+            .from(users)
+            .where(and(eq(users.role, "admin"), ne(users.id, input.userId)));
+          if (Number(countRow?.count ?? 0) === 0) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Cannot demote the last administrator. Promote another user first." });
+          }
+        }
 
         // Apply the role update
         const updated = await updateUserRoleById(
@@ -844,7 +862,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
           input.organization,
         );
 
-        // Write audit log entry
+        // Write immutable audit log entry
         await createRoleAuditEntry({
           targetUserId: input.userId,
           targetUserName: targetUser.name ?? null,
@@ -861,10 +879,10 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         return { success: true, user: updated };
       }),
 
-    /** Fetch role change audit log */
-    auditLog: protectedProcedure
+    /** Fetch role change audit log — admin only */
+    auditLog: adminProcedure
       .input(z.object({
-        targetUserId: z.number().optional(),
+        targetUserId: z.number().int().positive().optional(),
         limit: z.number().min(1).max(200).default(50),
       }))
       .query(async ({ input }) => getRoleAuditLog(input)),

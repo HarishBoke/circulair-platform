@@ -233,3 +233,17 @@
 - [x] Spinner shown inside SelectTrigger while mutation is in flight; dropdown disabled during save
 - [x] UserRow extracted as a separate component with its own mutation instance
 - [x] TypeScript: 0 errors, 113 tests passing
+
+## Phase 26: Admin User Management — Full Audit & Hardening [COMPLETE]
+- [x] Backend: all admin.* procedures now use adminProcedure (non-admins get FORBIDDEN)
+- [x] Backend: self-demotion guard — cannot remove own admin access
+- [x] Backend: last-admin guard — cannot demote if no other admins remain
+- [x] Backend: TRPCError with proper codes (NOT_FOUND, FORBIDDEN, INTERNAL_SERVER_ERROR)
+- [x] Backend: input validation — max lengths on strings, .int().positive() on IDs
+- [x] Frontend: useMemo depends on debouncedSearch (not raw search) — no stale queries
+- [x] Frontend: EditDialog uses key prop for full remount + useEffect syncs on user.id change
+- [x] Frontend: mutation.isPending used throughout — no manual boolean state
+- [x] Frontend: mobile role badge + details button always visible on small screens
+- [x] Frontend: PAGE_SIZE is module-level constant
+- [x] Frontend: access guard placed after all hooks (Rules of Hooks compliant)
+- [x] TypeScript: 0 errors, 113 tests passing (8 test files)
