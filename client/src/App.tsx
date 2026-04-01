@@ -22,6 +22,7 @@ import YieldVerification from "./pages/YieldVerification";
 import ServiceHistory from "./pages/ServiceHistory";
 import Home from "./pages/Home";
 import DataIntegration from "./pages/DataIntegration";
+import MqttFlowTester from "./pages/MqttFlowTester";
 
 function Router() {
   return (
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/assistant" component={() => <PlatformLayout><AiAssistant /></PlatformLayout>} />
       <Route path="/documents" component={() => <PlatformLayout><Documents /></PlatformLayout>} />
       <Route path="/data-integration" component={DataIntegration} />
+      <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

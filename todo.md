@@ -151,3 +151,12 @@
 - [x] Write 19 vitest tests for MQTT subscriber logic (all passing)
 - [x] TypeScript: 0 errors
 - [x] Tests: 58 passing (19 MQTT + 15 socket + 23 platform + 1 auth)
+
+## Phase 18: MQTT Flow Tester (Bidirectional Live Testing)
+- [ ] Add mqtt.publish tRPC procedure (server-side broker publish)
+- [ ] Add mqtt.startStream / mqtt.stopStream for continuous publishing
+- [ ] Build MqttFlowTester.tsx — publish form, scenario picker, live log feed, DB confirmation
+- [ ] Show real-time message flow: Publish → Broker → Server → DB → Socket.io
+- [ ] Add sidebar nav link under INTEGRATIONS
+- [ ] Wire /mqtt-flow-tester route in App.tsx
+- [ ] Write tests for mqtt.publish procedure

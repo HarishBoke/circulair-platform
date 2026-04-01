@@ -466,3 +466,139 @@ export function publishTestMessage(bpan: string): Promise<void> {
     });
   });
 }
+
+// ─── Stream state ─────────────────────────────────────────────────────────────
+let _streamTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Publish a fully custom telemetry payload to the broker.
+ * Used by the MQTT Flow Tester UI to send real messages.
+ */
+export function publishTelemetryMessage(
+  bpan: string,
+  payload: {
+    bpan: string;
+    vPack: number;
+    current: number;
+    tMax: number;
+    tMin: number;
+    tAvg: number;
+    soc: number;
+    sohEstimate: number;
+    cycleCount: number;
+    internalResistance: number;
+    dtcCodes?: string[];
+  }
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!_client || !_status.connected) {
+      reject(new Error("MQTT client not connected — cannot publish"));
+      return;
+    }
+    const topic = `${_config?.topicPrefix ?? "circulair/telemetry"}/${bpan}`;
+    const body = JSON.stringify({
+      ...payload,
+      source: "flow_tester",
+      ts: new Date().toISOString(),
+    });
+    _client!.publish(topic, body, { qos: 1 }, (err) => {
+      if (err) {
+        console.error(`[MQTT] Publish failed for ${bpan}:`, err.message);
+        reject(err);
+      } else {
+        console.log(`[MQTT] ↑ Published to ${topic} (${body.length} bytes)`);
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * Generate a realistic random telemetry payload for a given BPAN.
+ * Used by the continuous stream for testing.
+ */
+function generateRandomPayload(bpan: string, scenario: string = "normal") {
+  const base = {
+    bpan,
+    vPack: parseFloat((340 + Math.random() * 20).toFixed(2)),
+    current: parseFloat((-80 + Math.random() * 160).toFixed(2)),
+    tMin: parseFloat((22 + Math.random() * 5).toFixed(2)),
+    tAvg: parseFloat((28 + Math.random() * 8).toFixed(2)),
+    tMax: parseFloat((32 + Math.random() * 12).toFixed(2)),
+    soc: parseFloat((20 + Math.random() * 75).toFixed(1)),
+    sohEstimate: parseFloat((65 + Math.random() * 30).toFixed(1)),
+    cycleCount: Math.floor(100 + Math.random() * 900),
+    internalResistance: parseFloat((10 + Math.random() * 20).toFixed(2)),
+    dtcCodes: [] as string[],
+    source: "stream",
+  };
+
+  if (scenario === "thermal") {
+    base.tMax = parseFloat((52 + Math.random() * 10).toFixed(2));
+    base.tAvg = parseFloat((48 + Math.random() * 5).toFixed(2));
+    base.dtcCodes = ["P0A1B", "P0A0F"];
+  } else if (scenario === "degraded") {
+    base.sohEstimate = parseFloat((45 + Math.random() * 20).toFixed(1));
+    base.dtcCodes = ["P0A80"];
+  } else if (scenario === "charging") {
+    base.current = parseFloat((80 + Math.random() * 70).toFixed(2));
+    base.soc = parseFloat((40 + Math.random() * 55).toFixed(1));
+  }
+
+  return base;
+}
+
+/**
+ * Start a continuous telemetry stream publishing to the broker at a fixed interval.
+ * Each tick publishes one reading per BPAN with randomised realistic values.
+ */
+export function startTelemetryStream(bpans: string[], intervalMs: number = 3000): void {
+  if (_streamTimer) {
+    clearInterval(_streamTimer);
+    _streamTimer = null;
+  }
+  if (!_client || !_status.connected) {
+    throw new Error("MQTT client not connected — cannot start stream");
+  }
+
+  const scenarios = ["normal", "normal", "normal", "charging", "thermal", "degraded"];
+  let tick = 0;
+
+  console.log(`[MQTT] Stream started — ${bpans.length} BPANs at ${intervalMs}ms interval`);
+
+  _streamTimer = setInterval(() => {
+    if (!_client || !_status.connected) {
+      stopTelemetryStream();
+      return;
+    }
+    for (const bpan of bpans) {
+      const scenario = scenarios[tick % scenarios.length];
+      const payload = generateRandomPayload(bpan, scenario);
+      const topic = `${_config?.topicPrefix ?? "circulair/telemetry"}/${bpan}`;
+      const body = JSON.stringify(payload);
+      _client!.publish(topic, body, { qos: 0 }, (err) => {
+        if (err) console.error(`[MQTT] Stream publish error for ${bpan}:`, err.message);
+      });
+    }
+    tick++;
+    console.log(`[MQTT] Stream tick #${tick} — published ${bpans.length} messages`);
+  }, intervalMs);
+}
+
+/**
+ * Stop the continuous telemetry stream.
+ */
+export function stopTelemetryStream(): void {
+  if (_streamTimer) {
+    clearInterval(_streamTimer);
+    _streamTimer = null;
+    console.log("[MQTT] Stream stopped");
+  }
+}
+
+/**
+ * Check if a continuous stream is currently running.
+ */
+export function isStreamRunning(): boolean {
+  return _streamTimer !== null;
+}

@@ -809,8 +809,8 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
   mqtt: router({
     /** Get current MQTT broker connection status */
     status: protectedProcedure.query(async () => {
-      const { getMqttStatus } = await import("./mqttSubscriber");
-      return getMqttStatus();
+      const { getMqttStatus, isStreamRunning } = await import("./mqttSubscriber");
+      return { ...getMqttStatus(), streamRunning: isStreamRunning() };
     }),
     /** (Re)connect to MQTT broker — optionally override config */
     connect: protectedProcedure
@@ -839,6 +839,46 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         await publishTestMessage(input.bpan);
         return { success: true, message: `Test message published for BPAN ${input.bpan}` };
       }),
+    /** Publish a fully custom telemetry payload to the broker */
+    publish: protectedProcedure
+      .input(z.object({
+        bpan: z.string().length(21),
+        payload: z.object({
+          bpan: z.string(),
+          vPack: z.number(),
+          current: z.number(),
+          tMax: z.number(),
+          tMin: z.number(),
+          tAvg: z.number(),
+          soc: z.number(),
+          sohEstimate: z.number(),
+          cycleCount: z.number(),
+          internalResistance: z.number(),
+          dtcCodes: z.array(z.string()).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const { publishTelemetryMessage } = await import("./mqttSubscriber");
+        await publishTelemetryMessage(input.bpan, input.payload);
+        return { success: true, message: `Telemetry published for ${input.bpan}` };
+      }),
+    /** Start continuous telemetry stream for testing */
+    startStream: protectedProcedure
+      .input(z.object({
+        bpans: z.array(z.string().length(21)),
+        intervalMs: z.number().min(1000).max(60000).default(3000),
+      }))
+      .mutation(async ({ input }) => {
+        const { startTelemetryStream } = await import("./mqttSubscriber");
+        startTelemetryStream(input.bpans, input.intervalMs);
+        return { success: true, message: `Stream started for ${input.bpans.length} BPANs at ${input.intervalMs}ms interval` };
+      }),
+    /** Stop continuous telemetry stream */
+    stopStream: protectedProcedure.mutation(async () => {
+      const { stopTelemetryStream } = await import("./mqttSubscriber");
+      stopTelemetryStream();
+      return { success: true, message: "Stream stopped" };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;
