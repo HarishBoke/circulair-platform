@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useStructuredData } from "@/hooks/useStructuredData";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import ArchitectureDiagram from "@/components/ArchitectureDiagram";
@@ -635,6 +636,20 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
 
 export default function CirculWiki() {
   usePageTitle("CirculWiki");
+  useStructuredData({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "CirculWiki — Battery Lifecycle Knowledge Base",
+    "url": "https://www.circulair.energy/wiki",
+    "description": "Community knowledge base covering battery lifecycle management, BPAN standards, SOH prediction, EPR compliance, and circular economy best practices.",
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.circulair.energy/" },
+        { "@type": "ListItem", "position": 2, "name": "CirculWiki", "item": "https://www.circulair.energy/wiki" }
+      ]
+    }
+  });
 
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");

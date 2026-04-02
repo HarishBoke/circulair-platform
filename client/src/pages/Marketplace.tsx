@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useStructuredData } from "@/hooks/useStructuredData";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,22 @@ function formatPrice(amount: number | string | null | undefined, currency: strin
 
 export default function Marketplace() {
   usePageTitle("Marketplace");
+  useStructuredData([
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Second-Life Battery Marketplace",
+      "url": "https://www.circulair.energy/marketplace",
+      "description": "Browse and trade second-life EV batteries with verified health passports, SOH data, and chain-of-custody tracking.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.circulair.energy/" },
+          { "@type": "ListItem", "position": 2, "name": "Marketplace", "item": "https://www.circulair.energy/marketplace" }
+        ]
+      }
+    }
+  ]);
 
   const [search, setSearch] = useState("");
   const [listingType, setListingType] = useState("all");

@@ -516,3 +516,8 @@
 ## SEO: Add sitemap.xml
 - [x] Create /sitemap.xml route listing all public pages with canonical URLs, priorities, and change frequencies
 - [x] Add sitemap reference to robots.txt
+
+## SEO: Add JSON-LD structured data
+- [x] Add Organization schema to index.html
+- [x] Add WebApplication + WebSite schema to index.html
+- [x] Add BreadcrumbList + WebPage schema to Home, Marketplace, CirculWiki, GettingStarted

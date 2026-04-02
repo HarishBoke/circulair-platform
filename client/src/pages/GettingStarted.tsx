@@ -4,6 +4,7 @@
  * Each step links to a real platform page and can be marked complete.
  */
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useStructuredData } from "@/hooks/useStructuredData";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -62,6 +63,20 @@ const STEP_COLORS: Record<string, string> = {
 
 export default function GettingStarted() {
   usePageTitle("Getting Started");
+  useStructuredData({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Getting Started with Circul-AI-r",
+    "url": "https://www.circulair.energy/getting-started",
+    "description": "Quick start guide for battery manufacturers, OEMs, recyclers, and fleet operators to onboard batteries, generate passports, and leverage AI-driven lifecycle intelligence.",
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.circulair.energy/" },
+        { "@type": "ListItem", "position": 2, "name": "Getting Started", "item": "https://www.circulair.energy/getting-started" }
+      ]
+    }
+  });
 
   const { user } = useAuth();
   const [, navigate] = useLocation();

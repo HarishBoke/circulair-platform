@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useStructuredData } from "@/hooks/useStructuredData";
 
 import { Button } from "@/components/ui/button";
 import CirculairLogo from "@/components/CirculairLogo";
@@ -149,6 +150,44 @@ const TECH_STACK = [
 /* ─── COMPONENT ────────────────────────────────────────────────────────────── */
 export default function Home() {
   usePageTitle("Battery Circular Economy Platform");
+  useStructuredData([
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Circul-AI-r",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "url": "https://www.circulair.energy",
+      "description": "End-to-end battery lifecycle intelligence platform — traceability, AI-driven SOH prediction, EPR compliance across 7 jurisdictions, and a second-life marketplace.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Battery Passport (BPAN) generation and tracking",
+        "AI-powered State of Health (SOH) prediction",
+        "Real-time IoT telemetry monitoring",
+        "EPR compliance across EU, India, China, US, UK, Thailand, Indonesia",
+        "Second-life battery marketplace",
+        "Yield verification and recycler workflows",
+        "Logistics and chain-of-custody tracking"
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Circul-AI-r — Battery Circular Economy Platform",
+      "url": "https://www.circulair.energy/",
+      "description": "End-to-end battery lifecycle intelligence: traceability, AI health prediction, EPR compliance across 7 jurisdictions, and a second-life marketplace.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.circulair.energy/" }
+        ]
+      }
+    }
+  ]);
 
   const { isAuthenticated, loading } = useAuth();
   const [activeStakeholder, setActiveStakeholder] = useState(0);
