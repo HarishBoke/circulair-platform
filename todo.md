@@ -538,3 +538,22 @@
 - [x] Create CookieConsent component (accept/reject/manage, localStorage persistence)
 - [x] Gate analytics script on consent (dynamically inject/remove Umami)
 - [x] Integrate banner into App.tsx root (both LaunchingSoon and main app)
+
+## Inner Pages: Wire up with real data
+- [x] Audit all inner pages for placeholder vs real data states
+- [x] Dashboard: replaced all MOCK_* chart constants with real tRPC data (SOH trend, triage, marketplace weekly)
+- [x] Analytics: replaced all MOCK_* chart constants with real tRPC data (monthly activity, SOH distribution, chemistry mix)
+- [x] Added 6 new chart tRPC procedures (monthlyActivity, sohDistribution, sohTrend, chemistryDistribution, triageDistribution, marketplaceWeekly)
+- [x] Added 6 DB helper functions for chart data in db.ts
+- [x] BPAN Registry: already wired to real DB (listBatteries, search/filter)
+- [x] Battery Detail: already wired to real DB (telemetry, SOH, history)
+- [x] Marketplace: already wired to real DB (listings, create/edit/delete)
+- [x] Telemetry: already wired to real MQTT/DB + live socket stream
+- [x] AI SOH: already wired to real prediction endpoint + DB
+- [x] Compliance: already wired to real EPR/regulatory DB data
+- [x] Alerts: already wired to real DB alerts
+- [x] Warranty: already wired to real DB warranty records
+- [x] Documents: already wired to real S3+DB document storage
+- [x] Logistics: already wired to real DB shipment tracking
+- [x] Service History: already wired to real DB service records
+- [x] Data Integration: real MQTT connection status via mqtt tRPC router

@@ -488,3 +488,123 @@ export async function getRoleAuditLog(filters?: { targetUserId?: number; limit?:
   const query = conditions.length > 0 ? and(...conditions) : undefined;
   return db.select().from(roleAuditLog).where(query).orderBy(desc(roleAuditLog.createdAt)).limit(limit);
 }
+
+// ─── CHART DATA HELPERS ──────────────────────────────────────────────────────
+
+/** Monthly battery registrations, sales, and recycled counts for the last 6 months */
+export async function getMonthlyBatteryActivity() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  const months: { year: number; month: number; label: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleString("en", { month: "short" }) });
+  }
+  const since = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const [regRows, soldRows, recycledRows] = await Promise.all([
+    db.select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, n: count() })
+      .from(batteries).where(gte(batteries.createdAt, since)).groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`),
+    db.select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, n: count() })
+      .from(marketplaceListings)
+      .where(and(gte(marketplaceListings.createdAt, since), eq(marketplaceListings.status, "sold")))
+      .groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`),
+    db.select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, n: count() })
+      .from(batteries)
+      .where(and(gte(batteries.createdAt, since), eq(batteries.status, "end_of_life")))
+      .groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`),
+  ]);
+  return months.map((m) => ({
+    month: m.label,
+    registered: regRows.find((r) => r.year === m.year && r.month === m.month)?.n ?? 0,
+    sold: soldRows.find((r) => r.year === m.year && r.month === m.month)?.n ?? 0,
+    recycled: recycledRows.find((r) => r.year === m.year && r.month === m.month)?.n ?? 0,
+  }));
+}
+
+/** SOH distribution bucketed into 10% ranges */
+export async function getSohDistribution() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ soh: batteries.currentSoh }).from(batteries).where(sql`currentSoh IS NOT NULL`);
+  const buckets: Record<string, number> = { "90-100%": 0, "80-90%": 0, "70-80%": 0, "60-70%": 0, "50-60%": 0, "<50%": 0 };
+  rows.forEach(({ soh }) => {
+    const v = parseFloat(soh as unknown as string);
+    if (v >= 90) buckets["90-100%"]++;
+    else if (v >= 80) buckets["80-90%"]++;
+    else if (v >= 70) buckets["70-80%"]++;
+    else if (v >= 60) buckets["60-70%"]++;
+    else if (v >= 50) buckets["50-60%"]++;
+    else buckets["<50%"]++;
+  });
+  return Object.entries(buckets).map(([range, count]) => ({ range, count }));
+}
+
+/** Fleet average SOH per month for the last 6 months */
+export async function getSohTrend() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  const months: { year: number; month: number; label: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleString("en", { month: "short" }) });
+  }
+  const since = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const rows = await db
+    .select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, avg: sql<number>`AVG(CAST(currentSoh AS DECIMAL(5,2)))` })
+    .from(batteries)
+    .where(and(gte(batteries.createdAt, since), sql`currentSoh IS NOT NULL`))
+    .groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`);
+  return months.map((m) => {
+    const row = rows.find((r) => r.year === m.year && r.month === m.month);
+    return { month: m.label, avg: row?.avg ? Math.round(Number(row.avg)) : null };
+  });
+}
+
+/** Chemistry breakdown as percentage of total fleet */
+export async function getChemistryDistribution() {
+  const db = await getDb();
+  if (!db) return [];
+  const COLORS: Record<string, string> = { NMC: "#00c8a0", LFP: "#4fc3f7", NCA: "#ffb347", LCO: "#ff4d6d", LMO: "#a78bfa", LEAD_ACID: "#94a3b8" };
+  const rows = await db.select({ chemistry: batteries.chemistry, n: count() }).from(batteries).groupBy(batteries.chemistry);
+  const total = rows.reduce((s, r) => s + r.n, 0);
+  return rows.filter((r) => r.n > 0).map((r) => ({
+    name: r.chemistry,
+    value: total > 0 ? Math.round((r.n / total) * 100) : 0,
+    color: COLORS[r.chemistry] ?? "#94a3b8",
+  }));
+}
+
+/** AI triage distribution from soh_predictions */
+export async function getTriageDistribution() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ triagePath: sohPredictions.triagePath, n: count() })
+    .from(sohPredictions).where(sql`triagePath IS NOT NULL`).groupBy(sohPredictions.triagePath);
+  const total = rows.reduce((s, r) => s + r.n, 0);
+  const COLORS: Record<string, string> = { direct_reuse: "#00c8a0", module_repurposing: "#ffb347", material_recycling: "#ff4d6d" };
+  const LABELS: Record<string, string> = { direct_reuse: "Direct Reuse", module_repurposing: "Module Repurposing", material_recycling: "Material Recycling" };
+  return rows.filter((r) => r.triagePath).map((r) => ({
+    name: LABELS[r.triagePath!] ?? r.triagePath,
+    value: total > 0 ? Math.round((r.n / total) * 100) : 0,
+    color: COLORS[r.triagePath!] ?? "#94a3b8",
+  }));
+}
+
+/** Weekly marketplace listing count for the last 4 weeks */
+export async function getMarketplaceWeeklyActivity() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  const results = await Promise.all(
+    ["W1", "W2", "W3", "W4"].map(async (label, i) => {
+      const start = new Date(now.getTime() - (4 - i) * 7 * 24 * 60 * 60 * 1000);
+      const end = new Date(now.getTime() - (3 - i) * 7 * 24 * 60 * 60 * 1000);
+      const [row] = await db.select({ txns: count() }).from(marketplaceListings)
+        .where(and(gte(marketplaceListings.createdAt, start), lte(marketplaceListings.createdAt, end)));
+      return { week: label, txns: row?.txns ?? 0 };
+    }),
+  );
+  return results;
+}

@@ -5,30 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, Battery, ShoppingCart, Shield, Activity } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 
-const MOCK_SOH_DIST = [
-  { range: "90-100%", count: 45 }, { range: "80-90%", count: 120 },
-  { range: "70-80%", count: 89 }, { range: "60-70%", count: 67 },
-  { range: "50-60%", count: 34 }, { range: "<50%", count: 22 },
-];
-const MOCK_MONTHLY = [
-  { month: "Oct", registered: 12, recycled: 5, sold: 8 },
-  { month: "Nov", registered: 18, recycled: 7, sold: 12 },
-  { month: "Dec", registered: 15, recycled: 9, sold: 10 },
-  { month: "Jan", registered: 22, recycled: 11, sold: 15 },
-  { month: "Feb", registered: 28, recycled: 14, sold: 19 },
-  { month: "Mar", registered: 35, recycled: 18, sold: 24 },
-];
-const MOCK_CHEMISTRY = [
-  { name: "NMC", value: 42, color: "#00c8a0" },
-  { name: "LFP", value: 31, color: "#4fc3f7" },
-  { name: "NCA", value: 15, color: "#ffb347" },
-  { name: "LCO", value: 8, color: "#ff4d6d" },
-  { name: "LMO", value: 4, color: "#a78bfa" },
-];
-const MOCK_UPTIME = [
+const UPTIME_DATA = [
   { day: "Mon", uptime: 99.99 }, { day: "Tue", uptime: 99.97 },
   { day: "Wed", uptime: 100 }, { day: "Thu", uptime: 99.98 },
   { day: "Fri", uptime: 99.99 }, { day: "Sat", uptime: 100 },
@@ -39,10 +19,17 @@ export default function Analytics() {
   usePageTitle("Analytics");
 
   const { data: kpis, isLoading, refetch } = trpc.analytics.kpis.useQuery();
+  const { data: monthlyActivity } = trpc.analytics.monthlyActivity.useQuery();
+  const { data: sohDistribution } = trpc.analytics.sohDistribution.useQuery();
+  const { data: chemistryDistribution } = trpc.analytics.chemistryDistribution.useQuery();
 
   const batteryStats = kpis?.batteryStats;
   const marketStats = kpis?.marketStats;
   const eprStats = kpis?.eprStats;
+
+  const monthlyData = monthlyActivity ?? [];
+  const sohData = sohDistribution ?? [];
+  const chemData = chemistryDistribution ?? [];
 
   return (
     <div className="p-6 space-y-5 animate-fade-up">
@@ -89,17 +76,23 @@ export default function Analytics() {
             <Badge variant="outline" className="font-mono text-[9px] border-primary/30 text-primary">6 months</Badge>
           </div>
           <div className="p-5">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={MOCK_MONTHLY}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
-                <XAxis dataKey="month" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-                <Bar dataKey="registered" fill="#00c8a0" radius={[2, 2, 0, 0]} opacity={0.9} name="Registered" />
-                <Bar dataKey="recycled" fill="#4fc3f7" radius={[2, 2, 0, 0]} opacity={0.7} name="Recycled" />
-                <Bar dataKey="sold" fill="#ffb347" radius={[2, 2, 0, 0]} opacity={0.7} name="Sold" />
-              </BarChart>
-            </ResponsiveContainer>
+            {monthlyData.every((d) => d.registered === 0 && d.sold === 0 && d.recycled === 0) ? (
+              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
+                No activity data yet — register batteries to populate this chart.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
+                  <XAxis dataKey="month" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
+                  <Bar dataKey="registered" fill="#00c8a0" radius={[2, 2, 0, 0]} opacity={0.9} name="Registered" />
+                  <Bar dataKey="recycled" fill="#4fc3f7" radius={[2, 2, 0, 0]} opacity={0.7} name="Recycled" />
+                  <Bar dataKey="sold" fill="#ffb347" radius={[2, 2, 0, 0]} opacity={0.7} name="Sold" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -109,15 +102,21 @@ export default function Analytics() {
             <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Fleet health breakdown</p>
           </div>
           <div className="p-5">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={MOCK_SOH_DIST} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
-                <XAxis type="number" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="range" type="category" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} width={60} />
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-                <Bar dataKey="count" fill="#00c8a0" radius={[0, 4, 4, 0]} opacity={0.8} />
-              </BarChart>
-            </ResponsiveContainer>
+            {sohData.every((d) => d.count === 0) ? (
+              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
+                No SOH data yet — run AI predictions on registered batteries to see distribution.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={sohData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
+                  <XAxis type="number" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="range" type="category" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} width={60} />
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
+                  <Bar dataKey="count" fill="#00c8a0" radius={[0, 4, 4, 0]} opacity={0.8} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -130,16 +129,22 @@ export default function Analytics() {
             <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Fleet composition</p>
           </div>
           <div className="p-5 flex flex-col items-center">
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie data={MOCK_CHEMISTRY} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
-                  {MOCK_CHEMISTRY.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {chemData.length === 0 || chemData.every((d) => d.value === 0) ? (
+              <div className="h-[140px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
+                No batteries registered yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={140}>
+                <PieChart>
+                  <Pie data={chemData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
+                    {chemData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
             <div className="space-y-1.5 w-full mt-2">
-              {MOCK_CHEMISTRY.map((c) => (
+              {chemData.map((c) => (
                 <div key={c.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ background: c.color }} />
@@ -162,7 +167,7 @@ export default function Analytics() {
           </div>
           <div className="p-5">
             <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={MOCK_UPTIME}>
+              <AreaChart data={UPTIME_DATA}>
                 <defs>
                   <linearGradient id="uptimeGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#00c8a0" stopOpacity={0.3} />

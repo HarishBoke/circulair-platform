@@ -19,6 +19,8 @@ import {
   createChatSession, getChatSessions, addChatMessage, getChatMessages,
   getPlatformKpis, getAllUsers, upsertUser,
   listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog,
+  getMonthlyBatteryActivity, getSohDistribution, getSohTrend,
+  getChemistryDistribution, getTriageDistribution, getMarketplaceWeeklyActivity,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -900,6 +902,12 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     batteryStats: protectedProcedure.query(() => getBatteryStats()),
     marketStats: protectedProcedure.query(() => getMarketplaceStats()),
     eprStats: protectedProcedure.query(() => getEprStats()),
+    monthlyActivity: protectedProcedure.query(() => getMonthlyBatteryActivity()),
+    sohDistribution: protectedProcedure.query(() => getSohDistribution()),
+    sohTrend: protectedProcedure.query(() => getSohTrend()),
+    chemistryDistribution: protectedProcedure.query(() => getChemistryDistribution()),
+    triageDistribution: protectedProcedure.query(() => getTriageDistribution()),
+    marketplaceWeekly: protectedProcedure.query(() => getMarketplaceWeeklyActivity()),
   }),
 
   // ─── ADMIN ──────────────────────────────────────────────────────────────────

@@ -14,25 +14,15 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 
-const MOCK_SOH_TREND = [
-  { month: "Oct", avg: 87 }, { month: "Nov", avg: 85 }, { month: "Dec", avg: 83 },
-  { month: "Jan", avg: 82 }, { month: "Feb", avg: 80 }, { month: "Mar", avg: 78 },
-];
-const MOCK_MARKET_TREND = [
-  { week: "W1", txns: 12 }, { week: "W2", txns: 18 },
-  { week: "W3", txns: 15 }, { week: "W4", txns: 24 },
-];
-const MOCK_TRIAGE = [
-  { name: "Direct Reuse", value: 45, color: "#00c8a0" },
-  { name: "Module Repurposing", value: 32, color: "#ffb347" },
-  { name: "Material Recycling", value: 23, color: "#ff4d6d" },
+const TRIAGE_FALLBACK = [
+  { name: "Direct Reuse", value: 0, color: "#00c8a0" },
+  { name: "Module Repurposing", value: 0, color: "#ffb347" },
+  { name: "Material Recycling", value: 0, color: "#ff4d6d" },
 ];
 
 export default function Dashboard() {
   usePageTitle("Dashboard");
-
   const { user } = useAuth();
-
   return (
     <>
       <OnboardingWizard />
@@ -44,10 +34,20 @@ export default function Dashboard() {
 function DashboardContent({ user }: { user: any }) {
   const { data: kpis, isLoading: kpisLoading, refetch } = trpc.analytics.kpis.useQuery();
   const { data: alerts } = trpc.alerts.list.useQuery({ limit: 5 });
+  const { data: sohTrend } = trpc.analytics.sohTrend.useQuery();
+  const { data: triageDistribution } = trpc.analytics.triageDistribution.useQuery();
+  const { data: marketplaceWeekly } = trpc.analytics.marketplaceWeekly.useQuery();
 
   const batteryStats = kpis?.batteryStats;
   const marketStats = kpis?.marketStats;
   const eprStats = kpis?.eprStats;
+
+  // Use real data; fall back to empty arrays so charts render gracefully
+  const sohData = sohTrend?.filter((d) => d.avg !== null) ?? [];
+  const triageData = (triageDistribution && triageDistribution.length > 0)
+    ? triageDistribution
+    : TRIAGE_FALLBACK;
+  const marketData = marketplaceWeekly ?? [];
 
   return (
     <div className="p-6 space-y-6 animate-fade-up">
@@ -107,21 +107,27 @@ function DashboardContent({ user }: { user: any }) {
             <Badge variant="outline" className="font-mono text-[9px] border-primary/30 text-primary">CNN-LSTM v3.2.1</Badge>
           </div>
           <div className="p-5">
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={MOCK_SOH_TREND}>
-                <defs>
-                  <linearGradient id="sohGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00c8a0" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00c8a0" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
-                <XAxis dataKey="month" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[70, 95]} tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} labelStyle={{ color: "#00c8a0" }} />
-                <Area type="monotone" dataKey="avg" stroke="#00c8a0" strokeWidth={2} fill="url(#sohGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {sohData.length === 0 ? (
+              <div className="h-[180px] flex items-center justify-center text-muted-foreground text-xs font-mono">
+                No SOH data yet — register batteries and run AI predictions to populate this chart.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={sohData}>
+                  <defs>
+                    <linearGradient id="sohGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00c8a0" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#00c8a0" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
+                  <XAxis dataKey="month" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[70, 100]} tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} labelStyle={{ color: "#00c8a0" }} />
+                  <Area type="monotone" dataKey="avg" stroke="#00c8a0" strokeWidth={2} fill="url(#sohGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -131,16 +137,22 @@ function DashboardContent({ user }: { user: any }) {
             <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Current EOL routing</p>
           </div>
           <div className="p-5 flex flex-col items-center">
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie data={MOCK_TRIAGE} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                  {MOCK_TRIAGE.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {triageData.every((t) => t.value === 0) ? (
+              <div className="h-[140px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
+                No triage data yet — run AI SOH predictions to see routing distribution.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={140}>
+                <PieChart>
+                  <Pie data={triageData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
+                    {triageData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
             <div className="space-y-2 w-full mt-2">
-              {MOCK_TRIAGE.map((t) => (
+              {triageData.map((t) => (
                 <div key={t.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ background: t.color }} />
@@ -167,15 +179,21 @@ function DashboardContent({ user }: { user: any }) {
             </Link>
           </div>
           <div className="p-5">
-            <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={MOCK_MARKET_TREND}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
-                <XAxis dataKey="week" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-                <Bar dataKey="txns" fill="#00c8a0" radius={[4, 4, 0, 0]} opacity={0.8} />
-              </BarChart>
-            </ResponsiveContainer>
+            {marketData.every((d) => d.txns === 0) ? (
+              <div className="h-[150px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
+                No marketplace transactions yet — list batteries to see weekly activity.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={marketData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
+                  <XAxis dataKey="week" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
+                  <Bar dataKey="txns" fill="#00c8a0" radius={[4, 4, 0, 0]} opacity={0.8} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
