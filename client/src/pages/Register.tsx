@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Zap, ArrowRight, Lock, Globe, Shield, Eye, EyeOff, Loader2, UserPlus,
+  ArrowRight, Lock, Globe, Shield, Eye, EyeOff, Loader2, UserPlus,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import CirculairLogo from "@/components/CirculairLogo";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -70,8 +71,8 @@ export default function Register() {
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
-              <Zap className="w-6 h-6 text-primary-foreground" />
+            <div className="w-12 h-12 rounded-2xl bg-background/50 flex items-center justify-center">
+              <CirculairLogo size={36} />
             </div>
             <div>
               <div className="font-display text-2xl font-bold leading-tight">
@@ -120,7 +121,7 @@ export default function Register() {
               {/* Mobile logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
-                  <Zap className="w-5 h-5 text-primary-foreground" />
+                  <CirculairLogo size={30} />
                 </div>
                 <div>
                   <div className="font-display text-lg font-bold leading-tight">

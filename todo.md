@@ -487,3 +487,11 @@
 - [x] Clean stale i18next from node_modules (pnpm reinstall)
 - [x] Write auth.test.ts with 11 tests covering JWT, tRPC auth, email validation
 - [x] All 269 tests passing, 0 TypeScript errors, build succeeds
+
+## Logo Replacement: AI-generated icon → Circul-AI-r SVG logo
+- [x] Upload circulair.svg to CDN via manus-upload-file
+- [x] Generate favicon.ico from SVG
+- [x] Replace favicon in client/public/
+- [x] Update VITE_APP_LOGO env with CDN URL (built-in, used CDN directly)
+- [x] Replace all inline SVG logo icons across components (Home, PlatformLayout, LaunchingSoon, Login, Register, ManusDialog)
+- [x] Verify build and visual appearance

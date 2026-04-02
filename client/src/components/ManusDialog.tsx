@@ -7,7 +7,8 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Zap, ArrowRight, Shield, Globe, Battery } from "lucide-react";
+import { ArrowRight, Shield, Globe, Battery } from "lucide-react";
+import CirculairLogo from "@/components/CirculairLogo";
 
 interface ManusDialogProps {
   title?: string;
@@ -60,7 +61,7 @@ export function ManusDialog({
             {logo ? (
               <img src={logo} alt="Platform logo" className="w-10 h-10 rounded-lg" />
             ) : (
-              <Zap className="w-8 h-8 text-primary-foreground" />
+              <CirculairLogo size={40} />
             )}
           </div>
 

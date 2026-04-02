@@ -1,10 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
+import CirculairLogo from "@/components/CirculairLogo";
 import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import {
-  Zap, Battery, Brain, Shield, ShoppingCart, BarChart3, ArrowRight,
+  Battery, Brain, Shield, ShoppingCart, BarChart3, ArrowRight,
   CheckCircle2, Globe, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, CircuitBoard, Play,
@@ -158,8 +159,8 @@ export default function Home() {
       {/* ─── HEADER ─────────────────────────────────────────────────────────── */}
       <header className="relative z-10 flex items-center justify-between px-6 lg:px-10 py-4 border-b border-border/50 bg-background/70 backdrop-blur-2xl sticky top-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shadow-lg shadow-primary/20">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center shadow-lg shadow-primary/20">
+            <CirculairLogo size={30} />
           </div>
           <div>
             <div className="text-lg font-extrabold leading-tight tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
@@ -541,8 +542,8 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-primary-foreground" />
+                <div className="w-8 h-8 rounded-lg bg-background/50 flex items-center justify-center">
+                  <CirculairLogo size={24} />
                 </div>
                 <span className="text-base font-extrabold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
                   Circul<span className="text-primary">-AI-</span>r

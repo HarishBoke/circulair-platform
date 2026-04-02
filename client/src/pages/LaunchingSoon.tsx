@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Zap, Lock, Eye, EyeOff, ArrowRight, Shield, Globe, Battery, Cpu, ChevronRight } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, Shield, Globe, Battery, Cpu, ChevronRight } from "lucide-react";
+import CirculairLogo from "@/components/CirculairLogo";
 
 const ACCESS_KEY = "circulair_access_granted";
 
@@ -140,7 +141,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-emerald-400" />
+                <CirculairLogo size={30} />
               </div>
               <div className="absolute inset-0 w-10 h-10 rounded-xl border border-emerald-500/30" style={{ animation: "pulse-ring 3s ease-in-out infinite" }} />
             </div>
