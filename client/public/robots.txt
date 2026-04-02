@@ -1,0 +1,35 @@
+# Circul-AI-r Platform — Robots.txt
+
+User-agent: *
+# Allow public pages
+Allow: /
+Allow: /marketplace
+Allow: /getting-started
+Allow: /wiki
+Allow: /warranty/check
+Allow: /login
+Allow: /register
+
+# Block admin, internal tools, and test pages
+Disallow: /admin/
+Disallow: /mqtt-flow-tester
+Disallow: /data-integration
+Disallow: /dashboard
+Disallow: /batteries
+Disallow: /telemetry
+Disallow: /ai-soh
+Disallow: /logistics
+Disallow: /epr-compliance
+Disallow: /yield-verification
+Disallow: /service-history
+Disallow: /analytics
+Disallow: /alerts
+Disallow: /assistant
+Disallow: /documents
+Disallow: /settings/
+Disallow: /compliance
+Disallow: /warranty/register
+Disallow: /onboarding
+
+# Sitemap
+Sitemap: https://www.circulair.energy/sitemap.xml

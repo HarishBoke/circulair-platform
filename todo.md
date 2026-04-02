@@ -512,3 +512,7 @@
 ## SEO: Dynamic document.title for inner pages
 - [x] Create usePageTitle hook for consistent title management
 - [x] Apply to all inner page components (34 pages)
+
+## SEO: Add sitemap.xml
+- [x] Create /sitemap.xml route listing all public pages with canonical URLs, priorities, and change frequencies
+- [x] Add sitemap reference to robots.txt

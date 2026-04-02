@@ -12,6 +12,7 @@ import { applySecurityMiddleware } from "../security";
 import { startMqttSubscriber, stopMqttSubscriber } from "../mqttSubscriber";
 import { createApiGateway } from "../apiGateway";
 import { createMcpRouter } from "../mcpServer";
+import { createSitemapRouter } from "../sitemap";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -48,6 +49,8 @@ async function startServer() {
   app.use("/api/mcp", createMcpRouter());
   // Swagger UI redirect
   app.get("/api/docs", (_req, res) => res.redirect("/api/v1/docs"));
+  // Sitemap.xml for SEO
+  app.use(createSitemapRouter());
   // tRPC API
   app.use(
     "/api/trpc",
