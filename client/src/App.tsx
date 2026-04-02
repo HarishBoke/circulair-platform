@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -35,6 +36,7 @@ import BulkOnboarding from "./pages/BulkOnboarding";
 import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
+import LaunchingSoon, { isAccessGranted } from "./pages/LaunchingSoon";
 
 function Router() {
   return (
@@ -81,6 +83,18 @@ function Router() {
 }
 
 function App() {
+  const [accessGranted, setAccessGranted] = useState(isAccessGranted());
+
+  if (!accessGranted) {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="dark">
+          <LaunchingSoon onAccessGranted={() => setAccessGranted(true)} />
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

@@ -438,3 +438,11 @@
 - [x] Improve section headings, body text, and card typography across all sections
 - [x] Polish layout, fix dynamic Tailwind class issues (stakeholder icons), improve spacing
 - [x] TypeScript: 0 errors, 255 tests passing (15 test files)
+
+## Phase 39: Launching Soon Splash Screen & Access Gate
+- [x] Build LaunchingSoon.tsx splash page with countdown timer, animated particles, and password form
+- [x] Add username/password access gate (VITE_ACCESS_USERNAME/VITE_ACCESS_PASSWORD env secrets)
+- [x] Wire access gate into App.tsx — all routes protected until credentials entered
+- [x] Store access state in localStorage (circulair_access_granted key)
+- [x] Professional design matching platform dark theme with Plus Jakarta Sans typography
+- [x] TypeScript: 0 errors, 258 tests passing (16 test files)
