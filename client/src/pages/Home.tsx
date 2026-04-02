@@ -585,8 +585,10 @@ export default function Home() {
           </div>
 
           <div className="pt-8 border-t border-border/30 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-[12px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>
-              &copy; {new Date().getFullYear()} Circul-AI-r Platform. All rights reserved.
+            <div className="flex items-center gap-3 text-[12px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>
+              <span>&copy; {new Date().getFullYear()} Circul-AI-r Platform. All rights reserved.</span>
+              <span className="w-px h-3 bg-border/40" />
+              <span>By{" "}<a href="https://www.setoo.co" target="_blank" rel="noopener noreferrer" className="text-emerald-400/70 hover:text-emerald-400 transition-colors font-medium">www.setoo.co</a></span>
             </div>
             <div className="flex items-center gap-6 text-[12px] text-muted-foreground">
               <span>Privacy Policy</span>

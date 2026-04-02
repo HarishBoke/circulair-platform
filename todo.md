@@ -446,3 +446,7 @@
 - [x] Store access state in localStorage (circulair_access_granted key)
 - [x] Professional design matching platform dark theme with Plus Jakarta Sans typography
 - [x] TypeScript: 0 errors, 258 tests passing (16 test files)
+
+## Phase 40: Add Setoo Branding
+- [x] Add "By www.setoo.co" branding to Launching Soon footer
+- [x] Add "By www.setoo.co" branding to platform landing page footer

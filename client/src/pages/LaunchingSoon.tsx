@@ -336,13 +336,15 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
         </main>
 
         {/* Footer */}
-        <footer className="px-6 md:px-12 py-6 flex items-center justify-between border-t border-zinc-900/60" style={{ animation: "fade-in 1.2s ease-out" }}>
+        <footer className="px-6 md:px-12 py-6 flex flex-col md:flex-row items-center justify-between gap-3 border-t border-zinc-900/60" style={{ animation: "fade-in 1.2s ease-out" }}>
           <div className="flex items-center gap-4 text-[11px] text-zinc-600">
             <span>&copy; 2026 Circul-AI-r</span>
             <span className="w-px h-3 bg-zinc-800" />
             <span>Battery Intelligence Platform</span>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-zinc-600">
+          <div className="flex items-center gap-3 text-[11px] text-zinc-600">
+            <span>By{" "}<a href="https://www.setoo.co" target="_blank" rel="noopener noreferrer" className="text-emerald-400/70 hover:text-emerald-400 transition-colors font-medium">www.setoo.co</a></span>
+            <span className="w-px h-3 bg-zinc-800" />
             <span>v3.0</span>
             <ChevronRight className="w-3 h-3" />
             <span className="text-emerald-500/50">Pre-Launch</span>
