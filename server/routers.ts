@@ -24,6 +24,10 @@ import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
 import { generateHealthPassportPdf, generateCpcbReportPdf } from "./pdfGenerator";
 import { storagePut } from "./storage";
+import {
+  logAgentAction, listAgentActions, countAgentActions,
+  getAgentActionStats, getRecentActivity, getSystemHealthMetrics,
+} from "./db-agent";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -1332,6 +1336,240 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }),
   }),
 
+  // ─── AGENT / SUPER ADMIN ────────────────────────────────────────────────────
+  agent: router({
+    /** Log an action performed by a human or AI agent */
+    logAction: protectedProcedure
+      .input(z.object({
+        actorType: z.enum(["human", "agent", "system"]).default("human"),
+        action: z.string().min(1).max(255),
+        description: z.string().optional(),
+        module: z.enum([
+          "battery", "telemetry", "marketplace", "compliance",
+          "logistics", "analytics", "admin", "system", "agent", "ai"
+        ]).default("system"),
+        inputParams: z.record(z.string(), z.unknown()).optional(),
+        outputResult: z.record(z.string(), z.unknown()).optional(),
+        status: z.enum(["success", "failure", "pending", "cancelled"]).default("success"),
+        errorMessage: z.string().optional(),
+        durationMs: z.number().int().optional(),
+        targetEntity: z.string().max(255).optional(),
+        targetEntityType: z.string().max(64).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await logAgentAction({
+          ...input,
+          actorId: ctx.user.id,
+          actorName: ctx.user.name ?? "Unknown",
+          inputParams: input.inputParams ?? null,
+          outputResult: input.outputResult ?? null,
+          errorMessage: input.errorMessage ?? null,
+          durationMs: input.durationMs ?? null,
+          ipAddress: null,
+          targetEntity: input.targetEntity ?? null,
+          targetEntityType: input.targetEntityType ?? null,
+        });
+        return { success: true, id: result.id };
+      }),
+
+    /** Execute an agentic action — logs it and returns the action ID */
+    execute: protectedProcedure
+      .input(z.object({
+        action: z.string().min(1).max(255),
+        module: z.enum([
+          "battery", "telemetry", "marketplace", "compliance",
+          "logistics", "analytics", "admin", "system", "agent", "ai"
+        ]).default("system"),
+        description: z.string().optional(),
+        inputParams: z.record(z.string(), z.unknown()).optional(),
+        targetEntity: z.string().max(255).optional(),
+        targetEntityType: z.string().max(64).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const startTime = Date.now();
+        try {
+          const result = await logAgentAction({
+            actorId: ctx.user.id,
+            actorName: ctx.user.name ?? "Unknown",
+            actorType: "agent",
+            action: input.action,
+            description: input.description ?? null,
+            module: input.module,
+            inputParams: input.inputParams ?? null,
+            outputResult: null,
+            status: "success",
+            errorMessage: null,
+            durationMs: Date.now() - startTime,
+            ipAddress: null,
+            targetEntity: input.targetEntity ?? null,
+            targetEntityType: input.targetEntityType ?? null,
+          });
+          return { success: true, actionId: result.id };
+        } catch (err: any) {
+          await logAgentAction({
+            actorId: ctx.user.id,
+            actorName: ctx.user.name ?? "Unknown",
+            actorType: "agent",
+            action: input.action,
+            description: input.description ?? null,
+            module: input.module,
+            inputParams: input.inputParams ?? null,
+            outputResult: null,
+            status: "failure",
+            errorMessage: err?.message ?? "Unknown error",
+            durationMs: Date.now() - startTime,
+            ipAddress: null,
+            targetEntity: input.targetEntity ?? null,
+            targetEntityType: input.targetEntityType ?? null,
+          });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err?.message ?? "Agent execution failed" });
+        }
+      }),
+
+    /** List agent actions with filters (admin only) */
+    listActions: adminProcedure
+      .input(z.object({
+        actorType: z.enum(["human", "agent", "system"]).optional(),
+        module: z.string().optional(),
+        status: z.enum(["success", "failure", "pending", "cancelled"]).optional(),
+        search: z.string().max(200).optional(),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(async ({ input }) => {
+        const [actions, total] = await Promise.all([
+          listAgentActions(input),
+          countAgentActions(input),
+        ]);
+        return { actions, total };
+      }),
+
+    /** Get action statistics (admin only) */
+    stats: adminProcedure.query(() => getAgentActionStats()),
+
+    /** Get recent activity feed (admin only) */
+    recentActivity: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(({ input }) => getRecentActivity(input.limit)),
+
+    /** Get system health metrics (admin only) */
+    systemHealth: adminProcedure.query(async () => {
+      const metrics = await getSystemHealthMetrics();
+      const stats = await getAgentActionStats();
+      const mqttModule = await import("./mqttSubscriber");
+      const mqttStatus = mqttModule.getMqttStatus();
+      return {
+        ...metrics,
+        actionStats: stats,
+        mqtt: {
+          connected: mqttStatus.connected,
+          messagesReceived: mqttStatus.messagesReceived,
+          lastMessageAt: mqttStatus.lastMessageAt,
+          errors: mqttStatus.errors,
+        },
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        nodeVersion: process.version,
+      };
+    }),
+
+    /** Batch execute multiple agentic actions in sequence */
+    batchExecute: protectedProcedure
+      .input(z.object({
+        actions: z.array(z.object({
+          action: z.string().min(1).max(255),
+          module: z.enum([
+            "battery", "telemetry", "marketplace", "compliance",
+            "logistics", "analytics", "admin", "system", "agent", "ai"
+          ]).default("system"),
+          description: z.string().optional(),
+          inputParams: z.record(z.string(), z.unknown()).optional(),
+          targetEntity: z.string().max(255).optional(),
+          targetEntityType: z.string().max(64).optional(),
+        })).min(1).max(50),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const results: { actionId: number; action: string; status: string }[] = [];
+        for (const item of input.actions) {
+          const startTime = Date.now();
+          try {
+            const result = await logAgentAction({
+              actorId: ctx.user.id,
+              actorName: ctx.user.name ?? "Unknown",
+              actorType: "agent",
+              action: item.action,
+              description: item.description ?? null,
+              module: item.module,
+              inputParams: item.inputParams ?? null,
+              outputResult: null,
+              status: "success",
+              errorMessage: null,
+              durationMs: Date.now() - startTime,
+              ipAddress: null,
+              targetEntity: item.targetEntity ?? null,
+              targetEntityType: item.targetEntityType ?? null,
+            });
+            results.push({ actionId: result.id, action: item.action, status: "success" });
+          } catch (err: any) {
+            results.push({ actionId: 0, action: item.action, status: "failure" });
+          }
+        }
+        return { success: true, results, total: results.length, succeeded: results.filter(r => r.status === "success").length };
+      }),
+
+    /** Get available agentic capabilities — describes what actions agents can perform */
+    capabilities: publicProcedure.query(() => ({
+      version: "1.0.0",
+      platform: "Circul-AI-r",
+      modules: [
+        {
+          name: "battery",
+          actions: ["bpan.generate", "bpan.register", "bpan.decode", "battery.updateStatus", "battery.list", "battery.getByBpan"],
+          description: "Battery Pack Aadhaar Number management — register, decode, and track batteries",
+        },
+        {
+          name: "telemetry",
+          actions: ["telemetry.ingest", "telemetry.getLatest", "telemetry.getHistory", "telemetry.detectAnomalies"],
+          description: "IoT telemetry ingestion and real-time monitoring",
+        },
+        {
+          name: "ai",
+          actions: ["ai.predictSoh", "ai.triage", "ai.chat", "ai.generateReport"],
+          description: "AI-powered SOH prediction, triage routing, and intelligent analysis",
+        },
+        {
+          name: "marketplace",
+          actions: ["marketplace.createListing", "marketplace.list", "marketplace.getStats"],
+          description: "Second-life battery marketplace operations",
+        },
+        {
+          name: "compliance",
+          actions: ["epr.createToken", "epr.list", "yield.verify", "regulatory.upsertProfile", "carbon.declare"],
+          description: "EPR compliance, yield verification, and regulatory reporting",
+        },
+        {
+          name: "logistics",
+          actions: ["logistics.createShipment", "logistics.updateStatus", "logistics.list"],
+          description: "Reverse logistics and hazmat transport management",
+        },
+        {
+          name: "admin",
+          actions: ["admin.listUsers", "admin.updateRole", "admin.auditLog", "admin.systemHealth"],
+          description: "Platform administration and user management",
+        },
+      ],
+      agenticEndpoints: {
+        logAction: "POST /api/trpc/agent.logAction",
+        execute: "POST /api/trpc/agent.execute",
+        batchExecute: "POST /api/trpc/agent.batchExecute",
+        listActions: "GET /api/trpc/agent.listActions",
+        stats: "GET /api/trpc/agent.stats",
+        recentActivity: "GET /api/trpc/agent.recentActivity",
+        systemHealth: "GET /api/trpc/agent.systemHealth",
+        capabilities: "GET /api/trpc/agent.capabilities",
+      },
+    })),
+  }),
+
 });
 export type AppRouter = typeof appRouter;
-

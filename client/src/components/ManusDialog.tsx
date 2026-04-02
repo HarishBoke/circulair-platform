@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,6 +7,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Zap, ArrowRight, Shield, Globe, Battery } from "lucide-react";
 
 interface ManusDialogProps {
   title?: string;
@@ -40,7 +40,6 @@ export function ManusDialog({
     } else {
       setInternalOpen(nextOpen);
     }
-
     if (!nextOpen) {
       onClose?.();
     }
@@ -51,37 +50,59 @@ export function ManusDialog({
       open={onOpenChange ? open : internalOpen}
       onOpenChange={handleOpenChange}
     >
-      <DialogContent className="py-5 bg-[#f8f8f7] rounded-[20px] w-[400px] shadow-[0px_4px_11px_0px_rgba(0,0,0,0.08)] border border-[rgba(0,0,0,0.08)] backdrop-blur-2xl p-0 gap-0 text-center">
-        <div className="flex flex-col items-center gap-2 p-5 pt-12">
-          {logo ? (
-            <div className="w-16 h-16 bg-white rounded-xl border border-[rgba(0,0,0,0.08)] flex items-center justify-center">
-              <img
-                src={logo}
-                alt="Dialog graphic"
-                className="w-10 h-10 rounded-md"
-              />
-            </div>
-          ) : null}
+      <DialogContent className="py-0 bg-card border-border rounded-2xl w-[420px] max-w-[95vw] shadow-2xl shadow-primary/5 p-0 gap-0 text-center overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-primary" />
 
-          {/* Title and subtitle */}
-          {title ? (
-            <DialogTitle className="text-xl font-semibold text-[#34322d] leading-[26px] tracking-[-0.44px]">
-              {title}
+        <div className="flex flex-col items-center gap-3 p-6 pt-8">
+          {/* Logo */}
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
+            {logo ? (
+              <img src={logo} alt="Platform logo" className="w-10 h-10 rounded-lg" />
+            ) : (
+              <Zap className="w-8 h-8 text-primary-foreground" />
+            )}
+          </div>
+
+          {/* Branding */}
+          <div>
+            <DialogTitle className="font-display text-xl font-bold text-foreground leading-tight">
+              {title || (
+                <>Circul<span className="text-primary">-AI-</span>r</>
+              )}
             </DialogTitle>
-          ) : null}
-          <DialogDescription className="text-sm text-[#858481] leading-5 tracking-[-0.154px]">
-            Please sign in to continue
-          </DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              Battery Intelligence Platform
+            </DialogDescription>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex items-center gap-4 mt-2">
+            {[
+              { icon: Shield, label: "Secure" },
+              { icon: Globe, label: "Multi-Region" },
+              { icon: Battery, label: "IoT Ready" },
+            ].map((badge) => (
+              <div key={badge.label} className="flex items-center gap-1.5 text-muted-foreground">
+                <badge.icon className="w-3 h-3 text-primary/60" />
+                <span className="font-mono text-[9px] tracking-wider uppercase">{badge.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <DialogFooter className="px-5 py-5">
-          {/* Login button */}
-          <Button
-            onClick={onLogin}
-            className="w-full h-10 bg-[#1a1a19] hover:bg-[#1a1a19]/90 text-white rounded-[10px] text-sm font-medium leading-5 tracking-[-0.154px]"
-          >
-            Sign In
-          </Button>
+        <DialogFooter className="px-6 py-5 bg-secondary/30 border-t border-border/50">
+          <div className="w-full space-y-3">
+            <Button
+              onClick={onLogin}
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold"
+            >
+              Sign In to Platform <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <p className="text-[10px] text-muted-foreground font-mono">
+              Enterprise-grade authentication with role-based access control
+            </p>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

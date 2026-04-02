@@ -43,6 +43,13 @@
       "when": 1775068063701,
       "tag": "0005_purple_sabra",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1775093313820,
+      "tag": "0006_optimal_black_bird",
+      "breakpoints": true
     }
   ]
 }

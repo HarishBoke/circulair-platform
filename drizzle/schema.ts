@@ -462,3 +462,44 @@ export const recycledContentDeclarations = mysqlTable("recycled_content_declarat
 });
 export type RecycledContentDeclaration = typeof recycledContentDeclarations.$inferSelect;
 export type InsertRecycledContentDeclaration = typeof recycledContentDeclarations.$inferInsert;
+
+// ─── AGENT ACTIONS LOG ──────────────────────────────────────────────────────
+// Tracks every action performed by human users or AI agents on the platform.
+// Enables full audit trail, super admin oversight, and agentic workflow replay.
+export const agentActions = mysqlTable("agent_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Who performed the action — user ID (null for system/cron) */
+  actorId: int("actorId"),
+  /** Actor display name for quick lookups */
+  actorName: varchar("actorName", { length: 255 }),
+  /** Whether the actor is a human user or an AI agent */
+  actorType: mysqlEnum("actorType", ["human", "agent", "system"]).default("human").notNull(),
+  /** The tRPC procedure or action identifier (e.g. "bpan.generate", "marketplace.create") */
+  action: varchar("action", { length: 255 }).notNull(),
+  /** Human-readable description of what happened */
+  description: text("description"),
+  /** The module/domain this action belongs to */
+  module: mysqlEnum("module", [
+    "battery", "telemetry", "marketplace", "compliance",
+    "logistics", "analytics", "admin", "system", "agent", "ai"
+  ]).default("system").notNull(),
+  /** Structured input parameters (JSON) */
+  inputParams: json("inputParams"),
+  /** Structured output / result summary (JSON) */
+  outputResult: json("outputResult"),
+  /** Outcome of the action */
+  status: mysqlEnum("status", ["success", "failure", "pending", "cancelled"]).default("success").notNull(),
+  /** Error message if status is failure */
+  errorMessage: text("errorMessage"),
+  /** Duration in milliseconds */
+  durationMs: int("durationMs"),
+  /** IP address of the requester */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  /** Related entity (BPAN, listing ID, etc.) */
+  targetEntity: varchar("targetEntity", { length: 255 }),
+  /** Related entity type */
+  targetEntityType: varchar("targetEntityType", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AgentAction = typeof agentActions.$inferSelect;
+export type InsertAgentAction = typeof agentActions.$inferInsert;

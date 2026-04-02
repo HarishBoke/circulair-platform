@@ -27,6 +27,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import PlatformSettings from "./pages/PlatformSettings";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import EuBatteryPassport from "./pages/EuBatteryPassport";
+import SuperAdmin from "./pages/SuperAdmin";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/data-integration" component={DataIntegration} />
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
+      <Route path="/admin/system" component={() => <PlatformLayout><SuperAdmin /></PlatformLayout>} />
       <Route path="/settings/platform" component={() => <PlatformLayout><PlatformSettings /></PlatformLayout>} />
       <Route path="/compliance" component={() => <PlatformLayout><ComplianceDashboard /></PlatformLayout>} />
       {/* Public passport pages — no auth, no layout shell */}

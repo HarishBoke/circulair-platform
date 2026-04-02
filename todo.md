@@ -319,3 +319,14 @@
 - [x] Add pagination to Marketplace (12 per page with Previous/Next controls)
 - [x] Build first-login onboarding wizard — 7-step walkthrough (Welcome, Registry, Telemetry, Marketplace, Carbon/Recycled, Compliance, Roles), localStorage persistence, progress bar, dot navigation
 - [x] TypeScript: 0 errors, 169 tests passing (10 test files)
+
+## Phase 32: Professional Overhaul — Landing, Auth, Super Admin, Agentic Layer
+- [x] Redesign landing page with enterprise-grade content, animated hero, stakeholder use-cases, compliance badges, partner section, professional footer
+- [x] Modernize login/signup auth page — dark theme, animated battery visual, role-aware messaging
+- [x] Build Super Admin panel at /admin/system — platform health, agent action log, system metrics, MQTT status, user growth, API usage
+- [x] Add agentActions table to schema for tracking all agentic operations
+- [x] Add agent tRPC router — agent.execute, agent.logAction, agent.listActions, agent.stats, agent.recentActivity, agent.systemHealth, agent.batchExecute, agent.capabilities
+- [x] Wire Super Admin into sidebar navigation (admin-only)
+- [x] Add agentic action logging middleware — logAction and execute endpoints for all modules
+- [x] Write vitest tests for agent router and super admin procedures (12 tests)
+- [x] TypeScript: 0 errors, 181 tests passing (11 test files)
