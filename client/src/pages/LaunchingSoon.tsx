@@ -45,7 +45,28 @@ export function revokeAccess(): void {
 }
 
 export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: () => void }) {
-  usePageTitle("Launching Soon");
+  usePageTitle("Circul-AI-r — Battery Circular Economy Platform");
+
+  // SEO: Set description and keywords dynamically for the pre-launch page
+  useEffect(() => {
+    // Update description
+    let descMeta = document.querySelector('meta[name="description"]');
+    if (!descMeta) {
+      descMeta = document.createElement('meta');
+      descMeta.setAttribute('name', 'description');
+      document.head.appendChild(descMeta);
+    }
+    descMeta.setAttribute('content', 'End-to-end battery lifecycle intelligence: traceability, AI health prediction, EPR compliance across 7 jurisdictions, and a second-life marketplace.');
+
+    // Update keywords
+    let keywordsMeta = document.querySelector('meta[name="keywords"]');
+    if (!keywordsMeta) {
+      keywordsMeta = document.createElement('meta');
+      keywordsMeta.setAttribute('name', 'keywords');
+      document.head.appendChild(keywordsMeta);
+    }
+    keywordsMeta.setAttribute('content', 'battery circular economy, battery lifecycle management, EV battery traceability, battery passport, BPAN, SOH prediction, EPR compliance, second-life battery marketplace, battery intelligence');
+  }, []);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
