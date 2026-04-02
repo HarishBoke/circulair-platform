@@ -3,16 +3,16 @@
  *
  * Behaviour:
  * - Appears on first visit (no stored preference).
- * - Stores choice in localStorage under "cookie_consent" as:
- *     "all"       — analytics + functional cookies accepted
- *     "essential" — only strictly necessary cookies
- * - Exposes a "Manage Cookies" link in the footer to re-open the banner.
+ * - Stores choice in localStorage under "cookie_consent".
+ * - Logs consent to the server via tRPC for GDPR Article 7 accountability.
  * - Fires a custom "cookieConsentChange" window event so analytics scripts
  *   can react without polling localStorage.
+ * - Exposes "openCookieConsent" window event to re-open from any footer link.
  */
 
 import { useState, useEffect } from "react";
 import { X, Cookie, ChevronDown, ChevronUp, Shield } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export type ConsentLevel = "all" | "essential" | null;
 
@@ -34,6 +34,17 @@ function dispatchConsentEvent(level: ConsentLevel) {
   );
 }
 
+/** Simple SHA-256 fingerprint of IP+UA for anonymous tracking (no PII stored) */
+async function buildFingerprint(): Promise<string> {
+  try {
+    const raw = navigator.userAgent.slice(0, 200);
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 64);
+  } catch {
+    return "";
+  }
+}
+
 interface CookieConsentProps {
   onConsentChange?: (level: ConsentLevel) => void;
 }
@@ -42,27 +53,41 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
   const [visible, setVisible] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
+  const logConsent = trpc.consent.log.useMutation();
+
   useEffect(() => {
-    // Show banner only if no preference has been stored yet
     if (!getConsentLevel()) {
-      // Small delay so it doesn't flash immediately on load
       const t = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(t);
     }
   }, []);
 
-  // Allow external trigger (e.g. "Manage Cookies" footer link)
   useEffect(() => {
     const handler = () => setVisible(true);
     window.addEventListener("openCookieConsent", handler);
     return () => window.removeEventListener("openCookieConsent", handler);
   }, []);
 
-  const save = (level: "all" | "essential") => {
+  const save = async (level: "all" | "essential") => {
     localStorage.setItem(CONSENT_KEY, level);
     dispatchConsentEvent(level);
     onConsentChange?.(level);
     setVisible(false);
+
+    // Log consent to server for GDPR Article 7 accountability
+    try {
+      const fingerprint = await buildFingerprint();
+      await logConsent.mutateAsync({
+        level: level === "all" ? "all" : "essential",
+        analytics: level === "all",
+        marketing: false,
+        source: "banner",
+        userAgent: navigator.userAgent.slice(0, 512),
+        fingerprint,
+      });
+    } catch {
+      // Non-blocking — consent is still saved locally even if server log fails
+    }
   };
 
   if (!visible) return null;

@@ -40,6 +40,7 @@ import LaunchingSoon, { isAccessGranted } from "./pages/LaunchingSoon";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
+import Privacy from "./pages/Privacy";
 
 function Router() {
   return (
@@ -79,6 +80,8 @@ function Router() {
       <Route path="/wiki" component={CirculWiki} />
       {/* Getting Started Tutorial */}
       <Route path="/getting-started" component={() => <PlatformLayout><GettingStarted /></PlatformLayout>} />
+      {/* Public legal pages */}
+      <Route path="/privacy" component={Privacy} />
       {/* Public passport pages — no auth, no layout shell */}
       <Route path="/passport/EU/:localId" component={EuBatteryPassport} />
       <Route path="/404" component={NotFound} />

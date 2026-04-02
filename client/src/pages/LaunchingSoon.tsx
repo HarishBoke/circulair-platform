@@ -364,12 +364,17 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
             <span className="w-px h-3 bg-zinc-800" />
             <span>Battery Intelligence Platform</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-zinc-600">
+          <div className="flex items-center gap-4 text-[11px] text-zinc-600">
             <span>By{" "}<a href="https://www.setoo.co" target="_blank" rel="noopener noreferrer" className="text-emerald-400/70 hover:text-emerald-400 transition-colors font-medium">www.setoo.co</a></span>
             <span className="w-px h-3 bg-zinc-800" />
-            <span>v3.0</span>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-emerald-500/50">Pre-Launch</span>
+            <a href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</a>
+            <span className="w-px h-3 bg-zinc-800" />
+            <button
+              onClick={() => window.dispatchEvent(new Event("openCookieConsent"))}
+              className="hover:text-zinc-400 transition-colors cursor-pointer"
+            >
+              Manage Cookies
+            </button>
           </div>
         </footer>
       </div>

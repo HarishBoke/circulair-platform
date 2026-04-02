@@ -345,6 +345,18 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             <LanguageSelector />
           </div>
         )}
+        {!collapsed && (
+          <div className="flex items-center gap-3 px-1 pb-0.5">
+            <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-mono">Privacy</a>
+            <span className="text-muted-foreground/30 text-[10px]">·</span>
+            <button
+              onClick={() => window.dispatchEvent(new Event("openCookieConsent"))}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-mono cursor-pointer"
+            >
+              Cookies
+            </button>
+          </div>
+        )}
         <button
           onClick={() => logout()}
           className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ${collapsed ? "justify-center" : ""}`}

@@ -14,6 +14,7 @@ import {
   serviceHistory, InsertServiceHistory,
   chatSessions, chatMessages,
   roleAuditLog, InsertRoleAuditLog,
+  consentLogs, InsertConsentLog,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -607,4 +608,17 @@ export async function getMarketplaceWeeklyActivity() {
     }),
   );
   return results;
+}
+
+// ─── CONSENT LOG HELPERS (GDPR Article 7 accountability) ─────────────────────
+export async function insertConsentLog(data: InsertConsentLog): Promise<void> {
+  const db = await getDb();
+  if (!db) { console.warn("[Database] Cannot insert consent log: database not available"); return; }
+  await db.insert(consentLogs).values(data);
+}
+
+export async function listConsentLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(consentLogs).orderBy(desc(consentLogs.createdAt)).limit(limit);
 }

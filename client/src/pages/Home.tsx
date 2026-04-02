@@ -630,9 +630,15 @@ export default function Home() {
               <span>By{" "}<a href="https://www.setoo.co" target="_blank" rel="noopener noreferrer" className="text-emerald-400/70 hover:text-emerald-400 transition-colors font-medium">www.setoo.co</a></span>
             </div>
             <div className="flex items-center gap-6 text-[12px] text-muted-foreground">
-              <span>Privacy Policy</span>
+              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
               <span>Terms of Service</span>
               <span>Security</span>
+              <button
+                onClick={() => window.dispatchEvent(new Event("openCookieConsent"))}
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                Manage Cookies
+              </button>
             </div>
           </div>
         </div>

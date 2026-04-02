@@ -862,3 +862,26 @@ export const tutorialProgress = mysqlTable("tutorial_progress", {
 });
 export type TutorialProgress = typeof tutorialProgress.$inferSelect;
 export type InsertTutorialProgress = typeof tutorialProgress.$inferInsert;
+
+// ─── CONSENT LOGS (GDPR Article 7 accountability) ────────────────────────────
+export const consentLogs = mysqlTable("consent_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Null for anonymous/pre-login users */
+  userId: int("userId"),
+  /** Browser fingerprint (hashed IP + user agent) for anonymous tracking */
+  fingerprint: varchar("fingerprint", { length: 64 }),
+  /** Consent level: "all" | "essential" | "rejected" */
+  level: mysqlEnum("level", ["all", "essential", "rejected"]).notNull(),
+  /** Individual consent flags */
+  analytics: boolean("analytics").default(false).notNull(),
+  marketing: boolean("marketing").default(false).notNull(),
+  essential: boolean("essential").default(true).notNull(),
+  /** Request metadata */
+  userAgent: text("userAgent"),
+  ipHash: varchar("ipHash", { length: 64 }),
+  /** Consent source: "banner" | "settings" | "withdraw" */
+  source: mysqlEnum("source", ["banner", "settings", "withdraw"]).default("banner").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ConsentLog = typeof consentLogs.$inferSelect;
+export type InsertConsentLog = typeof consentLogs.$inferInsert;

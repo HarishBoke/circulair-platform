@@ -21,6 +21,7 @@ import {
   listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog,
   getMonthlyBatteryActivity, getSohDistribution, getSohTrend,
   getChemistryDistribution, getTriageDistribution, getMarketplaceWeeklyActivity,
+  insertConsentLog,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -893,6 +894,35 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         const assistantMessage = response.choices[0]?.message?.content ?? "I apologize, I could not process your request.";
         await addChatMessage(input.sessionId, "assistant", typeof assistantMessage === "string" ? assistantMessage : JSON.stringify(assistantMessage));
         return { message: assistantMessage };
+      }),
+  }),
+
+  // ─── CONSENT LOGGING (GDPR Article 7) ─────────────────────────────────────
+  consent: router({
+    log: publicProcedure
+      .input(z.object({
+        level: z.enum(["essential", "all", "rejected"]),
+        analytics: z.boolean().default(false),
+        marketing: z.boolean().default(false),
+        source: z.enum(["banner", "settings", "withdraw"]).default("banner"),
+        userAgent: z.string().max(512).optional(),
+        ipHash: z.string().max(64).optional(),
+        fingerprint: z.string().max(64).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const userId = ctx.user?.id ?? null;
+        await insertConsentLog({
+          userId,
+          level: input.level,
+          analytics: input.analytics,
+          marketing: input.marketing,
+          essential: true,
+          source: input.source,
+          userAgent: input.userAgent ?? null,
+          ipHash: input.ipHash ?? null,
+          fingerprint: input.fingerprint ?? null,
+        });
+        return { success: true } as const;
       }),
   }),
 

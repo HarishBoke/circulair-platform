@@ -557,3 +557,12 @@
 - [x] Logistics: already wired to real DB shipment tracking
 - [x] Service History: already wired to real DB service records
 - [x] Data Integration: real MQTT connection status via mqtt tRPC router
+
+## Compliance & Legal: GDPR Article 13
+- [x] Add consent_logs table to drizzle schema and push migration
+- [x] Build /privacy page with GDPR Article 13 required content (data controller, retention, rights, contact)
+- [x] Add consent.log tRPC procedure (server-side timestamped consent record with IP hash + user agent)
+- [x] Wire consent logging into CookieConsent component on accept/reject
+- [x] Add "Manage Cookies" + Privacy Policy links to footer in Home.tsx and LaunchingSoon.tsx
+- [x] Add Privacy + Cookies links to PlatformLayout sidebar footer
+- [x] Register /privacy route in App.tsx
