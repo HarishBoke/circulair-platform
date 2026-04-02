@@ -429,3 +429,12 @@
 - [x] Integrate into sidebar (ADMIN > Feedback Review) and App.tsx route (/admin/feedback)
 - [x] Write 16 vitest tests for feedback list, stats, review, submit, and validation
 - [x] TypeScript: 0 errors, 255 tests passing (15 test files)
+
+## Phase 38: Landing Page Typography & Design Overhaul
+- [x] Replace fonts: Plus Jakarta Sans (display), Inter (body), JetBrains Mono (monospace)
+- [x] Update index.css with new font-family CSS variables and refined type scale
+- [x] Update index.html with Google Fonts CDN links for all 3 font families
+- [x] Redesign hero section with extrabold headings, tight tracking, explicit font-family
+- [x] Improve section headings, body text, and card typography across all sections
+- [x] Polish layout, fix dynamic Tailwind class issues (stakeholder icons), improve spacing
+- [x] TypeScript: 0 errors, 255 tests passing (15 test files)

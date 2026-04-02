@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -79,9 +79,9 @@
   --chart-4: oklch(0.75 0.18 50);
   --chart-5: oklch(0.65 0.22 15);
   /* Custom tokens */
-  --font-display: "Syne", sans-serif;
-  --font-mono: "DM Mono", monospace;
-  --font-body: "DM Sans", sans-serif;
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-body: "Inter", system-ui, sans-serif;
   --accent-glow: oklch(0.72 0.17 165);
 }
 
