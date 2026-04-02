@@ -57,6 +57,13 @@
       "when": 1775095165852,
       "tag": "0007_sharp_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1775097385806,
+      "tag": "0008_dear_christian_walker",
+      "breakpoints": true
     }
   ]
 }

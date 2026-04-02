@@ -345,3 +345,50 @@
 - [x] Add warranty routes to App.tsx and sidebar navigation
 - [x] Write vitest tests for warranty and onboarding procedures (17 tests)
 - [x] TypeScript: 0 errors, 198 tests passing (12 test files)
+
+## Phase 34: Enterprise-Grade Upgrade — Compliance, Microservices, MCP & Documentation
+
+### ISO 27001 / SOC 2 Compliance
+- [ ] Build comprehensive audit_logs table (who, what, when, where, ip, user_agent, resource, action, result)
+- [ ] Build audit logging middleware for all tRPC procedures (automatic capture)
+- [ ] Build security event logging (login, logout, role change, data export, failed auth)
+- [ ] Build data classification labels (public, internal, confidential, restricted) on all endpoints
+- [ ] Build access control matrix documentation (role × resource × action)
+- [ ] Build encryption-at-rest and in-transit verification endpoints
+- [ ] Build compliance dashboard page with audit trail viewer, security events, data classification
+- [ ] Build GDPR/data retention policy engine (configurable retention periods)
+- [ ] Build session management (concurrent session limits, forced logout, session audit)
+
+### Microservices-Ready API Layer
+- [x] Build REST API gateway alongside tRPC (Express routes under /api/v1/*)
+- [x] Build API key management system (create, revoke, rotate keys with scopes)
+- [x] Build OpenAPI 3.1 specification for all public endpoints
+- [x] Build rate limiting per API key with configurable tiers
+- [x] Build API versioning (v1 namespace)
+- [x] Build webhook system for event notifications
+- [x] Build API usage analytics (requests per key, endpoint popularity, error rates)
+- [x] Build Swagger/OpenAPI documentation UI at /api/docs
+
+### MCP (Model Context Protocol) Server
+- [x] Build MCP server with 20 tools for all platform operations
+- [x] Build MCP resources (5) for battery data, warranty, marketplace, compliance, analytics
+- [x] Build MCP prompts (4) for battery health, fleet overview, warranty analysis, compliance summary
+- [x] Register MCP server at /api/mcp with JSON-RPC 2.0 protocol
+
+### Enhanced Logging
+- [x] Build structured JSON logging with correlation IDs (SIEM-ready)
+- [x] Build request tracing (trace_id propagation across all operations)
+- [x] Build security event log with severity classification (low/medium/high/critical)
+- [x] Build log retention and rotation policies
+
+### Documentation Suite
+- [x] Write Platform Overview document (PLATFORM_GUIDE.md)
+- [x] Write Getting Started / How-To Guide (HOW_TO_GUIDES.md — 12 guides)
+- [x] Write API Reference (API_REFERENCE.md)
+- [x] Write Feature Documentation (FEATURES.md — 25 features documented)
+- [x] Write Compliance & Security Guide (COMPLIANCE_GUIDE.md)
+- [x] Write Microservices Integration Guide (included in API_REFERENCE.md)
+- [x] Write MCP Integration Guide (MCP_GUIDE.md)
+- [x] Write Architecture & Data Model documentation (ARCHITECTURE.md)
+- [x] Documentation available in /docs directory (7 files, 79KB total)
+- [x] TypeScript: 0 errors, 198 tests passing (12 test files)

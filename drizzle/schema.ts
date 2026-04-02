@@ -631,3 +631,170 @@ export const bulkOnboardingJobs = mysqlTable("bulk_onboarding_jobs", {
 });
 export type BulkOnboardingJob = typeof bulkOnboardingJobs.$inferSelect;
 export type InsertBulkOnboardingJob = typeof bulkOnboardingJobs.$inferInsert;
+
+// ─── AUDIT LOGS (ISO 27001 / SOC 2) ────────────────────────────────────────
+// Comprehensive audit trail for all platform operations.
+// Captures who, what, when, where, and outcome for every significant action.
+// Supports ISO 27001 A.12.4 (Logging and monitoring) and SOC 2 CC7.2 (System monitoring).
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Trace ID for correlating related operations */
+  traceId: varchar("traceId", { length: 64 }).notNull(),
+  /** Who performed the action */
+  userId: int("userId"),
+  userName: varchar("userName", { length: 255 }),
+  userRole: varchar("userRole", { length: 64 }),
+  /** Actor type: human, agent, system, api_key */
+  actorType: mysqlEnum("actorType", ["human", "agent", "system", "api_key"]).default("human").notNull(),
+  /** API key ID if actor is api_key */
+  apiKeyId: int("apiKeyId"),
+  /** What happened */
+  action: varchar("action", { length: 255 }).notNull(),
+  /** ISO 27001 data classification */
+  dataClassification: mysqlEnum("dataClassification", ["public", "internal", "confidential", "restricted"]).default("internal").notNull(),
+  /** Resource type and ID */
+  resourceType: varchar("resourceType", { length: 64 }),
+  resourceId: varchar("resourceId", { length: 255 }),
+  /** Module/domain */
+  module: varchar("module", { length: 64 }),
+  /** HTTP method and path */
+  httpMethod: varchar("httpMethod", { length: 10 }),
+  httpPath: varchar("httpPath", { length: 512 }),
+  /** Request details */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  /** Input summary (sanitized — no passwords/tokens) */
+  inputSummary: json("inputSummary"),
+  /** Output summary */
+  outputSummary: json("outputSummary"),
+  /** Result */
+  status: mysqlEnum("status", ["success", "failure", "denied", "error"]).default("success").notNull(),
+  errorCode: varchar("errorCode", { length: 64 }),
+  errorMessage: text("errorMessage"),
+  /** Performance */
+  durationMs: int("durationMs"),
+  /** SOC 2 CC6.1 — Logical access security */
+  sessionId: varchar("sessionId", { length: 128 }),
+  /** Compliance tags */
+  complianceTags: json("complianceTags").$type<string[]>(),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// ─── SECURITY EVENTS (SIEM-READY) ──────────────────────────────────────────
+// Dedicated security event log for ISO 27001 A.12.4.1 and SOC 2 CC7.2.
+// Captures authentication, authorization, and security-relevant events.
+export const securityEvents = mysqlTable("security_events", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Event classification */
+  eventType: mysqlEnum("eventType", [
+    "login_success", "login_failure", "logout",
+    "role_change", "permission_denied", "api_key_created", "api_key_revoked",
+    "data_export", "data_deletion", "password_change",
+    "session_expired", "concurrent_session_blocked",
+    "rate_limit_exceeded", "suspicious_activity",
+    "compliance_violation", "config_change"
+  ]).notNull(),
+  /** Severity for SIEM integration */
+  severity: mysqlEnum("severity", ["info", "low", "medium", "high", "critical"]).default("info").notNull(),
+  /** Who */
+  userId: int("userId"),
+  userName: varchar("userName", { length: 255 }),
+  /** Details */
+  description: text("description").notNull(),
+  metadata: json("metadata"),
+  /** Where */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  /** Correlation */
+  traceId: varchar("traceId", { length: 64 }),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type InsertSecurityEvent = typeof securityEvents.$inferInsert;
+
+// ─── API KEYS ───────────────────────────────────────────────────────────────
+// API key management for microservices integration.
+// Supports scoped access, rate limiting, and key rotation.
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Key metadata */
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  /** The hashed key (SHA-256) — never store plaintext */
+  keyHash: varchar("keyHash", { length: 64 }).notNull().unique(),
+  /** Key prefix for identification (first 8 chars) */
+  keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(),
+  /** Owner */
+  userId: int("userId").notNull(),
+  /** Scopes: which modules/actions this key can access */
+  scopes: json("scopes").$type<string[]>().notNull(),
+  /** Rate limiting */
+  rateLimitTier: mysqlEnum("rateLimitTier", ["free", "standard", "premium", "enterprise"]).default("standard").notNull(),
+  rateLimit: int("rateLimit").default(100), // requests per minute
+  /** Status */
+  status: mysqlEnum("status", ["active", "revoked", "expired"]).default("active").notNull(),
+  /** Usage tracking */
+  lastUsedAt: timestamp("lastUsedAt"),
+  totalRequests: bigint("totalRequests", { mode: "number" }).default(0),
+  /** Expiry */
+  expiresAt: timestamp("expiresAt"),
+  /** Audit */
+  revokedAt: timestamp("revokedAt"),
+  revokedReason: text("revokedReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+// ─── API USAGE LOGS ─────────────────────────────────────────────────────────
+// Per-request usage tracking for API keys.
+export const apiUsageLogs = mysqlTable("api_usage_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  apiKeyId: int("apiKeyId").notNull(),
+  endpoint: varchar("endpoint", { length: 512 }).notNull(),
+  method: varchar("method", { length: 10 }).notNull(),
+  statusCode: int("statusCode"),
+  durationMs: int("durationMs"),
+  requestSize: int("requestSize"),
+  responseSize: int("responseSize"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  traceId: varchar("traceId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ApiUsageLog = typeof apiUsageLogs.$inferSelect;
+export type InsertApiUsageLog = typeof apiUsageLogs.$inferInsert;
+
+// ─── WEBHOOKS ───────────────────────────────────────────────────────────────
+// Webhook subscriptions for event-driven microservices integration.
+export const webhooks = mysqlTable("webhooks", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Owner */
+  userId: int("userId").notNull(),
+  /** Webhook configuration */
+  name: varchar("name", { length: 255 }).notNull(),
+  url: text("url").notNull(),
+  /** Secret for HMAC signature verification */
+  secret: varchar("secret", { length: 128 }).notNull(),
+  /** Events to subscribe to */
+  events: json("events").$type<string[]>().notNull(),
+  /** Status */
+  status: mysqlEnum("status", ["active", "paused", "failed"]).default("active").notNull(),
+  /** Retry config */
+  maxRetries: int("maxRetries").default(3),
+  /** Stats */
+  totalDeliveries: int("totalDeliveries").default(0),
+  totalFailures: int("totalFailures").default(0),
+  lastDeliveryAt: timestamp("lastDeliveryAt"),
+  lastFailureAt: timestamp("lastFailureAt"),
+  lastFailureReason: text("lastFailureReason"),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhook = typeof webhooks.$inferInsert;

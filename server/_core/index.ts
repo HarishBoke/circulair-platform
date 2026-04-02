@@ -10,6 +10,8 @@ import { serveStatic, setupVite } from "./vite";
 import { attachTelemetrySocket, stopAllSimulations } from "../telemetrySocket";
 import { applySecurityMiddleware } from "../security";
 import { startMqttSubscriber, stopMqttSubscriber } from "../mqttSubscriber";
+import { createApiGateway } from "../apiGateway";
+import { createMcpRouter } from "../mcpServer";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +42,12 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // REST API v1 Gateway (microservices)
+  app.use("/api/v1", createApiGateway());
+  // MCP Server (Model Context Protocol for AI agents)
+  app.use("/api/mcp", createMcpRouter());
+  // Swagger UI redirect
+  app.get("/api/docs", (_req, res) => res.redirect("/api/v1/docs"));
   // tRPC API
   app.use(
     "/api/trpc",

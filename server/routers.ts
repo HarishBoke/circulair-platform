@@ -35,6 +35,14 @@ import {
   createBulkOnboardingJob, updateBulkOnboardingJob, getBulkOnboardingJob, listBulkOnboardingJobs,
   computeWarrantyStatus,
 } from "./db-warranty";
+import {
+  writeAuditLog, queryAuditLogs, getAuditStats,
+  writeSecurityEvent, querySecurityEvents, getSecurityStats,
+  createApiKey as createApiKeyFn, validateApiKey, revokeApiKey, listApiKeys,
+  logApiUsage, getApiUsageStats,
+  createWebhook as createWebhookFn, listWebhooks, deleteWebhook,
+  generateTraceId, getDataClassification, DATA_CLASSIFICATION_MAP, ACCESS_CONTROL_MATRIX,
+} from "./compliance";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -1989,6 +1997,157 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         offset: z.number().min(0).default(0),
       }))
       .query(({ input }) => listBulkOnboardingJobs(input)),
+  }),
+
+  // ─── COMPLIANCE & SECURITY (ISO 27001 / SOC 2) ────────────────────────────
+  compliance: router({
+    /** Query audit logs with filtering */
+    auditLogs: adminProcedure
+      .input(z.object({
+        page: z.number().default(0),
+        limit: z.number().default(50),
+        userId: z.number().optional(),
+        action: z.string().optional(),
+        module: z.string().optional(),
+        status: z.string().optional(),
+        dataClassification: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        search: z.string().optional(),
+      }))
+      .query(({ input }) => queryAuditLogs(input)),
+
+    /** Get audit statistics */
+    auditStats: adminProcedure.query(() => getAuditStats()),
+
+    /** Query security events */
+    securityEvents: adminProcedure
+      .input(z.object({
+        page: z.number().default(0),
+        limit: z.number().default(50),
+        eventType: z.string().optional(),
+        severity: z.string().optional(),
+        userId: z.number().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      }))
+      .query(({ input }) => querySecurityEvents(input)),
+
+    /** Get security event statistics */
+    securityStats: adminProcedure.query(() => getSecurityStats()),
+
+    /** Get data classification map */
+    dataClassificationMap: adminProcedure.query(() => DATA_CLASSIFICATION_MAP),
+
+    /** Get access control matrix */
+    accessControlMatrix: adminProcedure.query(() => ACCESS_CONTROL_MATRIX),
+
+    /** Export audit log as JSON (for SIEM integration) */
+    exportAuditLog: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+        format: z.enum(["json", "csv"]).default("json"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const traceId = generateTraceId();
+        await writeSecurityEvent({
+          eventType: "data_export",
+          severity: "medium",
+          userId: ctx.user!.id,
+          userName: ctx.user!.name ?? undefined,
+          description: `Audit log exported for ${input.startDate.toISOString()} to ${input.endDate.toISOString()}`,
+          traceId,
+        });
+        const result = await queryAuditLogs({ startDate: input.startDate, endDate: input.endDate, limit: 10000 });
+        return { items: result.items, total: result.total, traceId };
+      }),
+  }),
+
+  // ─── API KEY MANAGEMENT ──────────────────────────────────────────────────
+  apiKey: router({
+    /** Create a new API key */
+    create: adminProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        description: z.string().optional(),
+        scopes: z.array(z.string()),
+        rateLimitTier: z.enum(["free", "standard", "premium", "enterprise"]).default("standard"),
+        rateLimit: z.number().default(100),
+        expiresInDays: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const expiresAt = input.expiresInDays
+          ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+          : undefined;
+        const result = await createApiKeyFn({
+          name: input.name,
+          description: input.description,
+          userId: ctx.user!.id,
+          scopes: input.scopes,
+          rateLimitTier: input.rateLimitTier,
+          rateLimit: input.rateLimit,
+          expiresAt,
+        });
+        await writeSecurityEvent({
+          eventType: "api_key_created",
+          severity: "medium",
+          userId: ctx.user!.id,
+          userName: ctx.user!.name ?? undefined,
+          description: `API key '${input.name}' created with prefix ${result.prefix}`,
+        });
+        return result;
+      }),
+
+    /** List API keys */
+    list: adminProcedure.query(({ ctx }) => listApiKeys(ctx.user!.id)),
+
+    /** Revoke an API key */
+    revoke: adminProcedure
+      .input(z.object({ keyId: z.number(), reason: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        await revokeApiKey(input.keyId, input.reason);
+        await writeSecurityEvent({
+          eventType: "api_key_revoked",
+          severity: "medium",
+          userId: ctx.user!.id,
+          userName: ctx.user!.name ?? undefined,
+          description: `API key ${input.keyId} revoked: ${input.reason ?? "No reason"}`,
+        });
+        return { success: true };
+      }),
+
+    /** Get API usage statistics */
+    usageStats: adminProcedure
+      .input(z.object({ apiKeyId: z.number().optional() }))
+      .query(({ input }) => getApiUsageStats(input.apiKeyId)),
+  }),
+
+  // ─── WEBHOOK MANAGEMENT ──────────────────────────────────────────────────
+  webhook: router({
+    /** Create a webhook subscription */
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        url: z.string().url(),
+        events: z.array(z.string()),
+        maxRetries: z.number().default(3),
+      }))
+      .mutation(({ input, ctx }) => createWebhookFn({
+        userId: ctx.user!.id,
+        name: input.name,
+        url: input.url,
+        events: input.events,
+        maxRetries: input.maxRetries,
+      })),
+
+    /** List webhooks */
+    list: protectedProcedure.query(({ ctx }) => listWebhooks(ctx.user!.id)),
+
+    /** Delete a webhook */
+    delete: protectedProcedure
+      .input(z.object({ webhookId: z.number() }))
+      .mutation(({ input }) => deleteWebhook(input.webhookId)),
   }),
 
 });
