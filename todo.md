@@ -566,3 +566,11 @@
 - [x] Add "Manage Cookies" + Privacy Policy links to footer in Home.tsx and LaunchingSoon.tsx
 - [x] Add Privacy + Cookies links to PlatformLayout sidebar footer
 - [x] Register /privacy route in App.tsx
+
+## Legal: Terms of Service page
+- [x] Build /terms page with platform ToS (usage, liability, data ownership, IP, governing law, 13 sections)
+- [x] Register /terms route in App.tsx
+- [x] Links from footer "Terms of Service" spans already point to /terms
+
+## Data: Seed database with demo data
+- [x] Ran seed.mjs — DB now has 558 batteries, 6035 telemetry readings, 170 marketplace listings, 15 users

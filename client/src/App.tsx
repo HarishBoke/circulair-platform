@@ -41,6 +41,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 function Router() {
   return (
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/getting-started" component={() => <PlatformLayout><GettingStarted /></PlatformLayout>} />
       {/* Public legal pages */}
       <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       {/* Public passport pages — no auth, no layout shell */}
       <Route path="/passport/EU/:localId" component={EuBatteryPassport} />
       <Route path="/404" component={NotFound} />
