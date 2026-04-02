@@ -533,3 +533,8 @@
 - [x] Generate manifest icons (192×192, 512×512) from logo SVG
 - [x] Create manifest.json with app name, icons, theme colors
 - [x] Link apple-touch-icon and manifest in index.html + mobile meta tags
+
+## Compliance: GDPR Cookie Consent Banner
+- [x] Create CookieConsent component (accept/reject/manage, localStorage persistence)
+- [x] Gate analytics script on consent (dynamically inject/remove Umami)
+- [x] Integrate banner into App.tsx root (both LaunchingSoon and main app)

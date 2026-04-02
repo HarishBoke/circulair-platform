@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -39,6 +39,7 @@ import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 import LaunchingSoon, { isAccessGranted } from "./pages/LaunchingSoon";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
 
 function Router() {
   return (
@@ -88,12 +89,46 @@ function Router() {
 
 function App() {
   const [accessGranted, setAccessGranted] = useState(isAccessGranted());
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(hasAnalyticsConsent());
+
+  // Gate the Umami analytics script on consent
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const level = (e as CustomEvent<{ level: ConsentLevel }>).detail.level;
+      setAnalyticsEnabled(level === "all");
+    };
+    window.addEventListener("cookieConsentChange", handler);
+    return () => window.removeEventListener("cookieConsentChange", handler);
+  }, []);
+
+  // Dynamically inject / remove the Umami analytics script based on consent
+  useEffect(() => {
+    const SCRIPT_ID = "umami-analytics";
+    const existing = document.getElementById(SCRIPT_ID);
+    if (analyticsEnabled) {
+      if (!existing) {
+        const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
+        const websiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
+        if (endpoint && websiteId) {
+          const script = document.createElement("script");
+          script.id = SCRIPT_ID;
+          script.defer = true;
+          script.src = `${endpoint}/umami`;
+          script.dataset.websiteId = websiteId;
+          document.head.appendChild(script);
+        }
+      }
+    } else {
+      existing?.remove();
+    }
+  }, [analyticsEnabled]);
 
   if (!accessGranted) {
     return (
       <ErrorBoundary>
         <ThemeProvider defaultTheme="dark">
           <LaunchingSoon onAccessGranted={() => setAccessGranted(true)} />
+          <CookieConsent onConsentChange={(level) => setAnalyticsEnabled(level === "all")} />
         </ThemeProvider>
       </ErrorBoundary>
     );
@@ -105,6 +140,7 @@ function App() {
         <TooltipProvider>
           <Toaster richColors position="top-right" />
           <Router />
+          <CookieConsent onConsentChange={(level) => setAnalyticsEnabled(level === "all")} />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
