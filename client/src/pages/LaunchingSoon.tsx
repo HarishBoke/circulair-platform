@@ -163,10 +163,10 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
 
             {/* Left — Branding & Countdown */}
             <div style={{ animation: "slide-up 0.8s ease-out" }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/5 mb-8">
-                <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-300/80" style={{ fontFamily: "var(--font-mono)" }}>
-                  MULTINATIONAL BATTERY LIFECYCLE PLATFORM
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-0.5 h-5 bg-emerald-400 rounded-full" />
+                <span className="text-[11px] font-medium text-zinc-400 tracking-[0.18em] uppercase" style={{ fontFamily: "var(--font-mono)" }}>
+                  Multinational Battery Lifecycle Platform
                 </span>
               </div>
 

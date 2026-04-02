@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import {
   Battery, Brain, Shield, ShoppingCart, BarChart3, ArrowRight,
-  CheckCircle2, Globe, Truck, Activity, Users,
+  CheckCircle2, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, CircuitBoard, Play,
   Sparkles, TrendingUp, Database, Wifi, FileCheck
@@ -204,9 +204,9 @@ export default function Home() {
       <section className="relative z-10 max-w-7xl mx-auto px-6 pt-24 lg:pt-32 pb-24">
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
           <div className="animate-fade-up">
-            <div className="inline-flex items-center gap-2 bg-primary/8 border border-primary/15 rounded-full px-4 py-2 mb-8">
-              <Globe className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-0.5 h-5 bg-primary rounded-full" />
+              <span className="text-[11px] font-medium text-muted-foreground tracking-[0.18em] uppercase" style={{ fontFamily: "var(--font-mono)" }}>
                 Multinational Battery Lifecycle Platform
               </span>
             </div>

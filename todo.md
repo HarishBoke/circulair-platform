@@ -499,3 +499,8 @@
 ## Fixes: Logo display and contact email
 - [x] Fix broken logo display (created dark-bg version of SVG, white path → #000202 matching theme)
 - [x] Update contact email to business@setoo.co across all pages
+
+## Design: Remove AI-looking badge/pill labels
+- [ ] Audit all rounded pill badge labels (e.g. "MULTINATIONAL BATTERY LIFECYCLE PLATFORM")
+- [ ] Redesign to editorial/typographic treatment (no rounded pill, no globe icon, clean type)
+- [ ] Apply consistently across Home, LaunchingSoon, and any other pages
