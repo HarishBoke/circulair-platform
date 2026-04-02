@@ -521,3 +521,6 @@
 - [x] Add Organization schema to index.html
 - [x] Add WebApplication + WebSite schema to index.html
 - [x] Add BreadcrumbList + WebPage schema to Home, Marketplace, CirculWiki, GettingStarted
+
+## Fix: Regenerate favicon from correct logo
+- [x] Regenerate favicon.ico from circulair.svg (20KB, 6 sizes: 16/32/48/64/128/256)
