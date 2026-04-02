@@ -527,3 +527,9 @@
 
 ## Fix: LaunchingSoon page SEO (title, description, keywords)
 - [x] Fix title (47 chars), description (148 chars), keywords meta — all within SEO limits
+
+## Mobile: Apple Touch Icon + Web App Manifest
+- [x] Generate apple-touch-icon.png (180×180) from logo SVG
+- [x] Generate manifest icons (192×192, 512×512) from logo SVG
+- [x] Create manifest.json with app name, icons, theme colors
+- [x] Link apple-touch-icon and manifest in index.html + mobile meta tags
