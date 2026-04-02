@@ -504,3 +504,7 @@
 - [ ] Audit all rounded pill badge labels (e.g. "MULTINATIONAL BATTERY LIFECYCLE PLATFORM")
 - [ ] Redesign to editorial/typographic treatment (no rounded pill, no globe icon, clean type)
 - [ ] Apply consistently across Home, LaunchingSoon, and any other pages
+
+## SEO: Update meta tags from landing page content
+- [x] Extract key headings, value props, and features from Home.tsx
+- [x] Rewrite title, description, keywords, OG tags to match landing page (not launch screen)
