@@ -503,3 +503,131 @@ export const agentActions = mysqlTable("agent_actions", {
 });
 export type AgentAction = typeof agentActions.$inferSelect;
 export type InsertAgentAction = typeof agentActions.$inferInsert;
+
+// ─── WARRANTY RECORDS ──────────────────────────────────────────────────────
+// Full warranty lifecycle: registration → active → expired/voided/claimed.
+// Tracks customer contact info (phone, WhatsApp, email) for multi-channel verification.
+export const warrantyRecords = mysqlTable("warranty_records", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Link to batteries table */
+  batteryId: int("batteryId").notNull(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  /** Manufacturer serial number (original, pre-BPAN) */
+  serialNumber: varchar("serialNumber", { length: 100 }),
+  modelNumber: varchar("modelNumber", { length: 100 }),
+  /** Warranty terms */
+  warrantyType: mysqlEnum("warrantyType", ["standard", "extended", "premium", "commercial"]).default("standard").notNull(),
+  coverageType: mysqlEnum("coverageType", [
+    "full_replacement", "pro_rata", "labor_only", "parts_only", "comprehensive"
+  ]).default("full_replacement").notNull(),
+  warrantyTermMonths: int("warrantyTermMonths").notNull(),
+  /** Key dates */
+  purchaseDate: timestamp("purchaseDate").notNull(),
+  warrantyStartDate: timestamp("warrantyStartDate").notNull(),
+  warrantyEndDate: timestamp("warrantyEndDate").notNull(),
+  /** Warranty status — computed from dates + manual overrides */
+  status: mysqlEnum("status", [
+    "active", "expired", "voided", "claimed", "suspended", "pending_activation"
+  ]).default("pending_activation").notNull(),
+  /** Customer information */
+  customerName: varchar("customerName", { length: 255 }).notNull(),
+  customerPhone: varchar("customerPhone", { length: 20 }),
+  customerWhatsApp: varchar("customerWhatsApp", { length: 20 }),
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  customerAddress: text("customerAddress"),
+  /** Dealer / Point of Sale */
+  dealerName: varchar("dealerName", { length: 255 }),
+  dealerCode: varchar("dealerCode", { length: 50 }),
+  dealerPhone: varchar("dealerPhone", { length: 20 }),
+  dealerEmail: varchar("dealerEmail", { length: 320 }),
+  /** Purchase documentation */
+  invoiceNumber: varchar("invoiceNumber", { length: 100 }),
+  invoiceUrl: text("invoiceUrl"),
+  purchaseAmount: decimal("purchaseAmount", { precision: 12, scale: 2 }),
+  purchaseCurrency: varchar("purchaseCurrency", { length: 10 }).default("INR"),
+  /** Manufacturer info */
+  manufacturer: varchar("manufacturer", { length: 255 }),
+  /** Claim tracking */
+  totalClaims: int("totalClaims").default(0),
+  lastClaimDate: timestamp("lastClaimDate"),
+  /** Notes and metadata */
+  notes: text("notes"),
+  metadata: json("metadata"),
+  /** Registration tracking */
+  registeredById: int("registeredById").notNull(),
+  activatedAt: timestamp("activatedAt"),
+  voidedAt: timestamp("voidedAt"),
+  voidReason: text("voidReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WarrantyRecord = typeof warrantyRecords.$inferSelect;
+export type InsertWarrantyRecord = typeof warrantyRecords.$inferInsert;
+
+// ─── WARRANTY CLAIMS ─────────────────────────────────────────────────────────
+// Individual warranty claim records with full resolution workflow.
+export const warrantyClaims = mysqlTable("warranty_claims", {
+  id: int("id").autoincrement().primaryKey(),
+  warrantyId: int("warrantyId").notNull(),
+  batteryId: int("batteryId").notNull(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  /** Claim details */
+  claimType: mysqlEnum("claimType", [
+    "defect", "performance_degradation", "physical_damage",
+    "thermal_event", "capacity_loss", "premature_failure", "other"
+  ]).notNull(),
+  description: text("description").notNull(),
+  /** Evidence */
+  evidenceUrls: json("evidenceUrls").$type<string[]>(),
+  sohAtClaim: decimal("sohAtClaim", { precision: 5, scale: 2 }),
+  cycleCountAtClaim: int("cycleCountAtClaim"),
+  /** Resolution workflow */
+  status: mysqlEnum("status", [
+    "submitted", "under_review", "approved", "rejected",
+    "in_repair", "replacement_issued", "resolved", "escalated"
+  ]).default("submitted").notNull(),
+  assignedTo: varchar("assignedTo", { length: 255 }),
+  resolutionType: mysqlEnum("resolutionType", [
+    "replacement", "repair", "refund", "pro_rata_credit", "rejected", "pending"
+  ]).default("pending"),
+  resolutionNotes: text("resolutionNotes"),
+  resolutionDate: timestamp("resolutionDate"),
+  /** Tracking */
+  claimedById: int("claimedById").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WarrantyClaim = typeof warrantyClaims.$inferSelect;
+export type InsertWarrantyClaim = typeof warrantyClaims.$inferInsert;
+
+// ─── BULK ONBOARDING JOBS ────────────────────────────────────────────────────
+// Tracks batch imports of existing batteries with auto-BPAN generation.
+export const bulkOnboardingJobs = mysqlTable("bulk_onboarding_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Job metadata */
+  jobName: varchar("jobName", { length: 255 }).notNull(),
+  source: mysqlEnum("source", ["csv_import", "api_batch", "manual_entry", "agent"]).default("csv_import").notNull(),
+  /** Counts */
+  totalRecords: int("totalRecords").notNull(),
+  processedRecords: int("processedRecords").default(0),
+  successCount: int("successCount").default(0),
+  failureCount: int("failureCount").default(0),
+  skippedCount: int("skippedCount").default(0),
+  /** Status */
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "cancelled"]).default("pending").notNull(),
+  /** Results */
+  errorLog: json("errorLog").$type<{ row: number; error: string }[]>(),
+  generatedBpans: json("generatedBpans").$type<string[]>(),
+  /** Options */
+  autoGenerateBpan: boolean("autoGenerateBpan").default(true),
+  registerWarranty: boolean("registerWarranty").default(false),
+  defaultWarrantyMonths: int("defaultWarrantyMonths"),
+  /** Tracking */
+  createdById: int("createdById").notNull(),
+  csvFileUrl: text("csvFileUrl"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BulkOnboardingJob = typeof bulkOnboardingJobs.$inferSelect;
+export type InsertBulkOnboardingJob = typeof bulkOnboardingJobs.$inferInsert;

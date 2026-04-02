@@ -28,6 +28,13 @@ import {
   logAgentAction, listAgentActions, countAgentActions,
   getAgentActionStats, getRecentActivity, getSystemHealthMetrics,
 } from "./db-agent";
+import {
+  createWarrantyRecord, getWarrantyByBpan, getWarrantyById, lookupWarranty,
+  listWarrantyRecords, updateWarrantyStatus, getWarrantyStats,
+  createWarrantyClaim, listWarrantyClaims, updateClaimStatus,
+  createBulkOnboardingJob, updateBulkOnboardingJob, getBulkOnboardingJob, listBulkOnboardingJobs,
+  computeWarrantyStatus,
+} from "./db-warranty";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -221,13 +228,23 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const battery = await getBatteryByBpan(input.bpan);
         if (!battery) throw new Error("Battery not found");
-        const [latestTelemetry, latestSoh, history, serviceHist] = await Promise.all([
+        const [latestTelemetry, latestSoh, history, serviceHist, warrantyRecords] = await Promise.all([
           getLatestTelemetry(input.bpan),
           getLatestSohPrediction(input.bpan),
           getSohPredictionHistory(input.bpan, 10),
           getServiceHistory(input.bpan),
+          getWarrantyByBpan(input.bpan),
         ]);
-        return { battery, latestTelemetry, latestSoh, sohHistory: history, serviceHistory: serviceHist };
+        // Compute warranty status for each record
+        const warranties = warrantyRecords.map(w => ({
+          ...w,
+          ...computeWarrantyStatus(w),
+        }));
+        const activeWarranty = warranties.find(w => w.effectiveStatus === "active") ?? null;
+        return {
+          battery, latestTelemetry, latestSoh, sohHistory: history, serviceHistory: serviceHist,
+          warranties, activeWarranty,
+        };
       }),
 
     updateStatus: protectedProcedure
@@ -481,11 +498,22 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         targetMarkets: z.array(z.string()).default(["IN"]),
       }))
       .mutation(async ({ input, ctx }) => {
-        const [battery, latestSoh] = await Promise.all([
+        const [battery, latestSoh, warrantyRecords] = await Promise.all([
           getBatteryById(input.batteryId),
           getLatestSohPrediction(input.bpan),
+          getWarrantyByBpan(input.bpan),
         ]);
         if (!battery) throw new Error("Battery not found");
+        // Warranty gate: in-warranty batteries cannot be listed on marketplace
+        const activeWarranty = warrantyRecords.find(w => {
+          const computed = computeWarrantyStatus(w);
+          return computed.effectiveStatus === "active";
+        });
+        const warrantyInfo = activeWarranty ? {
+          warrantyId: activeWarranty.id,
+          warrantyEndDate: activeWarranty.warrantyEndDate,
+          isInWarranty: true,
+        } : { isInWarranty: false };
         const soh = Number(latestSoh?.predictedSoh ?? battery.currentSoh ?? 80);
         const spotPrice = calculateSpotPrice(soh, Number(battery.capacityKwh), battery.chemistry);
         // Store the original INR price for backward compat
@@ -518,7 +546,7 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
             }
           } catch { /* currency record is supplementary */ }
         }
-        return { listing, spotPrice };
+        return { listing, spotPrice, warrantyInfo };
       }),
 
     list: publicProcedure
@@ -1569,6 +1597,398 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
         capabilities: "GET /api/trpc/agent.capabilities",
       },
     })),
+  }),
+
+  // ─── WARRANTY & ONBOARDING ─────────────────────────────────────────────────
+  warranty: router({
+    /** Register a new warranty for a battery */
+    register: protectedProcedure
+      .input(z.object({
+        batteryId: z.number(),
+        bpan: z.string().length(21),
+        serialNumber: z.string().max(100).optional(),
+        modelNumber: z.string().max(100).optional(),
+        warrantyType: z.enum(["standard", "extended", "premium", "commercial"]).default("standard"),
+        coverageType: z.enum(["full_replacement", "pro_rata", "labor_only", "parts_only", "comprehensive"]).default("full_replacement"),
+        warrantyTermMonths: z.number().int().min(1).max(120),
+        purchaseDate: z.string(),
+        warrantyStartDate: z.string().optional(),
+        customerName: z.string().min(1).max(255),
+        customerPhone: z.string().max(20).optional(),
+        customerWhatsApp: z.string().max(20).optional(),
+        customerEmail: z.string().email().optional(),
+        customerAddress: z.string().optional(),
+        dealerName: z.string().max(255).optional(),
+        dealerCode: z.string().max(50).optional(),
+        dealerPhone: z.string().max(20).optional(),
+        dealerEmail: z.string().email().optional(),
+        invoiceNumber: z.string().max(100).optional(),
+        purchaseAmount: z.number().optional(),
+        purchaseCurrency: z.string().max(10).default("INR"),
+        manufacturer: z.string().max(255).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const purchaseDate = new Date(input.purchaseDate);
+        const warrantyStartDate = input.warrantyStartDate ? new Date(input.warrantyStartDate) : purchaseDate;
+        const warrantyEndDate = new Date(warrantyStartDate);
+        warrantyEndDate.setMonth(warrantyEndDate.getMonth() + input.warrantyTermMonths);
+
+        const result = await createWarrantyRecord({
+          batteryId: input.batteryId,
+          bpan: input.bpan,
+          serialNumber: input.serialNumber ?? null,
+          modelNumber: input.modelNumber ?? null,
+          warrantyType: input.warrantyType,
+          coverageType: input.coverageType,
+          warrantyTermMonths: input.warrantyTermMonths,
+          purchaseDate,
+          warrantyStartDate,
+          warrantyEndDate,
+          status: "active",
+          customerName: input.customerName,
+          customerPhone: input.customerPhone ?? null,
+          customerWhatsApp: input.customerWhatsApp ?? null,
+          customerEmail: input.customerEmail ?? null,
+          customerAddress: input.customerAddress ?? null,
+          dealerName: input.dealerName ?? null,
+          dealerCode: input.dealerCode ?? null,
+          dealerPhone: input.dealerPhone ?? null,
+          dealerEmail: input.dealerEmail ?? null,
+          invoiceNumber: input.invoiceNumber ?? null,
+          invoiceUrl: null,
+          purchaseAmount: input.purchaseAmount?.toString() ?? null,
+          purchaseCurrency: input.purchaseCurrency,
+          manufacturer: input.manufacturer ?? null,
+          notes: input.notes ?? null,
+          metadata: null,
+          registeredById: ctx.user.id,
+          activatedAt: new Date(),
+          voidedAt: null,
+          voidReason: null,
+          totalClaims: 0,
+          lastClaimDate: null,
+        });
+        return { success: true, warrantyId: result.id, warrantyEndDate: warrantyEndDate.toISOString() };
+      }),
+
+    /** Get warranty records for a specific BPAN */
+    getByBpan: publicProcedure
+      .input(z.object({ bpan: z.string().length(21) }))
+      .query(({ input }) => getWarrantyByBpan(input.bpan)),
+
+    /** Get a single warranty record by ID */
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getWarrantyById(input.id)),
+
+    /** Multi-channel warranty lookup — public facing */
+    lookup: publicProcedure
+      .input(z.object({
+        bpan: z.string().optional(),
+        serialNumber: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        whatsApp: z.string().optional(),
+      }))
+      .query(({ input }) => lookupWarranty(input)),
+
+    /** List all warranty records with filters */
+    list: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        search: z.string().max(200).optional(),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(({ input }) => listWarrantyRecords(input)),
+
+    /** Update warranty status (activate, void, suspend) */
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["active", "expired", "voided", "claimed", "suspended", "pending_activation"]),
+        voidReason: z.string().optional(),
+      }))
+      .mutation(({ input }) => updateWarrantyStatus(input.id, input.status, { voidReason: input.voidReason })),
+
+    /** Get warranty statistics */
+    stats: protectedProcedure.query(() => getWarrantyStats()),
+
+    // ─── CLAIMS ──────────────────────────────────────────────────────────────
+    /** Submit a warranty claim */
+    submitClaim: protectedProcedure
+      .input(z.object({
+        warrantyId: z.number(),
+        batteryId: z.number(),
+        bpan: z.string().length(21),
+        claimType: z.enum(["defect", "performance_degradation", "physical_damage", "thermal_event", "capacity_loss", "premature_failure", "other"]),
+        description: z.string().min(10),
+        sohAtClaim: z.number().optional(),
+        cycleCountAtClaim: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify warranty is active
+        const warranty = await getWarrantyById(input.warrantyId);
+        if (!warranty) throw new TRPCError({ code: "NOT_FOUND", message: "Warranty not found" });
+        if (!warranty.isInWarranty) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot claim — warranty is ${warranty.effectiveStatus}` });
+        }
+        const result = await createWarrantyClaim({
+          warrantyId: input.warrantyId,
+          batteryId: input.batteryId,
+          bpan: input.bpan,
+          claimType: input.claimType,
+          description: input.description,
+          evidenceUrls: null,
+          sohAtClaim: input.sohAtClaim?.toString() ?? null,
+          cycleCountAtClaim: input.cycleCountAtClaim ?? null,
+          status: "submitted",
+          assignedTo: null,
+          resolutionType: "pending",
+          resolutionNotes: null,
+          resolutionDate: null,
+          claimedById: ctx.user.id,
+        });
+        return { success: true, claimId: result.id };
+      }),
+
+    /** List claims for a warranty */
+    listClaims: protectedProcedure
+      .input(z.object({ warrantyId: z.number() }))
+      .query(({ input }) => listWarrantyClaims(input.warrantyId)),
+
+    /** Update claim status (admin) */
+    updateClaimStatus: adminProcedure
+      .input(z.object({
+        claimId: z.number(),
+        status: z.enum(["submitted", "under_review", "approved", "rejected", "in_repair", "replacement_issued", "resolved", "escalated"]),
+        resolutionType: z.enum(["replacement", "repair", "refund", "pro_rata_credit", "rejected", "pending"]).optional(),
+        resolutionNotes: z.string().optional(),
+      }))
+      .mutation(({ input }) => updateClaimStatus(input.claimId, input.status, {
+        resolutionType: input.resolutionType,
+        resolutionNotes: input.resolutionNotes,
+      })),
+  }),
+
+  // ─── BULK ONBOARDING ───────────────────────────────────────────────────────
+  onboarding: router({
+    /** Start a bulk onboarding job — processes batteries and auto-generates BPANs */
+    bulkImport: protectedProcedure
+      .input(z.object({
+        jobName: z.string().min(1).max(255),
+        batteries: z.array(z.object({
+          // Required for BPAN generation
+          countryCode: z.string().length(2).default("IN"),
+          manufacturerId: z.string().length(3),
+          capacityCode: z.string().length(2),
+          chemistryCode: z.string().length(1),
+          voltageCode: z.string().length(2),
+          cellOriginCode: z.string().length(2).default("IN"),
+          extinguisherClass: z.string().length(1).default("D"),
+          mfgYear: z.number().int().min(2000).max(2030),
+          mfgMonth: z.number().int().min(1).max(12),
+          mfgDay: z.number().int().min(1).max(31),
+          factoryCode: z.string().length(1).default("A"),
+          serialNumber: z.string().min(1).max(4),
+          // Optional enrichment
+          vehicleId: z.string().optional(),
+          currentSoh: z.number().optional(),
+          cycleCount: z.number().optional(),
+          status: z.enum(["operational", "second_life", "end_of_life", "in_transit", "recycling"]).default("operational"),
+          // Optional material composition
+          recyclabilityPct: z.number().optional(),
+          lithiumPct: z.number().optional(),
+          cobaltPct: z.number().optional(),
+          nickelPct: z.number().optional(),
+          manganesePct: z.number().optional(),
+          carbonFootprintKgCo2: z.number().optional(),
+        })).min(1).max(500),
+        // Warranty options
+        registerWarranty: z.boolean().default(false),
+        defaultWarrantyMonths: z.number().int().min(1).max(120).optional(),
+        defaultCustomerName: z.string().optional(),
+        defaultCustomerPhone: z.string().optional(),
+        defaultManufacturer: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Create the job record
+        const job = await createBulkOnboardingJob({
+          jobName: input.jobName,
+          source: "manual_entry",
+          totalRecords: input.batteries.length,
+          processedRecords: 0,
+          successCount: 0,
+          failureCount: 0,
+          skippedCount: 0,
+          status: "processing",
+          errorLog: null,
+          generatedBpans: null,
+          autoGenerateBpan: true,
+          registerWarranty: input.registerWarranty,
+          defaultWarrantyMonths: input.defaultWarrantyMonths ?? null,
+          createdById: ctx.user.id,
+          csvFileUrl: null,
+          completedAt: null,
+        });
+
+        const errors: { row: number; error: string }[] = [];
+        const generatedBpans: string[] = [];
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (let i = 0; i < input.batteries.length; i++) {
+          const bat = input.batteries[i];
+          try {
+            // Auto-generate BPAN
+            const bpan = generateBpan({
+              countryCode: bat.countryCode,
+              manufacturerId: bat.manufacturerId,
+              capacityCode: bat.capacityCode,
+              chemistryCode: bat.chemistryCode,
+              voltageCode: bat.voltageCode,
+              cellOriginCode: bat.cellOriginCode,
+              extinguisherClass: bat.extinguisherClass,
+              mfgYear: bat.mfgYear,
+              mfgMonth: bat.mfgMonth,
+              mfgDay: bat.mfgDay,
+              factoryCode: bat.factoryCode,
+              serialNumber: bat.serialNumber.padStart(4, "0"),
+            });
+
+            // Check for duplicate BPAN
+            const existing = await getBatteryByBpan(bpan);
+            if (existing) {
+              errors.push({ row: i + 1, error: `BPAN ${bpan} already exists` });
+              failureCount++;
+              continue;
+            }
+
+            // Register battery
+            const capacityInfo = CAPACITY_MAP[bat.capacityCode];
+            const chemistryName = CHEMISTRY_MAP[bat.chemistryCode] ?? "LFP";
+            const voltageVal = VOLTAGE_MAP[bat.voltageCode] ?? 48;
+            const originName = ORIGIN_MAP[bat.cellOriginCode] ?? bat.cellOriginCode;
+
+            const battery = await createBattery({
+              bpan,
+              countryCode: bat.countryCode,
+              manufacturerId: bat.manufacturerId,
+              capacityCode: bat.capacityCode,
+              capacityKwh: String(capacityInfo?.kwh ?? 0),
+              chemistryCode: bat.chemistryCode,
+              chemistry: chemistryName as any,
+              voltageCode: bat.voltageCode,
+              voltageV: String(voltageVal),
+              cellOriginCode: bat.cellOriginCode,
+              cellOriginCountry: originName,
+              extinguisherClass: bat.extinguisherClass,
+              mfgYear: bat.mfgYear,
+              mfgMonth: bat.mfgMonth,
+              mfgDay: bat.mfgDay,
+              factoryCode: bat.factoryCode,
+              serialNumber: bat.serialNumber.padStart(4, "0"),
+              status: bat.status as any,
+              currentSoh: bat.currentSoh?.toString() ?? "100.00",
+              cycleCount: bat.cycleCount ?? 0,
+              recyclabilityPct: bat.recyclabilityPct?.toString() ?? null,
+              lithiumPct: bat.lithiumPct?.toString() ?? null,
+              cobaltPct: bat.cobaltPct?.toString() ?? null,
+              nickelPct: bat.nickelPct?.toString() ?? null,
+              manganesePct: bat.manganesePct?.toString() ?? null,
+              carbonFootprintKgCo2: bat.carbonFootprintKgCo2?.toString() ?? null,
+              registeredById: ctx.user.id,
+              ownerId: ctx.user.id,
+              vehicleId: bat.vehicleId ?? null,
+            });
+
+            generatedBpans.push(bpan);
+
+            // Auto-register warranty if requested
+            if (input.registerWarranty && input.defaultWarrantyMonths) {
+              const purchaseDate = new Date(bat.mfgYear, bat.mfgMonth - 1, bat.mfgDay);
+              const warrantyEndDate = new Date(purchaseDate);
+              warrantyEndDate.setMonth(warrantyEndDate.getMonth() + input.defaultWarrantyMonths);
+
+              await createWarrantyRecord({
+                batteryId: battery.id,
+                bpan,
+                serialNumber: bat.serialNumber,
+                modelNumber: null,
+                warrantyType: "standard",
+                coverageType: "full_replacement",
+                warrantyTermMonths: input.defaultWarrantyMonths,
+                purchaseDate,
+                warrantyStartDate: purchaseDate,
+                warrantyEndDate,
+                status: "active",
+                customerName: input.defaultCustomerName ?? "Bulk Import",
+                customerPhone: input.defaultCustomerPhone ?? null,
+                customerWhatsApp: null,
+                customerEmail: null,
+                customerAddress: null,
+                dealerName: null,
+                dealerCode: null,
+                dealerPhone: null,
+                dealerEmail: null,
+                invoiceNumber: null,
+                invoiceUrl: null,
+                purchaseAmount: null,
+                purchaseCurrency: "INR",
+                manufacturer: input.defaultManufacturer ?? null,
+                notes: `Auto-registered via bulk onboarding job #${job.id}`,
+                metadata: null,
+                registeredById: ctx.user.id,
+                activatedAt: new Date(),
+                voidedAt: null,
+                voidReason: null,
+                totalClaims: 0,
+                lastClaimDate: null,
+              });
+            }
+
+            successCount++;
+          } catch (err: any) {
+            errors.push({ row: i + 1, error: err?.message ?? "Unknown error" });
+            failureCount++;
+          }
+        }
+
+        // Update job with results
+        await updateBulkOnboardingJob(job.id, {
+          processedRecords: input.batteries.length,
+          successCount,
+          failureCount,
+          status: failureCount === input.batteries.length ? "failed" : "completed",
+          errorLog: errors.length > 0 ? errors : undefined,
+          generatedBpans,
+          completedAt: new Date(),
+        });
+
+        return {
+          success: true,
+          jobId: job.id,
+          totalProcessed: input.batteries.length,
+          successCount,
+          failureCount,
+          generatedBpans,
+          errors,
+        };
+      }),
+
+    /** Get a bulk onboarding job status */
+    getJob: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getBulkOnboardingJob(input.id)),
+
+    /** List all bulk onboarding jobs */
+    listJobs: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(({ input }) => listBulkOnboardingJobs(input)),
   }),
 
 });

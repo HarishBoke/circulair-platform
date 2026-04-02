@@ -330,3 +330,18 @@
 - [x] Add agentic action logging middleware — logAction and execute endpoints for all modules
 - [x] Write vitest tests for agent router and super admin procedures (12 tests)
 - [x] TypeScript: 0 errors, 181 tests passing (11 test files)
+
+## Phase 33: Battery Onboarding, Auto-BPAN Tie-Up & Warranty System
+- [x] Design warranty_records schema (warrantyId, batteryId, bpan, manufacturer, purchaseDate, warrantyStartDate, warrantyEndDate, warrantyTermMonths, warrantyType, coverageType, customerName, customerPhone, customerEmail, customerWhatsApp, dealerName, dealerCode, invoiceNumber, invoiceUrl, serialNumber, modelNumber, status, claimHistory, notes)
+- [x] Build bulk battery onboarding — CSV/manual import of existing batteries with auto-BPAN generation and tie-up
+- [x] Auto-BPAN assignment logic — parse manufacturer serial, chemistry, capacity, origin to generate BPAN automatically
+- [x] Warranty registration flow — register warranty with purchase details, customer info, dealer info
+- [x] Warranty check/lookup — public-facing page to check warranty by BPAN, serial number, phone, or email
+- [x] Warranty status engine — active/expired/voided/claimed logic with days remaining calculation
+- [x] Warranty impact on platform — warranty status affects triage path, marketplace listing eligibility, and compliance reporting
+- [x] Multi-channel warranty verification — phone, WhatsApp, email lookup support
+- [x] Warranty claim workflow — initiate claim, track status, resolution
+- [x] Wire warranty into battery detail page and dashboard
+- [x] Add warranty routes to App.tsx and sidebar navigation
+- [x] Write vitest tests for warranty and onboarding procedures (17 tests)
+- [x] TypeScript: 0 errors, 198 tests passing (12 test files)

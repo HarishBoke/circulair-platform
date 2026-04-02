@@ -11,7 +11,7 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Zap, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -40,6 +40,14 @@ function useNavSections() {
       items: [
         { icon: Brain, label: t("battery.soh", "AI SOH Prediction"), href: "/ai-soh" },
         { icon: MessageSquare, label: t("nav.aiAssistant", "AI Assistant"), href: "/assistant" },
+      ],
+    },
+    {
+      label: "WARRANTY & ONBOARDING",
+      sectionKey: "WARRANTY",
+      items: [
+        { icon: ShieldCheck, label: "Warranty Management", href: "/warranty" },
+        { icon: Upload, label: "Bulk Onboarding", href: "/onboarding" },
       ],
     },
     {

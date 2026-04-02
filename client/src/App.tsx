@@ -28,6 +28,10 @@ import PlatformSettings from "./pages/PlatformSettings";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import EuBatteryPassport from "./pages/EuBatteryPassport";
 import SuperAdmin from "./pages/SuperAdmin";
+import WarrantyDashboard from "./pages/WarrantyDashboard";
+import WarrantyRegister from "./pages/WarrantyRegister";
+import WarrantyCheck from "./pages/WarrantyCheck";
+import BulkOnboarding from "./pages/BulkOnboarding";
 
 function Router() {
   return (
@@ -54,6 +58,12 @@ function Router() {
       <Route path="/admin/system" component={() => <PlatformLayout><SuperAdmin /></PlatformLayout>} />
       <Route path="/settings/platform" component={() => <PlatformLayout><PlatformSettings /></PlatformLayout>} />
       <Route path="/compliance" component={() => <PlatformLayout><ComplianceDashboard /></PlatformLayout>} />
+      {/* Warranty */}
+      <Route path="/warranty" component={() => <PlatformLayout><WarrantyDashboard /></PlatformLayout>} />
+      <Route path="/warranty/register" component={() => <PlatformLayout><WarrantyRegister /></PlatformLayout>} />
+      <Route path="/warranty/check" component={WarrantyCheck} />
+      {/* Bulk Onboarding */}
+      <Route path="/onboarding" component={() => <PlatformLayout><BulkOnboarding /></PlatformLayout>} />
       {/* Public passport pages — no auth, no layout shell */}
       <Route path="/passport/EU/:localId" component={EuBatteryPassport} />
       <Route path="/404" component={NotFound} />
