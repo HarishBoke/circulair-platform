@@ -127,9 +127,7 @@ function AuthScreen() {
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-background/50 flex items-center justify-center">
-              <CirculairLogo size={36} />
-            </div>
+            <CirculairLogo size={36} />
             <div>
               <div className="font-display text-2xl font-bold leading-tight">
                 Circul<span className="text-primary">-AI-</span>r
@@ -177,9 +175,7 @@ function AuthScreen() {
             <div className="p-8">
               {/* Mobile logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
-                  <CirculairLogo size={30} />
-                </div>
+                <CirculairLogo size={30} />
                 <div>
                   <div className="font-display text-lg font-bold leading-tight">
                     Circul<span className="text-primary">-AI-</span>r
@@ -231,9 +227,7 @@ function LoadingScreen() {
   return (
     <div className="flex items-center justify-center h-screen bg-background">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-background/50 flex items-center justify-center">
-          <CirculairLogo size={36} />
-        </div>
+        <CirculairLogo size={36} />
         <div className="space-y-1 text-center">
           <p className="text-muted-foreground font-mono text-sm">Loading Circul-AI-r...</p>
           <div className="w-32 h-1 bg-secondary rounded-full overflow-hidden mx-auto">
@@ -272,9 +266,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
-        <div className="w-8 h-8 rounded-lg bg-background/50 flex items-center justify-center flex-shrink-0">
-          <CirculairLogo size={24} />
-        </div>
+        <CirculairLogo size={24} className="flex-shrink-0" />
         {!collapsed && (
           <div className="min-w-0">
             <div className="font-display text-sm font-bold leading-tight">

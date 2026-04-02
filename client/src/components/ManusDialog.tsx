@@ -57,11 +57,11 @@ export function ManusDialog({
 
         <div className="flex flex-col items-center gap-3 p-6 pt-8">
           {/* Logo */}
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
+          <div className="flex items-center justify-center">
             {logo ? (
-              <img src={logo} alt="Platform logo" className="w-10 h-10 rounded-lg" />
+              <img src={logo} alt="Platform logo" className="w-16 h-16 rounded-lg" />
             ) : (
-              <CirculairLogo size={40} />
+              <CirculairLogo size={56} />
             )}
           </div>
 

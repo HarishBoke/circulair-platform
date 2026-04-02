@@ -71,9 +71,7 @@ export default function Register() {
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-background/50 flex items-center justify-center">
-              <CirculairLogo size={36} />
-            </div>
+            <CirculairLogo size={36} />
             <div>
               <div className="font-display text-2xl font-bold leading-tight">
                 Circul<span className="text-primary">-AI-</span>r
@@ -120,9 +118,7 @@ export default function Register() {
             <div className="p-8">
               {/* Mobile logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center animate-pulse-glow">
-                  <CirculairLogo size={30} />
-                </div>
+                <CirculairLogo size={30} />
                 <div>
                   <div className="font-display text-lg font-bold leading-tight">
                     Circul<span className="text-primary">-AI-</span>r
