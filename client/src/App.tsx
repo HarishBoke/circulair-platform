@@ -34,6 +34,7 @@ import WarrantyCheck from "./pages/WarrantyCheck";
 import BulkOnboarding from "./pages/BulkOnboarding";
 import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
+import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 
 function Router() {
   return (
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
       <Route path="/admin/system" component={() => <PlatformLayout><SuperAdmin /></PlatformLayout>} />
+      <Route path="/admin/feedback" component={() => <PlatformLayout><AdminFeedbackReview /></PlatformLayout>} />
       <Route path="/settings/platform" component={() => <PlatformLayout><PlatformSettings /></PlatformLayout>} />
       <Route path="/compliance" component={() => <PlatformLayout><ComplianceDashboard /></PlatformLayout>} />
       {/* Warranty */}

@@ -418,3 +418,14 @@
 - [x] Add /getting-started route, sidebar link (KNOWLEDGE section), and landing page footer link
 - [x] All 239 existing tests still passing (14 test files)
 - [x] TypeScript: 0 errors, 239 tests passing (14 test files)
+
+## Phase 37: Admin Feedback Review Page
+- [x] Build Admin Feedback Review page at /admin/feedback with full CRUD
+- [x] Add feedback stats summary (total, pending, approved, rejected, merged) with clickable stat cards
+- [x] Add filtering by status, type (7 types), and full-text search across articles/content/users
+- [x] Add review actions (approve, reject, merge) with optional review notes field
+- [x] Add feedback detail side panel with user info, dates, rating, content, suggested edits, and article link
+- [x] Add bulk actions — select multiple items and batch approve/reject/merge
+- [x] Integrate into sidebar (ADMIN > Feedback Review) and App.tsx route (/admin/feedback)
+- [x] Write 16 vitest tests for feedback list, stats, review, submit, and validation
+- [x] TypeScript: 0 errors, 255 tests passing (15 test files)

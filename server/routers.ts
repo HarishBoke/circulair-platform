@@ -2237,7 +2237,9 @@ Rules:
     list: adminProcedure
       .input(z.object({
         status: z.enum(["pending", "approved", "rejected", "merged"]).optional(),
+        type: z.enum(["suggest_edit", "flag_outdated", "flag_inaccurate", "request_topic", "rate_helpful", "rate_not_helpful", "general"]).optional(),
         articleId: z.string().optional(),
+        search: z.string().optional(),
         limit: z.number().optional(),
         offset: z.number().optional(),
       }).optional())

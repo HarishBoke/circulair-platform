@@ -98,6 +98,7 @@ function useNavSections() {
       items: [
         { icon: Users, label: t("nav.users", "User Management"), href: "/admin/users" },
         { icon: Cpu, label: "Super Admin", href: "/admin/system" },
+        { icon: MessageSquare, label: "Feedback Review", href: "/admin/feedback" },
         { icon: Settings2, label: t("nav.settings", "Platform Settings"), href: "/settings/platform" },
       ],
     },

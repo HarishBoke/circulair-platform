@@ -37,7 +37,9 @@ export async function submitFeedback(data: {
 
 export async function listFeedback(opts: {
   status?: "pending" | "approved" | "rejected" | "merged";
+  type?: "suggest_edit" | "flag_outdated" | "flag_inaccurate" | "request_topic" | "rate_helpful" | "rate_not_helpful" | "general";
   articleId?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }) {
@@ -45,17 +47,29 @@ export async function listFeedback(opts: {
   const limit = opts.limit ?? 50;
   const offset = opts.offset ?? 0;
 
-  let query = db!.select().from(wikiFeedback).orderBy(desc(wikiFeedback.createdAt)).limit(limit).offset(offset);
-
-  if (opts.status) {
-    query = query.where(eq(wikiFeedback.status, opts.status)) as typeof query;
+  // Build conditions array
+  const conditions = [];
+  if (opts.status) conditions.push(eq(wikiFeedback.status, opts.status));
+  if (opts.type) conditions.push(eq(wikiFeedback.type, opts.type));
+  if (opts.articleId) conditions.push(eq(wikiFeedback.articleId, opts.articleId));
+  if (opts.search) {
+    conditions.push(
+      sql`(${wikiFeedback.articleTitle} LIKE ${`%${opts.search}%`} OR ${wikiFeedback.content} LIKE ${`%${opts.search}%`} OR ${wikiFeedback.userName} LIKE ${`%${opts.search}%`})`
+    );
   }
-  if (opts.articleId) {
-    query = query.where(eq(wikiFeedback.articleId, opts.articleId)) as typeof query;
-  }
 
-  const rows = await query;
-  return rows;
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const rows = await db!.select().from(wikiFeedback)
+    .where(whereClause)
+    .orderBy(desc(wikiFeedback.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const totalRows = await db!.select({ cnt: count() }).from(wikiFeedback).where(whereClause);
+  const total = Number(totalRows[0]?.cnt ?? 0);
+
+  return { items: rows, total };
 }
 
 export async function getFeedbackStats() {
