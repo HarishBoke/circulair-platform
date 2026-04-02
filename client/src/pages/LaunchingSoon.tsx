@@ -140,10 +140,9 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
         <header className="flex items-center justify-between px-6 md:px-12 py-6" style={{ animation: "fade-in 0.8s ease-out" }}>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                 <CirculairLogo size={30} />
               </div>
-              <div className="absolute inset-0 w-10 h-10 rounded-xl border border-emerald-500/30" style={{ animation: "pulse-ring 3s ease-in-out infinite" }} />
             </div>
             <div>
               <span className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
