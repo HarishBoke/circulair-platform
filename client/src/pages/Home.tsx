@@ -535,9 +535,11 @@ export default function Home() {
             <div>
               <h4 className="font-display text-xs font-bold uppercase tracking-wider mb-3 text-foreground/80">Resources</h4>
               <div className="space-y-2">
-                {["API Documentation", "Integration Guide", "Data Residency", "Security", "Support"].map((item) => (
-                  <div key={item} className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">{item}</div>
-                ))}
+                <a href="/wiki" className="block text-xs text-muted-foreground hover:text-primary transition-colors">CirculWiki Knowledge Base</a>
+                <a href="/api/docs" className="block text-xs text-muted-foreground hover:text-primary transition-colors">API Documentation</a>
+                <a href="/wiki?category=integration" className="block text-xs text-muted-foreground hover:text-primary transition-colors">Integration Guide</a>
+                <a href="/wiki?category=compliance" className="block text-xs text-muted-foreground hover:text-primary transition-colors">Security & Compliance</a>
+                <a href="/wiki?category=architecture" className="block text-xs text-muted-foreground hover:text-primary transition-colors">Architecture</a>
               </div>
             </div>
           </div>

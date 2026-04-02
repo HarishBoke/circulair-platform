@@ -11,7 +11,7 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Zap, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -82,6 +82,13 @@ function useNavSections() {
       items: [
         { icon: Database, label: t("nav.dataIntegration", "Data Integration"), href: "/data-integration" },
         { icon: Radio, label: t("nav.mqttTester", "MQTT Flow Tester"), href: "/mqtt-flow-tester" },
+      ],
+    },
+    {
+      label: "KNOWLEDGE",
+      sectionKey: "KNOWLEDGE",
+      items: [
+        { icon: BookOpen, label: "CirculWiki", href: "/wiki" },
       ],
     },
     {

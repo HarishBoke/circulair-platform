@@ -392,3 +392,16 @@
 - [x] Write Architecture & Data Model documentation (ARCHITECTURE.md)
 - [x] Documentation available in /docs directory (7 files, 79KB total)
 - [x] TypeScript: 0 errors, 198 tests passing (12 test files)
+
+## Phase 35: CirculWiki — AI-Powered Knowledge Base (DeepWiki-style)
+- [x] Design wiki content structure with 6 categories, 24 articles, cross-references
+- [x] Build 24 knowledge base articles covering platform features, battery science, compliance, integration, architecture, operations
+- [x] Build CirculWiki main page with category grid, featured articles, search bar
+- [x] Build article reader page with table of contents, cross-references, related articles
+- [x] Build full-text search across all wiki articles
+- [x] Build AI chat interface with LLM-powered Q&A (tRPC wiki.chat mutation)
+- [x] Build 4 interactive SVG architecture diagrams (system, data-flow, security, modules)
+- [x] Build knowledge graph visualization showing article relationships
+- [x] Add CirculWiki to sidebar navigation (KNOWLEDGE section) and landing page footer
+- [x] Write vitest tests for wiki data, search, chat, and diagrams (16 tests)
+- [x] TypeScript: 0 errors, 239 tests passing (14 test files)

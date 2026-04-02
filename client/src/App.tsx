@@ -32,6 +32,7 @@ import WarrantyDashboard from "./pages/WarrantyDashboard";
 import WarrantyRegister from "./pages/WarrantyRegister";
 import WarrantyCheck from "./pages/WarrantyCheck";
 import BulkOnboarding from "./pages/BulkOnboarding";
+import CirculWiki from "./pages/CirculWiki";
 
 function Router() {
   return (
@@ -64,6 +65,8 @@ function Router() {
       <Route path="/warranty/check" component={WarrantyCheck} />
       {/* Bulk Onboarding */}
       <Route path="/onboarding" component={() => <PlatformLayout><BulkOnboarding /></PlatformLayout>} />
+      {/* CirculWiki */}
+      <Route path="/wiki" component={CirculWiki} />
       {/* Public passport pages — no auth, no layout shell */}
       <Route path="/passport/EU/:localId" component={EuBatteryPassport} />
       <Route path="/404" component={NotFound} />

@@ -2123,6 +2123,62 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       .query(({ input }) => getApiUsageStats(input.apiKeyId)),
   }),
 
+  // ─── WIKI CHAT (AI-POWERED Q&A) ────────────────────────────────────────
+  wiki: router({
+    /** AI-powered chat about the platform */
+    chat: publicProcedure
+      .input(z.object({
+        message: z.string().min(1).max(2000),
+        context: z.string().optional(),
+        history: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+        })).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const systemPrompt = `You are CirculWiki AI, the intelligent assistant for the Circul-AI-r Battery Intelligence Platform. You have deep knowledge of:
+
+1. The Circul-AI-r platform — all modules, features, and workflows
+2. Battery science — chemistries (NMC, LFP, NCA, Na-ion, solid-state), degradation, SOH prediction
+3. Regulatory compliance — ISO 27001, SOC 2, EPR, BWMR, EU Battery Regulation
+4. Integration — REST API at /api/v1, MCP server at /api/mcp, MQTT, webhooks
+5. Architecture — modular monolith, tRPC + REST + MCP, Drizzle ORM, MySQL
+6. BPAN system — Battery Passport Aadhaar Number format and generation
+7. Warranty system — multi-channel lookup (phone, WhatsApp, email, BPAN, serial)
+8. Marketplace — second-life battery trading with SOH verification
+
+Relevant context from knowledge base:\n${input.context || "No specific context"}
+
+Rules:
+- Be specific and reference platform features by name
+- Use tables for comparisons when helpful
+- Provide code examples for API/integration questions
+- Keep responses concise but comprehensive
+- If unsure, say so honestly`;
+
+        const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+          { role: "system", content: systemPrompt },
+        ];
+
+        // Add history if provided
+        if (input.history) {
+          for (const msg of input.history.slice(-6)) {
+            messages.push({ role: msg.role, content: msg.content });
+          }
+        }
+
+        messages.push({ role: "user", content: input.message });
+
+        try {
+          const response = await invokeLLM({ messages });
+          const reply = response.choices?.[0]?.message?.content || "I apologize, I could not generate a response.";
+          return { reply };
+        } catch {
+          return { reply: "I'm having trouble connecting to the AI service right now. Please try searching the knowledge base directly." };
+        }
+      }),
+  }),
+
   // ─── WEBHOOK MANAGEMENT ──────────────────────────────────────────────────
   webhook: router({
     /** Create a webhook subscription */
