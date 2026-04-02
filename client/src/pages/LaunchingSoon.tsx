@@ -327,8 +327,8 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
               <div className="mt-6 text-center">
                 <p className="text-xs text-zinc-600">
                   Need access? Contact{" "}
-                  <a href="mailto:admin@circulair.io" className="text-emerald-500/60 hover:text-emerald-400 transition-colors">
-                    admin@circulair.io
+                  <a href="mailto:business@setoo.co" className="text-emerald-500/60 hover:text-emerald-400 transition-colors">
+                    business@setoo.co
                   </a>
                 </p>
               </div>

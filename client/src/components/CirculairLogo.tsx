@@ -7,7 +7,7 @@ interface CirculairLogoProps {
   size?: number;
 }
 
-const CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663256112242/Su7XGBwDj2SqiggDTNrQPe/circulair_addb5c70.svg";
+const CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663256112242/Su7XGBwDj2SqiggDTNrQPe/circulair-dark_e291b236.svg";
 
 export default function CirculairLogo({ className = "", size = 32 }: CirculairLogoProps) {
   return (

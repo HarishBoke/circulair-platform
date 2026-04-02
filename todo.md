@@ -495,3 +495,7 @@
 - [x] Update VITE_APP_LOGO env with CDN URL (built-in, used CDN directly)
 - [x] Replace all inline SVG logo icons across components (Home, PlatformLayout, LaunchingSoon, Login, Register, ManusDialog)
 - [x] Verify build and visual appearance
+
+## Fixes: Logo display and contact email
+- [x] Fix broken logo display (created dark-bg version of SVG, white path → #000202 matching theme)
+- [x] Update contact email to business@setoo.co across all pages
