@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,8 @@ type ImportResult = {
 };
 
 export default function BulkOnboarding() {
+  usePageTitle("Bulk Onboarding");
+
   const [mode, setMode] = useState<"manual" | "csv">("manual");
   const [jobName, setJobName] = useState("");
   const [batteries, setBatteries] = useState<BatteryEntry[]>([defaultEntry()]);

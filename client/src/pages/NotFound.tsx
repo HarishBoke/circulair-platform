@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { Zap } from "lucide-react";
 
 export default function NotFound() {
+  usePageTitle("Page Not Found");
+
   const [, setLocation] = useLocation();
 
   return (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,8 @@ const TRIAGE_INFO = {
 };
 
 export default function AiSoh() {
+  usePageTitle("AI SOH Prediction");
+
   const [bpan, setBpan] = useState("");
   const [batteryId, setBatteryId] = useState<number | null>(null);
   const [activeBpan, setActiveBpan] = useState("");

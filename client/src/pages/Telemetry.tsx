@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,8 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Telemetry() {
+  usePageTitle("Telemetry");
+
   const [bpan, setBpan] = useState("");
   const [activeBpan, setActiveBpan] = useState<string | null>(null);
 

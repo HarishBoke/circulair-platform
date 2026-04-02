@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,8 @@ function formatPrice(amount: number | string | null | undefined, currency: strin
 }
 
 export default function Marketplace() {
+  usePageTitle("Marketplace");
+
   const [search, setSearch] = useState("");
   const [listingType, setListingType] = useState("all");
   const [page, setPage] = useState(0);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Lock, Eye, EyeOff, ArrowRight, Shield, Globe, Battery, Cpu, ChevronRight } from "lucide-react";
 import CirculairLogo from "@/components/CirculairLogo";
 
@@ -44,6 +45,8 @@ export function revokeAccess(): void {
 }
 
 export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: () => void }) {
+  usePageTitle("Launching Soon");
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

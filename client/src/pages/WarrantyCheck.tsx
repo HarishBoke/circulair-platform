@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ const STATUS_CONFIG: Record<string, { color: string; icon: any; label: string; b
 type SearchMode = "bpan" | "serial" | "phone" | "email" | "whatsapp";
 
 export default function WarrantyCheck() {
+  usePageTitle("Check Warranty");
+
   const [searchMode, setSearchMode] = useState<SearchMode>("bpan");
   const [searchValue, setSearchValue] = useState("");
   const [hasSearched, setHasSearched] = useState(false);

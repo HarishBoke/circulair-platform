@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAuth } from "@/_core/hooks/useAuth";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { Link } from "wouter";
@@ -28,6 +29,8 @@ const MOCK_TRIAGE = [
 ];
 
 export default function Dashboard() {
+  usePageTitle("Dashboard");
+
   const { user } = useAuth();
 
   return (

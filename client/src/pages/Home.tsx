@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 import { Button } from "@/components/ui/button";
 import CirculairLogo from "@/components/CirculairLogo";
@@ -147,6 +148,8 @@ const TECH_STACK = [
 
 /* ─── COMPONENT ────────────────────────────────────────────────────────────── */
 export default function Home() {
+  usePageTitle("Battery Circular Economy Platform");
+
   const { isAuthenticated, loading } = useAuth();
   const [activeStakeholder, setActiveStakeholder] = useState(0);
 

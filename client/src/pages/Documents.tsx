@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,8 @@ const ACCESS_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 };
 
 export default function Documents() {
+  usePageTitle("Documents");
+
   const [search, setSearch] = useState("");
   const [docType, setDocType] = useState("all");
   const [showUploadDialog, setShowUploadDialog] = useState(false);

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,8 @@ function timeAgo(date: Date | string | null): string {
 type Tab = "overview" | "actions" | "activity";
 
 export default function SuperAdmin() {
+  usePageTitle("Super Admin");
+
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("overview");
 

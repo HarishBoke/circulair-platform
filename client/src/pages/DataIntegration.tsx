@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import PlatformLayout from "@/components/PlatformLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +72,8 @@ function ConnectorCard({ icon: Icon, title, description, status, children }: {
 }
 
 export default function DataIntegration() {
+  usePageTitle("Data Integration");
+
   const [mqttHost, setMqttHost] = useState("mqtt.circulair.in");
   const [mqttPort, setMqttPort] = useState("8883");
   const [mqttTopic, setMqttTopic] = useState("circulair/telemetry/{BPAN}");

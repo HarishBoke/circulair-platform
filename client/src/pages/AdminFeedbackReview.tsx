@@ -2,6 +2,7 @@
  * AdminFeedbackReview — Full admin page for reviewing, filtering,
  * and managing all user-submitted wiki feedback.
  */
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,8 @@ function timeAgo(d: Date | string | null | undefined): string {
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 
 export default function AdminFeedbackReview() {
+  usePageTitle("Feedback Review");
+
   const [statusFilter, setStatusFilter] = useState<StatusType | "all">("all");
   const [typeFilter, setTypeFilter] = useState<FeedbackType | "all">("all");
   const [search, setSearch] = useState("");

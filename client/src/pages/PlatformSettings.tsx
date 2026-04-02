@@ -7,6 +7,7 @@
  *
  * Route: /settings/platform
  */
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -150,6 +151,8 @@ function JurisdictionPicker({
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function PlatformSettings() {
+  usePageTitle("Platform Settings");
+
   const { user } = useAuth();
   const { locale: ctxLocale } = usePlatformSettings();
   const utils = trpc.useUtils();

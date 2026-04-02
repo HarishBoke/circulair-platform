@@ -3,6 +3,7 @@
  * via backend (tutorial.progress / tutorial.complete).
  * Each step links to a real platform page and can be marked complete.
  */
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -60,6 +61,8 @@ const STEP_COLORS: Record<string, string> = {
 };
 
 export default function GettingStarted() {
+  usePageTitle("Getting Started");
+
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [celebrateStep, setCelebrateStep] = useState<string | null>(null);

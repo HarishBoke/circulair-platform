@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import PlatformLayout from "@/components/PlatformLayout";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +121,8 @@ const KNOWN_BPANS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MqttFlowTester() {
+  usePageTitle("MQTT Flow Tester");
+
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [logCounter, setLogCounter] = useState(0);
   const [selectedBpan, setSelectedBpan] = useState(KNOWN_BPANS[0].bpan);

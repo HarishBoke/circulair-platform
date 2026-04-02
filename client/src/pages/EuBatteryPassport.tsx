@@ -12,6 +12,7 @@
  *
  * Route: /passport/EU/:localId
  */
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
@@ -124,6 +125,8 @@ function PassportNotFound({ localId }: { localId: string }) {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function EuBatteryPassport() {
+  usePageTitle("EU Battery Passport");
+
   const params = useParams<{ localId: string }>();
   const localId = params.localId ?? "";
 

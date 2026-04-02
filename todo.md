@@ -508,3 +508,7 @@
 ## SEO: Update meta tags from landing page content
 - [x] Extract key headings, value props, and features from Home.tsx
 - [x] Rewrite title, description, keywords, OG tags to match landing page (not launch screen)
+
+## SEO: Dynamic document.title for inner pages
+- [x] Create usePageTitle hook for consistent title management
+- [x] Apply to all inner page components (34 pages)

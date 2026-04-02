@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import {
 } from "lucide-react";
 
 export default function WarrantyRegister() {
+  usePageTitle("Register Warranty");
+
   const [, navigate] = useLocation();
   const [step, setStep] = useState(1);
   const [registeredWarranty, setRegisteredWarranty] = useState<{

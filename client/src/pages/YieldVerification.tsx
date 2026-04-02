@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function YieldVerification() {
+  usePageTitle("Yield Verification");
+
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({
     bpan: "",

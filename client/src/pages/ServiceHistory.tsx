@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,8 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ServiceHistory() {
+  usePageTitle("Service History");
+
   const [bpanSearch, setBpanSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({

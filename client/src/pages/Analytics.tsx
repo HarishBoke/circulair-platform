@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, Battery, ShoppingCart, Shield, Activity } from "lucide-react";
@@ -35,6 +36,8 @@ const MOCK_UPTIME = [
 ];
 
 export default function Analytics() {
+  usePageTitle("Analytics");
+
   const { data: kpis, isLoading, refetch } = trpc.analytics.kpis.useQuery();
 
   const batteryStats = kpis?.batteryStats;

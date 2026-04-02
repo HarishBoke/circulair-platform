@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import ArchitectureDiagram from "@/components/ArchitectureDiagram";
@@ -633,6 +634,8 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
 // ─── MAIN WIKI PAGE ─────────────────────────────────────────────────────────
 
 export default function CirculWiki() {
+  usePageTitle("CirculWiki");
+
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<WikiCategory | null>(null);

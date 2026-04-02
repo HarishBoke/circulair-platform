@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ const TRIAGE_COLORS: Record<string, string> = {
 };
 
 export default function BpanDetail() {
+  usePageTitle("Battery Details");
+
   const params = useParams<{ bpan: string }>();
   const bpan = params.bpan ?? "";
 

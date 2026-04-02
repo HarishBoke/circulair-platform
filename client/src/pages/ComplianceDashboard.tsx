@@ -10,6 +10,7 @@
  *
  * Route: /compliance
  */
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -214,6 +215,8 @@ function FeatureHighlights() {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function ComplianceDashboard() {
+  usePageTitle("Compliance Dashboard");
+
   const { activeJurisdictions } = usePlatformSettings();
 
   const activeList = useMemo(

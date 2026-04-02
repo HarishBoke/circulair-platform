@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ const EXTINGUISHER_OPTIONS = [
 ];
 
 export default function BpanRegister() {
+  usePageTitle("Register Battery");
+
   const [, navigate] = useLocation();
   const [form, setForm] = useState({
     countryCode: "IN",

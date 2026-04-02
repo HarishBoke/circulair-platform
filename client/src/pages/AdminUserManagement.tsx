@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useDebounce } from "@/hooks/useDebounce";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -459,6 +460,8 @@ function UserRow({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminUserManagement() {
+  usePageTitle("User Management");
+
   const { user } = useAuth();
 
   const [tab, setTab] = useState<"users" | "audit">("users");

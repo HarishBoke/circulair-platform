@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ function CarbonBadge({ carbonClass }: { carbonClass: string | null }) {
 }
 
 export default function BpanRegistry() {
+  usePageTitle("Battery Registry");
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [chemistry, setChemistry] = useState("all");
