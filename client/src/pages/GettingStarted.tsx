@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+
 import {
   Rocket,
   CheckCircle2,
@@ -101,7 +101,7 @@ export default function GettingStarted() {
             every key feature step by step.
           </p>
           <Button
-            onClick={() => (window.location.href = getLoginUrl())}
+            onClick={() => (window.location.href = "/login")}
             className="bg-emerald-600 hover:bg-emerald-500 text-white"
           >
             Sign In to Start

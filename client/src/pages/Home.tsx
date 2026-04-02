@@ -1,5 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
@@ -192,7 +192,7 @@ export default function Home() {
               <Button
                 size="sm"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md shadow-primary/20"
-                onClick={() => window.location.href = getLoginUrl()}
+                onClick={() => window.location.href = "/login"}
               >
                 Get Started <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
@@ -237,7 +237,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-13 text-[15px] rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
-                onClick={() => window.location.href = getLoginUrl()}
+                onClick={() => window.location.href = "/login"}
               >
                 Launch Platform <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -520,7 +520,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-10 h-13 text-[15px] rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
-                  onClick={() => window.location.href = getLoginUrl()}
+                  onClick={() => window.location.href = "/login"}
                 >
                   Start Free <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

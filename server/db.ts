@@ -61,6 +61,32 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim())).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createLocalUser(data: {
+  openId: string;
+  name: string | null;
+  email: string;
+  passwordHash: string;
+  loginMethod: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(users).values({
+    openId: data.openId,
+    name: data.name,
+    email: data.email,
+    passwordHash: data.passwordHash,
+    loginMethod: data.loginMethod,
+    lastSignedIn: new Date(),
+  });
+}
+
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];

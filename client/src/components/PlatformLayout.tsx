@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "react-i18next";
+
 import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
@@ -16,30 +16,29 @@ import {
 import { LanguageSelector } from "@/components/LanguageSelector";
 
 function useNavSections() {
-  const { t } = useTranslation();
   return [
     {
-      label: t("nav.dashboard", "OVERVIEW"),
+      label: "OVERVIEW",
       sectionKey: "OVERVIEW",
       items: [
-        { icon: LayoutDashboard, label: t("nav.dashboard", "Dashboard"), href: "/dashboard" },
+        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
       ],
     },
     {
-      label: t("battery.title", "BATTERY MANAGEMENT"),
+      label: "BATTERY MANAGEMENT",
       sectionKey: "BATTERY_MGMT",
       items: [
-        { icon: Battery, label: t("nav.batteries", "BPAN Registry"), href: "/batteries" },
-        { icon: Activity, label: t("nav.telemetry", "IoT Telemetry"), href: "/telemetry" },
-        { icon: Wrench, label: t("common.actions", "Service History"), href: "/service-history" },
+        { icon: Battery, label: "BPAN Registry", href: "/batteries" },
+        { icon: Activity, label: "IoT Telemetry", href: "/telemetry" },
+        { icon: Wrench, label: "Service History", href: "/service-history" },
       ],
     },
     {
-      label: "AI & " + t("nav.aiAssistant", "INTELLIGENCE").split(" ")[0],
+      label: "AI & INTELLIGENCE",
       sectionKey: "AI",
       items: [
-        { icon: Brain, label: t("battery.soh", "AI SOH Prediction"), href: "/ai-soh" },
-        { icon: MessageSquare, label: t("nav.aiAssistant", "AI Assistant"), href: "/assistant" },
+        { icon: Brain, label: "AI SOH Prediction", href: "/ai-soh" },
+        { icon: MessageSquare, label: "AI Assistant", href: "/assistant" },
       ],
     },
     {
@@ -51,37 +50,37 @@ function useNavSections() {
       ],
     },
     {
-      label: t("nav.marketplace", "MARKETPLACE"),
+      label: "MARKETPLACE",
       sectionKey: "MARKETPLACE",
       items: [
-        { icon: ShoppingCart, label: t("nav.marketplace", "Marketplace"), href: "/marketplace" },
-        { icon: Truck, label: t("nav.logistics", "Logistics"), href: "/logistics" },
+        { icon: ShoppingCart, label: "Marketplace", href: "/marketplace" },
+        { icon: Truck, label: "Logistics", href: "/logistics" },
       ],
     },
     {
-      label: t("nav.compliance", "COMPLIANCE"),
+      label: "COMPLIANCE",
       sectionKey: "COMPLIANCE",
       items: [
-        { icon: Shield, label: t("compliance.title", "EPR Compliance"), href: "/epr-compliance" },
-        { icon: FlaskConical, label: t("common.actions", "Yield Verification"), href: "/yield-verification" },
-        { icon: Globe, label: t("compliance.title", "Compliance Dashboard"), href: "/compliance" },
+        { icon: Shield, label: "EPR Compliance", href: "/epr-compliance" },
+        { icon: FlaskConical, label: "Yield Verification", href: "/yield-verification" },
+        { icon: Globe, label: "Compliance Dashboard", href: "/compliance" },
       ],
     },
     {
-      label: t("nav.analytics", "REPORTING"),
+      label: "REPORTING",
       sectionKey: "REPORTING",
       items: [
-        { icon: BarChart3, label: t("nav.analytics", "Analytics"), href: "/analytics" },
-        { icon: FileText, label: t("nav.documents", "Documents"), href: "/documents" },
-        { icon: Bell, label: t("nav.alerts", "Alerts"), href: "/alerts", badge: true },
+        { icon: BarChart3, label: "Analytics", href: "/analytics" },
+        { icon: FileText, label: "Documents", href: "/documents" },
+        { icon: Bell, label: "Alerts", href: "/alerts", badge: true },
       ],
     },
     {
-      label: t("nav.dataIntegration", "INTEGRATIONS"),
+      label: "INTEGRATIONS",
       sectionKey: "INTEGRATIONS",
       items: [
-        { icon: Database, label: t("nav.dataIntegration", "Data Integration"), href: "/data-integration" },
-        { icon: Radio, label: t("nav.mqttTester", "MQTT Flow Tester"), href: "/mqtt-flow-tester" },
+        { icon: Database, label: "Data Integration", href: "/data-integration" },
+        { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
       ],
     },
     {
@@ -93,13 +92,13 @@ function useNavSections() {
       ],
     },
     {
-      label: t("nav.admin", "ADMIN"),
+      label: "ADMIN",
       sectionKey: "ADMIN",
       items: [
-        { icon: Users, label: t("nav.users", "User Management"), href: "/admin/users" },
+        { icon: Users, label: "User Management", href: "/admin/users" },
         { icon: Cpu, label: "Super Admin", href: "/admin/system" },
         { icon: MessageSquare, label: "Feedback Review", href: "/admin/feedback" },
-        { icon: Settings2, label: t("nav.settings", "Platform Settings"), href: "/settings/platform" },
+        { icon: Settings2, label: "Platform Settings", href: "/settings/platform" },
       ],
     },
   ];
@@ -195,7 +194,7 @@ function AuthScreen() {
 
               <Button
                 className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold"
-                onClick={() => window.location.href = getLoginUrl()}
+                onClick={() => window.location.href = "/login"}
               >
                 Sign In to Platform <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -251,7 +250,6 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { t } = useTranslation();
   const NAV_SECTIONS = useNavSections();
 
   const { data: unreadCount } = trpc.alerts.unreadCount.useQuery(undefined, {
@@ -359,7 +357,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ${collapsed ? "justify-center" : ""}`}
         >
           <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
-          {!collapsed && <span>{t("common.actions", "Sign Out")}</span>}
+          {!collapsed && <span>{"Sign Out"}</span>}
         </button>
       </div>
     </div>

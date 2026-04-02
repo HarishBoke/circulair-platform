@@ -1,11 +1,9 @@
 /**
- * LanguageSelector
- *
- * Compact language switcher for the sidebar footer.
- * Reads current language from i18next, persists choice to localStorage.
+ * LanguageSelector — Compact language switcher for the sidebar footer.
+ * Uses the lightweight static i18n system (no i18next dependency).
  */
-import { useTranslation } from "react-i18next";
-import { SUPPORTED_LANGUAGES } from "@/lib/i18n";
+import { useState } from "react";
+import { SUPPORTED_LANGUAGES, getCurrentLanguage, setLanguage } from "@/lib/i18n";
 import {
   Select,
   SelectContent,
@@ -16,14 +14,14 @@ import {
 import { Globe } from "lucide-react";
 
 export function LanguageSelector() {
-  const { i18n } = useTranslation();
+  const [lang, setLang] = useState(getCurrentLanguage);
 
   const handleChange = (code: string) => {
-    i18n.changeLanguage(code);
-    localStorage.setItem("i18nextLng", code);
+    setLanguage(code);
+    setLang(code);
   };
 
-  const current = SUPPORTED_LANGUAGES.find((l) => l.code === i18n.language) ?? SUPPORTED_LANGUAGES[0];
+  const current = SUPPORTED_LANGUAGES.find((l) => l.code === lang) ?? SUPPORTED_LANGUAGES[0];
 
   return (
     <div className="flex items-center gap-2">

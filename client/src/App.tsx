@@ -37,11 +37,15 @@ import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 import LaunchingSoon, { isAccessGranted } from "./pages/LaunchingSoon";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/dashboard" component={() => <PlatformLayout><Dashboard /></PlatformLayout>} />
       <Route path="/batteries" component={() => <PlatformLayout><BpanRegistry /></PlatformLayout>} />
       <Route path="/batteries/register" component={() => <PlatformLayout><BpanRegister /></PlatformLayout>} />

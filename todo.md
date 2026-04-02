@@ -450,3 +450,40 @@
 ## Phase 40: Add Setoo Branding
 - [x] Add "By www.setoo.co" branding to Launching Soon footer
 - [x] Add "By www.setoo.co" branding to platform landing page footer
+
+## Phase 41: Fix Deployment + Replace Manus OAuth with JWT Auth
+- [ ] Fix pnpm-lock.yaml sync with package.json for deployment
+- [ ] Remove Manus OAuth dependency
+- [ ] Build email/password registration endpoint with bcrypt hashing
+- [ ] Build email/password login endpoint returning JWT token
+- [ ] Build JWT middleware for protected routes (replace protectedProcedure)
+- [ ] Build Login page UI with email/password form
+- [ ] Build Register page UI with name/email/password form
+- [ ] Update useAuth hook to use JWT-based auth instead of Manus OAuth
+- [ ] Update all auth references across frontend (getLoginUrl, ManusDialog, etc.)
+- [ ] Update PlatformLayout auth screen to use new login/register
+- [ ] Write vitest tests for new auth system
+- [ ] TypeScript: 0 errors, all tests passing, deployment succeeds
+
+## Auth Migration: Manus OAuth → JWT Email/Password
+- [x] Add passwordHash column to users table schema
+- [x] Create server/_core/auth.ts with JWT token creation/verification
+- [x] Create /api/auth/register endpoint with bcrypt password hashing
+- [x] Create /api/auth/login endpoint with JWT cookie session
+- [x] Create /api/auth/logout endpoint
+- [x] Create /api/auth/me endpoint
+- [x] Rewrite context.ts to use new authenticateRequest from auth.ts
+- [x] Replace registerOAuthRoutes with registerAuthRoutes in index.ts
+- [x] Add getUserByEmail and createLocalUser helpers to db.ts
+- [x] Create Login page (client/src/pages/Login.tsx) with email/password form
+- [x] Create Register page (client/src/pages/Register.tsx) with name/email/password form
+- [x] Add /login and /register routes to App.tsx
+- [x] Rewrite client/src/const.ts — getLoginUrl now returns /login
+- [x] Update useAuth hook to redirect to /login instead of OAuth URL
+- [x] Update main.tsx to redirect to /login on unauthorized errors
+- [x] Remove getLoginUrl import from PlatformLayout, DashboardLayout, Home, GettingStarted
+- [x] Update ArchitectureDiagram security node from "Manus OAuth" to "JWT Auth"
+- [x] Update security.ts rate limiter from /api/oauth/ to /api/auth/
+- [x] Clean stale i18next from node_modules (pnpm reinstall)
+- [x] Write auth.test.ts with 11 tests covering JWT, tRPC auth, email validation
+- [x] All 269 tests passing, 0 TypeScript errors, build succeeds

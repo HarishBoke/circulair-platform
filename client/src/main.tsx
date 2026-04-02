@@ -7,9 +7,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { getLoginUrl } from "./const";
 import "./index.css";
-import "./lib/i18n"; // Initialize i18next before app renders
 
 const queryClient = new QueryClient();
 
@@ -21,7 +19,11 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Don't redirect if already on login or register page
+  const path = window.location.pathname;
+  if (path === "/login" || path === "/register") return;
+
+  window.location.href = "/login";
 };
 
 queryClient.getQueryCache().subscribe(event => {

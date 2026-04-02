@@ -34,5 +34,5 @@ export function applySecurityMiddleware(app: Express): void {
     legacyHeaders: false,
     message: { error: "Too many authentication attempts, please try again later." },
   });
-  app.use("/api/oauth/", authLimiter);
+  app.use("/api/auth/", authLimiter);
 }

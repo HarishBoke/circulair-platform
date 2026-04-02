@@ -80,7 +80,7 @@ const DATA_FLOW_EDGES: DiagramEdge[] = [
 ];
 
 const SECURITY_NODES: DiagramNode[] = [
-  { id: "oauth", label: "Manus OAuth", description: "OAuth 2.0 authentication via Manus Identity. Session cookies with JWT signing.", icon: Users, color: "#3b82f6", x: 50, y: 20, width: 200, height: 65 },
+  { id: "oauth", label: "JWT Auth", description: "Email/password authentication with JWT session cookies and bcrypt hashing.", icon: Users, color: "#3b82f6", x: 50, y: 20, width: 200, height: 65 },
   { id: "rbac", label: "Role-Based Access", description: "Admin/User roles with procedure-level enforcement. adminProcedure gates sensitive operations.", icon: Lock, color: "#8b5cf6", x: 300, y: 20, width: 200, height: 65 },
   { id: "apikey", label: "API Key Auth", description: "Scoped API keys with rate limiting. Keys have read/write/admin permission levels.", icon: Key, color: "#f59e0b", x: 550, y: 20, width: 200, height: 65 },
   { id: "audit", label: "Audit Logging", description: "ISO 27001 compliant audit trail. Every data access, modification, and auth event logged.", icon: FileText, color: "#10b981", x: 50, y: 140, width: 200, height: 65 },
