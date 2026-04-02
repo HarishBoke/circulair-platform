@@ -798,3 +798,66 @@ export const webhooks = mysqlTable("webhooks", {
 });
 export type Webhook = typeof webhooks.$inferSelect;
 export type InsertWebhook = typeof webhooks.$inferInsert;
+
+
+// ─── WIKI FEEDBACK ───────────────────────────────────────────────────────────
+export const wikiFeedback = mysqlTable("wiki_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Article this feedback is about */
+  articleId: varchar("articleId", { length: 128 }).notNull(),
+  articleTitle: varchar("articleTitle", { length: 256 }).notNull(),
+  /** Feedback type */
+  type: mysqlEnum("feedbackType", [
+    "suggest_edit",
+    "flag_outdated",
+    "flag_inaccurate",
+    "request_topic",
+    "rate_helpful",
+    "rate_not_helpful",
+    "general",
+  ]).notNull(),
+  /** User-provided details */
+  content: text("content"),
+  /** Suggested replacement text (for suggest_edit) */
+  suggestedContent: text("suggestedContent"),
+  /** Section of the article (optional) */
+  section: varchar("section", { length: 256 }),
+  /** Helpfulness rating 1-5 */
+  rating: int("rating"),
+  /** Review status */
+  status: mysqlEnum("reviewStatus", [
+    "pending",
+    "approved",
+    "rejected",
+    "merged",
+  ]).default("pending").notNull(),
+  /** Admin review notes */
+  reviewNotes: text("reviewNotes"),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  /** Submitter info */
+  userId: int("userId"),
+  userName: varchar("userName", { length: 256 }),
+  userEmail: varchar("userEmail", { length: 320 }),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WikiFeedback = typeof wikiFeedback.$inferSelect;
+export type InsertWikiFeedback = typeof wikiFeedback.$inferInsert;
+
+// ─── TUTORIAL PROGRESS ───────────────────────────────────────────────────────
+export const tutorialProgress = mysqlTable("tutorial_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** Step key (e.g., "register_battery", "check_warranty") */
+  stepKey: varchar("stepKey", { length: 128 }).notNull(),
+  /** Whether this step has been completed */
+  completed: boolean("completed").default(false).notNull(),
+  completedAt: timestamp("completedAt"),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TutorialProgress = typeof tutorialProgress.$inferSelect;
+export type InsertTutorialProgress = typeof tutorialProgress.$inferInsert;

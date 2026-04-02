@@ -535,6 +535,7 @@ export default function Home() {
             <div>
               <h4 className="font-display text-xs font-bold uppercase tracking-wider mb-3 text-foreground/80">Resources</h4>
               <div className="space-y-2">
+                <a href="/getting-started" className="block text-xs text-muted-foreground hover:text-primary transition-colors">Getting Started Guide</a>
                 <a href="/wiki" className="block text-xs text-muted-foreground hover:text-primary transition-colors">CirculWiki Knowledge Base</a>
                 <a href="/api/docs" className="block text-xs text-muted-foreground hover:text-primary transition-colors">API Documentation</a>
                 <a href="/wiki?category=integration" className="block text-xs text-muted-foreground hover:text-primary transition-colors">Integration Guide</a>

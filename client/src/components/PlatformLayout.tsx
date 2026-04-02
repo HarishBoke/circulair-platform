@@ -11,7 +11,7 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Zap, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -88,6 +88,7 @@ function useNavSections() {
       label: "KNOWLEDGE",
       sectionKey: "KNOWLEDGE",
       items: [
+        { icon: Rocket, label: "Getting Started", href: "/getting-started" },
         { icon: BookOpen, label: "CirculWiki", href: "/wiki" },
       ],
     },

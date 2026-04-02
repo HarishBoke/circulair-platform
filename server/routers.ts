@@ -43,6 +43,11 @@ import {
   createWebhook as createWebhookFn, listWebhooks, deleteWebhook,
   generateTraceId, getDataClassification, DATA_CLASSIFICATION_MAP, ACCESS_CONTROL_MATRIX,
 } from "./compliance";
+import {
+  submitFeedback, listFeedback, getFeedbackStats, getArticleFeedbackStats,
+  reviewFeedback, getUserProgress, completeStep, resetProgress,
+  getTutorialStats, TUTORIAL_STEPS,
+} from "./db-wiki";
 
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
@@ -2204,6 +2209,79 @@ Rules:
     delete: protectedProcedure
       .input(z.object({ webhookId: z.number() }))
       .mutation(({ input }) => deleteWebhook(input.webhookId)),
+  }),
+
+  // ─── WIKI FEEDBACK ───────────────────────────────────────────────────────
+  wikiFeedback: router({
+    /** Submit feedback on a wiki article */
+    submit: protectedProcedure
+      .input(z.object({
+        articleId: z.string(),
+        articleTitle: z.string(),
+        type: z.enum(["suggest_edit", "flag_outdated", "flag_inaccurate", "request_topic", "rate_helpful", "rate_not_helpful", "general"]),
+        content: z.string().optional(),
+        suggestedContent: z.string().optional(),
+        section: z.string().optional(),
+        rating: z.number().min(1).max(5).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return submitFeedback({
+          ...input,
+          userId: ctx.user!.id,
+          userName: ctx.user!.name ?? undefined,
+          userEmail: ctx.user!.email ?? undefined,
+        });
+      }),
+
+    /** List feedback (admin) */
+    list: adminProcedure
+      .input(z.object({
+        status: z.enum(["pending", "approved", "rejected", "merged"]).optional(),
+        articleId: z.string().optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+      }).optional())
+      .query(({ input }) => listFeedback(input ?? {})),
+
+    /** Get feedback stats (admin) */
+    stats: adminProcedure.query(() => getFeedbackStats()),
+
+    /** Get article-specific feedback stats */
+    articleStats: protectedProcedure
+      .input(z.object({ articleId: z.string() }))
+      .query(({ input }) => getArticleFeedbackStats(input.articleId)),
+
+    /** Review feedback (admin) */
+    review: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["approved", "rejected", "merged"]),
+        reviewNotes: z.string().optional(),
+      }))
+      .mutation(({ input, ctx }) => reviewFeedback({
+        ...input,
+        reviewedBy: ctx.user!.id,
+      })),
+  }),
+
+  // ─── TUTORIAL PROGRESS ─────────────────────────────────────────────────────
+  tutorial: router({
+    /** Get all tutorial steps with progress for current user */
+    progress: protectedProcedure.query(({ ctx }) => getUserProgress(ctx.user!.id)),
+
+    /** Mark a step as completed */
+    complete: protectedProcedure
+      .input(z.object({ stepKey: z.string() }))
+      .mutation(({ input, ctx }) => completeStep(ctx.user!.id, input.stepKey)),
+
+    /** Reset tutorial progress */
+    reset: protectedProcedure.mutation(({ ctx }) => resetProgress(ctx.user!.id)),
+
+    /** Get tutorial steps metadata */
+    steps: publicProcedure.query(() => TUTORIAL_STEPS),
+
+    /** Get tutorial stats (admin) */
+    stats: adminProcedure.query(() => getTutorialStats()),
   }),
 
 });

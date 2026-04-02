@@ -1,0 +1,256 @@
+/**
+ * db-wiki.ts — Database helpers for wiki feedback and tutorial progress
+ */
+import { eq, desc, and, sql, count } from "drizzle-orm";
+import { wikiFeedback, tutorialProgress } from "../drizzle/schema";
+import { getDb } from "./db";
+
+// ─── WIKI FEEDBACK ───────────────────────────────────────────────────────────
+
+export async function submitFeedback(data: {
+  articleId: string;
+  articleTitle: string;
+  type: "suggest_edit" | "flag_outdated" | "flag_inaccurate" | "request_topic" | "rate_helpful" | "rate_not_helpful" | "general";
+  content?: string;
+  suggestedContent?: string;
+  section?: string;
+  rating?: number;
+  userId?: number;
+  userName?: string;
+  userEmail?: string;
+}) {
+  const db = await getDb();
+  const result = await db!.insert(wikiFeedback).values({
+    articleId: data.articleId,
+    articleTitle: data.articleTitle,
+    type: data.type,
+    content: data.content ?? null,
+    suggestedContent: data.suggestedContent ?? null,
+    section: data.section ?? null,
+    rating: data.rating ?? null,
+    userId: data.userId ?? null,
+    userName: data.userName ?? null,
+    userEmail: data.userEmail ?? null,
+  });
+  return { id: result[0].insertId };
+}
+
+export async function listFeedback(opts: {
+  status?: "pending" | "approved" | "rejected" | "merged";
+  articleId?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const db = await getDb();
+  const limit = opts.limit ?? 50;
+  const offset = opts.offset ?? 0;
+
+  let query = db!.select().from(wikiFeedback).orderBy(desc(wikiFeedback.createdAt)).limit(limit).offset(offset);
+
+  if (opts.status) {
+    query = query.where(eq(wikiFeedback.status, opts.status)) as typeof query;
+  }
+  if (opts.articleId) {
+    query = query.where(eq(wikiFeedback.articleId, opts.articleId)) as typeof query;
+  }
+
+  const rows = await query;
+  return rows;
+}
+
+export async function getFeedbackStats() {
+  const db = await getDb();
+  const rows = await db!.select({
+    status: wikiFeedback.status,
+    cnt: count(),
+  }).from(wikiFeedback).groupBy(wikiFeedback.status);
+
+  const stats: Record<string, number> = { pending: 0, approved: 0, rejected: 0, merged: 0, total: 0 };
+  for (const row of rows) {
+    stats[row.status!] = Number(row.cnt);
+    stats.total += Number(row.cnt);
+  }
+  return stats;
+}
+
+export async function getArticleFeedbackStats(articleId: string) {
+  const db = await getDb();
+  
+  // Get average rating
+  const ratingRows = await db!.select({
+    avgRating: sql<number>`AVG(rating)`,
+    ratingCount: count(),
+  }).from(wikiFeedback).where(
+    and(
+      eq(wikiFeedback.articleId, articleId),
+      sql`rating IS NOT NULL`
+    )
+  );
+
+  // Get feedback type counts
+  const typeRows = await db!.select({
+    type: wikiFeedback.type,
+    cnt: count(),
+  }).from(wikiFeedback).where(eq(wikiFeedback.articleId, articleId)).groupBy(wikiFeedback.type);
+
+  const typeCounts: Record<string, number> = {};
+  for (const row of typeRows) {
+    typeCounts[row.type!] = Number(row.cnt);
+  }
+
+  return {
+    averageRating: ratingRows[0]?.avgRating ? Number(ratingRows[0].avgRating) : null,
+    ratingCount: Number(ratingRows[0]?.ratingCount ?? 0),
+    typeCounts,
+  };
+}
+
+export async function reviewFeedback(data: {
+  id: number;
+  status: "approved" | "rejected" | "merged";
+  reviewNotes?: string;
+  reviewedBy: number;
+}) {
+  const db = await getDb();
+  await db!.update(wikiFeedback).set({
+    status: data.status,
+    reviewNotes: data.reviewNotes ?? null,
+    reviewedBy: data.reviewedBy,
+    reviewedAt: new Date(),
+  }).where(eq(wikiFeedback.id, data.id));
+  return { success: true };
+}
+
+// ─── TUTORIAL PROGRESS ───────────────────────────────────────────────────────
+
+export const TUTORIAL_STEPS = [
+  {
+    key: "explore_dashboard",
+    title: "Explore the Dashboard",
+    description: "Visit the main dashboard to see your platform overview with live metrics and system status.",
+    href: "/dashboard",
+    order: 1,
+  },
+  {
+    key: "register_battery",
+    title: "Register Your First Battery",
+    description: "Go to Battery Registry and register a new battery pack with BPAN ID, chemistry, capacity, and manufacturer details.",
+    href: "/batteries/register",
+    order: 2,
+  },
+  {
+    key: "view_telemetry",
+    title: "View Live Telemetry",
+    description: "Check the Telemetry page to see real-time voltage, current, temperature, and cycle data from connected batteries.",
+    href: "/telemetry",
+    order: 3,
+  },
+  {
+    key: "check_soh",
+    title: "Run AI Health Prediction",
+    description: "Visit the AI SOH page to see machine learning predictions for battery state of health and remaining useful life.",
+    href: "/ai-soh",
+    order: 4,
+  },
+  {
+    key: "register_warranty",
+    title: "Register a Warranty",
+    description: "Go to Warranty Registration and register a warranty for a battery with customer contacts, dealer info, and coverage terms.",
+    href: "/warranty/register",
+    order: 5,
+  },
+  {
+    key: "check_warranty",
+    title: "Check Warranty Status",
+    description: "Use the public Warranty Check page to look up warranty status by BPAN, serial number, phone, email, or WhatsApp.",
+    href: "/warranty/check",
+    order: 6,
+  },
+  {
+    key: "explore_marketplace",
+    title: "Browse the Marketplace",
+    description: "Visit the Second-Life Marketplace to see battery listings for reuse, repurposing, and recycling with verified SOH data.",
+    href: "/marketplace",
+    order: 7,
+  },
+  {
+    key: "view_compliance",
+    title: "Check Compliance Status",
+    description: "Review your EPR compliance dashboard to see regulatory status across jurisdictions and generate compliance reports.",
+    href: "/epr-compliance",
+    order: 8,
+  },
+  {
+    key: "explore_wiki",
+    title: "Read the Knowledge Base",
+    description: "Visit CirculWiki to explore articles about battery science, platform features, compliance regulations, and API integration.",
+    href: "/wiki",
+    order: 9,
+  },
+  {
+    key: "try_ai_assistant",
+    title: "Chat with AI Assistant",
+    description: "Open the AI Assistant to ask questions about your batteries, get recommendations, and explore platform capabilities.",
+    href: "/assistant",
+    order: 10,
+  },
+] as const;
+
+export type TutorialStepKey = typeof TUTORIAL_STEPS[number]["key"];
+
+export async function getUserProgress(userId: number) {
+  const db = await getDb();
+  const rows = await db!.select().from(tutorialProgress).where(eq(tutorialProgress.userId, userId));
+  
+  const completedSteps = new Set(rows.filter((r) => r.completed).map((r) => r.stepKey));
+  
+  return TUTORIAL_STEPS.map((step) => ({
+    ...step,
+    completed: completedSteps.has(step.key),
+  }));
+}
+
+export async function completeStep(userId: number, stepKey: string) {
+  const db = await getDb();
+  
+  // Upsert — try insert, on duplicate key update
+  await db!.execute(
+    sql`INSERT INTO tutorial_progress (userId, stepKey, completed, completedAt)
+        VALUES (${userId}, ${stepKey}, TRUE, NOW())
+        ON DUPLICATE KEY UPDATE completed = TRUE, completedAt = NOW()`
+  );
+  
+  return { success: true };
+}
+
+export async function resetProgress(userId: number) {
+  const db = await getDb();
+  await db!.delete(tutorialProgress).where(eq(tutorialProgress.userId, userId));
+  return { success: true };
+}
+
+export async function getTutorialStats() {
+  const db = await getDb();
+  
+  // Total users who started the tutorial
+  const startedRows = await db!.select({
+    cnt: sql<number>`COUNT(DISTINCT userId)`,
+  }).from(tutorialProgress);
+  
+  // Users who completed all steps
+  const completedRows = await db!.select({
+    userId: tutorialProgress.userId,
+    completedCount: count(),
+  }).from(tutorialProgress)
+    .where(eq(tutorialProgress.completed, true))
+    .groupBy(tutorialProgress.userId);
+  
+  const totalSteps = TUTORIAL_STEPS.length;
+  const completedAll = completedRows.filter((r) => Number(r.completedCount) >= totalSteps).length;
+  
+  return {
+    totalStarted: Number(startedRows[0]?.cnt ?? 0),
+    totalCompleted: completedAll,
+    totalSteps,
+  };
+}

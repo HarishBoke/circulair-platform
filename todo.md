@@ -405,3 +405,16 @@
 - [x] Add CirculWiki to sidebar navigation (KNOWLEDGE section) and landing page footer
 - [x] Write vitest tests for wiki data, search, chat, and diagrams (16 tests)
 - [x] TypeScript: 0 errors, 239 tests passing (14 test files)
+
+## Phase 36: CirculWiki Enhancements — Diagrams, Feedback, Tutorial
+- [x] Embed ArchitectureDiagram component into 11 wiki articles (platform-overview, architecture-overview, platform-modules, security-architecture, data-model, telemetry-system, mqtt-integration, rest-api, mcp-integration, iso27001, soc2)
+- [x] Add ARTICLE_DIAGRAM_MAP with type and title metadata for each article-diagram pair
+- [x] Build article contribution/feedback system — wiki_feedback table with star ratings, 6 feedback types, admin review
+- [x] Build ArticleFeedback component with star ratings, 6 types (helpful, not helpful, suggest edit, flag outdated, flag inaccurate, request topic)
+- [x] Build admin review workflow — wikiFeedback.list, wikiFeedback.review (approve/reject/merge) tRPC procedures
+- [x] Build interactive Getting Started tutorial page with 10 backend-tracked steps and progress bar
+- [x] Tutorial covers: dashboard, register battery, telemetry, SOH, warranty register/check, marketplace, compliance, wiki, AI assistant
+- [x] Add backend progress tracking via tutorial_progress table with complete/reset mutations
+- [x] Add /getting-started route, sidebar link (KNOWLEDGE section), and landing page footer link
+- [x] All 239 existing tests still passing (14 test files)
+- [x] TypeScript: 0 errors, 239 tests passing (14 test files)

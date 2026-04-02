@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import ArchitectureDiagram from "@/components/ArchitectureDiagram";
 import {
   WIKI_CATEGORIES,
   WIKI_ARTICLES,
@@ -56,6 +58,16 @@ import {
   FileText,
   Upload,
   Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  AlertTriangle,
+  Edit3,
+  Star,
+  CheckCircle2,
+  Rocket,
+  ChevronDown,
+  ChevronUp,
+  Heart,
 } from "lucide-react";
 
 // ─── ICON MAP ────────────────────────────────────────────────────────────────
@@ -70,6 +82,22 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
 function getIcon(name: string): React.ComponentType<{ className?: string; style?: React.CSSProperties }> {
   return ICON_MAP[name] || BookOpen;
 }
+
+// ─── ARTICLE-TO-DIAGRAM MAPPING ─────────────────────────────────────────────
+
+const ARTICLE_DIAGRAM_MAP: Record<string, { type: "system" | "data-flow" | "security" | "modules"; title: string }> = {
+  "platform-overview": { type: "system", title: "Platform Architecture" },
+  "architecture-overview": { type: "system", title: "System Architecture" },
+  "platform-modules": { type: "modules", title: "Platform Modules" },
+  "security-architecture": { type: "security", title: "Security Architecture" },
+  "data-model": { type: "data-flow", title: "Data Flow" },
+  "telemetry-system": { type: "data-flow", title: "Telemetry Data Flow" },
+  "mqtt-integration": { type: "data-flow", title: "MQTT Data Pipeline" },
+  "rest-api": { type: "system", title: "API Architecture" },
+  "mcp-integration": { type: "system", title: "MCP Integration Architecture" },
+  "iso27001-compliance": { type: "security", title: "Security Controls" },
+  "soc2-compliance": { type: "security", title: "SOC 2 Trust Services" },
+};
 
 // ─── MARKDOWN RENDERER ──────────────────────────────────────────────────────
 
@@ -451,6 +479,157 @@ function WikiChat({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── ARTICLE FEEDBACK COMPONENT ──────────────────────────────────────────────
+
+function ArticleFeedback({ articleId, articleTitle }: { articleId: string; articleTitle: string }) {
+  const { user } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<string | null>(null);
+  const [content, setContent] = useState("");
+  const [rating, setRating] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
+
+  const submitMutation = trpc.wikiFeedback.submit.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      setTimeout(() => {
+        setExpanded(false);
+        setSubmitted(false);
+        setFeedbackType(null);
+        setContent("");
+        setRating(0);
+      }, 2000);
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!feedbackType) return;
+    submitMutation.mutate({
+      articleId,
+      articleTitle,
+      type: feedbackType as any,
+      content: content || undefined,
+      rating: rating > 0 ? rating : undefined,
+    });
+  };
+
+  const FEEDBACK_TYPES = [
+    { key: "rate_helpful", label: "Helpful", icon: ThumbsUp, color: "text-emerald-400" },
+    { key: "rate_not_helpful", label: "Not helpful", icon: ThumbsDown, color: "text-amber-400" },
+    { key: "suggest_edit", label: "Suggest edit", icon: Edit3, color: "text-blue-400" },
+    { key: "flag_outdated", label: "Outdated", icon: AlertTriangle, color: "text-orange-400" },
+    { key: "flag_inaccurate", label: "Inaccurate", icon: AlertTriangle, color: "text-red-400" },
+    { key: "request_topic", label: "Request topic", icon: PlusCircle, color: "text-violet-400" },
+  ];
+
+  if (!user) return null;
+
+  return (
+    <div className="mt-10 pt-6 border-t border-white/5">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+      >
+        <Heart className="w-4 h-4" />
+        Was this article helpful? Share your feedback
+        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-4 p-5 bg-white/[0.02] border border-white/5 rounded-xl space-y-4 animate-in slide-in-from-top-2 duration-200">
+          {submitted ? (
+            <div className="flex items-center gap-3 text-emerald-400">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="text-sm">Thank you for your feedback!</span>
+            </div>
+          ) : (
+            <>
+              {/* Rating */}
+              <div>
+                <p className="text-xs text-zinc-500 mb-2">Rate this article</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      onMouseEnter={() => setHoveredStar(s)}
+                      onMouseLeave={() => setHoveredStar(0)}
+                      onClick={() => setRating(s)}
+                      className="p-0.5 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`w-5 h-5 transition-colors ${
+                          s <= (hoveredStar || rating)
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-zinc-600"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Feedback type */}
+              <div>
+                <p className="text-xs text-zinc-500 mb-2">What kind of feedback?</p>
+                <div className="flex flex-wrap gap-2">
+                  {FEEDBACK_TYPES.map((ft) => {
+                    const FtIcon = ft.icon;
+                    return (
+                      <button
+                        key={ft.key}
+                        onClick={() => setFeedbackType(ft.key)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                          feedbackType === ft.key
+                            ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
+                            : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-300"
+                        }`}
+                      >
+                        <FtIcon className={`w-3.5 h-3.5 ${feedbackType === ft.key ? "text-emerald-400" : ft.color}`} />
+                        {ft.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Content */}
+              {feedbackType && (
+                <div>
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder={
+                      feedbackType === "suggest_edit"
+                        ? "Describe what should be changed..."
+                        : feedbackType === "request_topic"
+                        ? "What topic would you like covered?"
+                        : "Additional details (optional)..."
+                    }
+                    rows={3}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Submit */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!feedbackType || submitMutation.isPending}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-colors"
+                >
+                  {submitMutation.isPending ? "Submitting..." : "Submit Feedback"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN WIKI PAGE ─────────────────────────────────────────────────────────
 
 export default function CirculWiki() {
@@ -612,6 +791,22 @@ export default function CirculWiki() {
             </div>
 
             <div className="prose-wiki">{renderMarkdown(selectedArticle.content)}</div>
+
+            {/* Embedded Architecture Diagram */}
+            {ARTICLE_DIAGRAM_MAP[selectedArticle.id] && (
+              <div className="mt-8 mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <Boxes className="w-4 h-4 text-emerald-400" />
+                  <h3 className="text-sm font-semibold text-zinc-300">
+                    {ARTICLE_DIAGRAM_MAP[selectedArticle.id].title} — Interactive Diagram
+                  </h3>
+                </div>
+                <ArchitectureDiagram type={ARTICLE_DIAGRAM_MAP[selectedArticle.id].type} />
+              </div>
+            )}
+
+            {/* Article Feedback */}
+            <ArticleFeedback articleId={selectedArticle.id} articleTitle={selectedArticle.title} />
 
             {/* Tags */}
             <div className="mt-10 pt-6 border-t border-white/5">
