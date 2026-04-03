@@ -1200,6 +1200,58 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       stopTelemetryStream();
       return { success: true, message: "Stream stopped" };
     }),
+    /** Start physics-based demo simulation for all seeded batteries */
+    startDemo: protectedProcedure
+      .input(z.object({ intervalMs: z.number().min(1000).max(10000).default(2000) }).optional())
+      .mutation(async ({ input }) => {
+        const { items: batteries, total } = await listBatteries({ limit: 50, offset: 0 });
+        const { startBatterySimulator, getActiveSimulators } = await import("./batterySimulator");
+        const { broadcastTelemetryReading, broadcastAnomaly } = await import("./telemetrySocket");
+        const intervalMs = input?.intervalMs ?? 2000;
+        let started = 0;
+        for (const battery of batteries) {
+          const bpan = battery.bpan;
+          if (getActiveSimulators().includes(bpan)) continue;
+          startBatterySimulator(bpan, battery.chemistry ?? "NMC", {
+            onReading: async (reading) => {
+              try {
+                await insertTelemetry({
+                  bpan, batteryId: battery.id,
+                  vPack: String(reading.vPack), iPack: String(reading.iPack),
+                  vMin: String(reading.vMin), vMax: String(reading.vMax),
+                  tPack: String(reading.tPack), tMax: String(reading.tMax),
+                  cycleCount: reading.cycleCount, irPack: String(reading.irPack),
+                  sohEstimate: String(reading.sohEstimate), dtcCodes: null,
+                  thermalAnomaly: reading.thermalAnomaly, anomalyType: reading.anomalyType ?? null,
+                  source: "simulated",
+                });
+                broadcastTelemetryReading({ ...reading, source: "simulated" });
+              } catch { /* ignore */ }
+            },
+            onAnomaly: (reading) => {
+              broadcastAnomaly(bpan, {
+                bpan, tMax: reading.tMax, tPack: reading.tPack,
+                recordedAt: reading.recordedAt,
+                message: `THERMAL ANOMALY: Battery ${bpan} at ${reading.tMax}\u00b0C`,
+              });
+            },
+          }, intervalMs);
+          started++;
+        }
+        return { success: true, started, total, message: `Demo started: ${started} batteries simulating at ${intervalMs}ms` };
+      }),
+    /** Stop all physics-based demo simulators */
+    stopDemo: protectedProcedure.mutation(async () => {
+      const { stopAllSimulators, getActiveSimulators } = await import("./batterySimulator");
+      const count = getActiveSimulators().length;
+      stopAllSimulators();
+      return { success: true, stopped: count, message: `Demo stopped: ${count} simulators shut down` };
+    }),
+    /** Get demo simulator stats */
+    demoStatus: protectedProcedure.query(async () => {
+      const { getSimulatorStats } = await import("./batterySimulator");
+      return getSimulatorStats();
+    }),
   }),
   // PDF EXPORT ROUTER
   pdf: router({

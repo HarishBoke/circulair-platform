@@ -765,3 +765,18 @@
 - [x] Store PDF metadata in documents table (compliance_report / battery_certificate types)
 - [x] Write 8 vitest tests for EPR PDF generation (all passing)
 - [x] TypeScript: 0 errors, 319 tests passing total
+
+## Phase 49 (COMPLETED): Full End-to-End Telemetry Pipeline
+- [x] Audit MQTT subscriber, telemetry DB helpers, simulator, and battery detail page
+- [x] Harden MQTT→DB write handler: validate payload fields, persist all columns, broadcast via Socket.io
+- [x] Device lastSeen heartbeat: update iot_devices.lastSeen on every MQTT message
+- [x] Physics-based battery simulator (server/batterySimulator.ts): realistic voltage/temperature/current curves per chemistry (NMC/LFP/NCA/LCO/LMO/LEAD_ACID)
+- [x] Degradation model: SOH decreases with cycles, capacity fade, internal resistance rise
+- [x] Anomaly injection: occasional thermal spikes, voltage sag, high current events for demo realism
+- [x] Per-battery simulator state: each battery has independent SoC, cycle count, temperature, current
+- [x] Rewrite telemetrySocket.ts to use physics-based simulator
+- [x] Demo mode page at /demo: one-click start/stop all simulators, live per-battery stats grid, readings/min rate, anomaly count
+- [x] Sidebar nav item (Play icon) under INTEGRATIONS
+- [x] tRPC procedures: mqtt.startDemo, mqtt.stopDemo, mqtt.demoStatus
+- [x] Write 16 vitest tests for simulator physics and lifecycle (all passing)
+- [x] TypeScript: 0 errors, 335 tests passing total

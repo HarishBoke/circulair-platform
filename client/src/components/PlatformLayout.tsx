@@ -12,7 +12,7 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -83,6 +83,7 @@ function useNavSections() {
         { icon: Database, label: "Data Integration", href: "/data-integration" },
         { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
         { icon: Cpu, label: "Device Provisioning", href: "/device-provisioning" },
+        { icon: Play, label: "Demo Mode", href: "/demo" },
       ],
     },
     {
