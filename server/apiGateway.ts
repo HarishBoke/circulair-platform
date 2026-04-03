@@ -18,8 +18,10 @@ import {
 import {
   getBatteryByBpan, listBatteries, getLatestTelemetry, getTelemetryHistory,
   getLatestSohPrediction, listMarketplace, getMarketplaceStats,
-  listEprTokens, getEprStats, getBatteryStats,
+  listEprTokens, getEprStats, getBatteryStats, insertTelemetry, createAlert,
 } from "./db";
+import { broadcastTelemetryReading } from "./telemetrySocket";
+import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import {
   lookupWarranty, listWarrantyRecords, getWarrantyStats, computeWarrantyStatus, getWarrantyByBpan,
 } from "./db-warranty";
@@ -463,6 +465,67 @@ export function createApiGateway(): Router {
         getTelemetryHistory(req.params.bpan),
       ]);
       res.json({ latest, history });
+    } catch (err: any) {
+      res.status(500).json({ error: "internal_error", message: err.message });
+    }
+  });
+
+  // POST /batteries/:bpan/telemetry — REST ingest for non-MQTT sources (SCADA, fleet software, direct device)
+  api.post("/batteries/:bpan/telemetry", async (req, res) => {
+    try {
+      const bpan = req.params.bpan;
+      const battery = await getBatteryByBpan(bpan);
+      if (!battery) return res.status(404).json({ error: "not_found", message: `Battery ${bpan} not registered` });
+      const body = req.body as Record<string, unknown>;
+      const vPack = typeof body.vPack === "number" ? body.vPack : undefined;
+      const iPack = typeof body.iPack === "number" ? body.iPack : undefined;
+      const vMin  = typeof body.vMin  === "number" ? body.vMin  : undefined;
+      const vMax  = typeof body.vMax  === "number" ? body.vMax  : undefined;
+      const tPack = typeof body.tPack === "number" ? body.tPack : undefined;
+      const tMax  = typeof body.tMax  === "number" ? body.tMax  : undefined;
+      const cycleCount = typeof body.cycleCount === "number" ? Math.floor(body.cycleCount) : undefined;
+      const irPack = typeof body.irPack === "number" ? body.irPack : undefined;
+      const sohEstimate = typeof body.sohEstimate === "number" ? body.sohEstimate : undefined;
+      const dtcCodes = Array.isArray(body.dtcCodes) ? (body.dtcCodes as unknown[]).map(String) : undefined;
+      const thermalAnomaly = (tMax ?? 0) > 51;
+      await insertTelemetry({
+        bpan,
+        batteryId: battery.id,
+        vPack: vPack != null ? String(vPack) : undefined,
+        iPack: iPack != null ? String(iPack) : undefined,
+        vMin:  vMin  != null ? String(vMin)  : undefined,
+        vMax:  vMax  != null ? String(vMax)  : undefined,
+        tPack: tPack != null ? String(tPack) : undefined,
+        tMax:  tMax  != null ? String(tMax)  : undefined,
+        cycleCount,
+        irPack: irPack != null ? String(irPack) : undefined,
+        sohEstimate: sohEstimate != null ? String(sohEstimate) : undefined,
+        dtcCodes: dtcCodes ?? null,
+        thermalAnomaly,
+        anomalyType: thermalAnomaly ? `High temperature: ${tMax}°C` : undefined,
+        source: "api",
+      });
+      broadcastTelemetryReading({
+        bpan,
+        batteryId: battery.id,
+        vPack: vPack ?? 0, iPack: iPack ?? 0, vMin: vMin ?? 0, vMax: vMax ?? 0,
+        tPack: tPack ?? 0, tMax: tMax ?? 0, cycleCount: cycleCount ?? 0,
+        irPack: irPack ?? 0, sohEstimate: sohEstimate ?? 0,
+        thermalAnomaly,
+        anomalyType: thermalAnomaly ? `High temperature: ${tMax}°C` : undefined,
+        source: "api",
+        recordedAt: new Date().toISOString(),
+      });
+      if (thermalAnomaly && await shouldCreateAlert(bpan, "thermal_anomaly")) {
+        await createAlert({
+          bpan, batteryId: battery.id, type: "thermal_anomaly", severity: "critical",
+          title: `Thermal Anomaly — ${bpan}`,
+          message: `REST ingest: T_max = ${tMax}°C exceeds 51°C threshold.`,
+          metadata: { tMax, tPack, source: "api" },
+        });
+        recordAlert(bpan, "thermal_anomaly");
+      }
+      res.status(201).json({ success: true, bpan, thermalAnomaly });
     } catch (err: any) {
       res.status(500).json({ error: "internal_error", message: err.message });
     }

@@ -653,15 +653,16 @@
 - [ ] Write vitest tests for rule engine, alert creation, notification dispatch
 
 ## Phase 49: Telemetry Pipeline — MQTT→DB Write Handler
-- [ ] MQTT→DB write handler — persist every incoming MQTT message to telemetry_readings table
+- [x] MQTT→DB write handler — persist every incoming MQTT message to telemetry_readings table
 - [ ] Device provisioning UI — register IoT device/gateway, associate with BPAN, generate device credentials
-- [ ] REST telemetry ingest endpoint — POST /api/v1/telemetry for non-MQTT sources (SCADA, fleet software)
-- [ ] Telemetry validation — reject malformed payloads, log validation errors
+- [x] REST telemetry ingest endpoint — POST /api/v1/batteries/:bpan/telemetry for non-MQTT sources (SCADA, fleet software)
+- [x] Telemetry validation — reject malformed payloads, log validation errors
 - [ ] Offline buffering strategy — document edge device buffering pattern, test replay on reconnect
-- [ ] Battery telemetry simulator — publish realistic voltage/temperature/current readings to MQTT broker for demos
+- [x] Battery telemetry simulator — auto-starts on Socket.io subscribe, publishes realistic readings every 2s
 - [ ] Non-EV battery adapters — Modbus/RS-485 bridge spec for industrial batteries, SMBus spec for consumer electronics
 - [ ] Telemetry data retention policy — configurable rolling window (e.g., keep 90 days of raw readings)
-- [ ] Write vitest tests for MQTT→DB handler, REST ingest, device provisioning
+- [x] Write vitest tests for REST ingest (14 tests passing)
+- [x] Battery detail page — live telemetry charts (voltage, temperature, current, SOH), history table, Socket.io stream, thermal anomaly banner
 
 ## Phase 50: Documents & Warranty — Full Workflow
 - [ ] Document upload UI — drag-and-drop file upload, associate with battery BPAN or compliance period
@@ -702,3 +703,17 @@
 - [ ] Admin platform settings — feature flags, maintenance mode toggle, rate limit configuration
 - [ ] Admin seed / reset demo data — one-click re-seed for demo environments
 - [ ] Write vitest tests for admin system health, audit log, security events
+
+## Phase 49 (Active): Telemetry Pipeline — MQTT→DB + Simulator + Battery Detail Page
+- [ ] Audit current MQTT subscriber, telemetry schema, and battery detail page
+- [ ] Wire MQTT→DB write handler — persist every incoming MQTT message to telemetry_readings table
+- [ ] Build REST telemetry ingest endpoint — POST /api/v1/telemetry for non-MQTT sources
+- [ ] Build battery telemetry simulator — publish realistic voltage/temperature/current/SoC readings every 2s
+- [ ] Add simulator controls to Data Integration page (start/stop per BPAN, speed multiplier)
+- [ ] Build battery detail page — full lifecycle view with live telemetry charts
+- [ ] Live voltage, temperature, current, SoC charts (rolling 60-point window via Socket.io)
+- [ ] Telemetry history table — paginated list of all readings with timestamps
+- [ ] Battery metadata panel — BPAN, chemistry, capacity, manufacturer, status, SOH badge
+- [ ] Add /battery/:bpan route to App.tsx and link from BpanRegistry table rows
+- [ ] Write vitest tests for MQTT→DB handler, REST ingest, simulator logic
+- [ ] TypeScript: 0 errors, all tests passing
