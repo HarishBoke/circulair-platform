@@ -203,7 +203,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
               </h1>
 
               <p className="text-base md:text-lg text-zinc-400 leading-relaxed mb-10 max-w-md">
-                The operating system for battery circular economy. End-to-end traceability, AI-driven health prediction, and regulatory compliance — all in one platform.
+                The operating system for battery circular economy. End-to-end traceability, AI-driven health prediction, and regulatory compliance - all in one platform.
               </p>
 
               {/* Countdown */}

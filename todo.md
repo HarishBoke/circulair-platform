@@ -574,3 +574,131 @@
 
 ## Data: Seed database with demo data
 - [x] Ran seed.mjs — DB now has 558 batteries, 6035 telemetry readings, 170 marketplace listings, 15 users
+
+## Phase 42: Authentication Hardening & User Account Management
+- [ ] Forgot Password flow — generate time-limited reset token, send reset email via SMTP/SendGrid
+- [ ] Reset Password page — validate token, accept new password, invalidate token after use
+- [ ] Email verification on registration — send verification link, block login until verified
+- [ ] User Profile page — update display name, email, password, avatar
+- [ ] Session management UI — list active sessions (device, IP, last seen), revoke individual sessions
+- [ ] Concurrent session tracking — store session metadata in DB (device, IP, user_agent, created_at)
+- [ ] Role-based frontend guards — conditionally render nav items, buttons, and routes based on ctx.user.role
+- [ ] Write vitest tests for reset token, email verification, session management
+
+## Phase 43: Battery Registry — Full CRUD & Battery Passport
+- [ ] Battery registration form — create new battery with manufacturer, chemistry, capacity, voltage, cell origin, serial number, model number
+- [ ] Auto-BPAN generation on form submit — derive from chemistry + origin + timestamp
+- [ ] Battery detail page — full lifecycle timeline, telemetry summary, SOH history, service records, documents
+- [ ] QR code generation — render scannable QR per BPAN, downloadable as PNG/SVG
+- [ ] NFC tag payload generation — NDEF record with BPAN URL for NFC-enabled devices
+- [ ] Battery edit form — update status, notes, owner, location
+- [ ] Battery archive / decommission flow — mark as End of Life, trigger EPR reporting
+- [ ] Bulk CSV import — upload CSV with battery rows, validate, auto-assign BPANs, preview before commit
+- [ ] Battery search and filter — by chemistry, status, SOH range, manufacturer, date range
+- [ ] Write vitest tests for BPAN generation, battery CRUD, QR payload
+
+## Phase 44: Marketplace — Full Transaction Flow
+- [ ] Listing creation form — post battery for sale with SOH, price, currency, photos, description, minimum SOH guarantee
+- [ ] Listing edit and delete — seller can update or remove their listing
+- [ ] Listing detail page — full battery passport preview, seller info, price history, contact button
+- [ ] Buyer interest / offer flow — express interest, send offer price, seller accepts/rejects
+- [ ] Transaction record — create transaction on acceptance, track payment status, delivery status
+- [ ] Seller and buyer profiles — reputation score, transaction history, verified badge
+- [ ] Marketplace search and filter — by chemistry, SOH range, price range, location, listing type (spot/auction/tender)
+- [ ] Saved searches and watchlist — notify buyer when matching listing appears
+- [ ] Marketplace analytics — volume, revenue, average SOH, take rate, top sellers
+- [ ] Write vitest tests for listing CRUD, offer flow, transaction creation
+
+## Phase 45: AI SOH Prediction — Real Inference Engine
+- [ ] Design inference API contract — input: voltage array, temperature array, cycle count, chemistry; output: SOH %, RUL cycles, confidence interval
+- [ ] Build tRPC procedure soh.predict — calls LLM with structured prompt + battery telemetry context
+- [ ] Build SOH prediction UI — submit telemetry snapshot, show prediction result with confidence bar
+- [ ] SHAP-style explainability panel — show which features drove the prediction (voltage degradation, temperature stress, cycle count)
+- [ ] Triage routing output — map SOH to one of: Direct Reuse (>80%), Module Repurposing (60–80%), Material Recycling (<60%)
+- [ ] Prediction history per battery — store all predictions with timestamps in soh_predictions table
+- [ ] Batch prediction — run SOH prediction for all batteries in fleet, export results as CSV
+- [ ] Model accuracy tracking — compare predicted vs actual SOH when ground truth is available
+- [ ] Write vitest tests for soh.predict procedure, triage routing logic, accuracy tracking
+
+## Phase 46: EPR Compliance — Report Generation & Jurisdiction Rules
+- [ ] Jurisdiction rule engine — encode thresholds and requirements for EU, IN, CN, US, UK, TH, ID
+- [ ] EU Battery Regulation compliance checker — validate carbon footprint class, recycled content %, due diligence
+- [ ] India BWMR compliance checker — validate CPCB registration, EPR targets, collection efficiency
+- [ ] EPR compliance report generation — PDF export of declaration per jurisdiction per period
+- [ ] Compliance period management — define reporting periods (quarterly/annual), track submission status
+- [ ] Submission workflow — mark period as submitted, attach proof document, record submission date
+- [ ] Compliance deadline reminders — alert 30/7/1 days before deadline
+- [ ] Government regulator portal view — read-only compliance dashboard for regulator role
+- [ ] Write vitest tests for rule engine, report generation, deadline logic
+
+## Phase 47: Logistics & Triage Workflow
+- [ ] Triage intake form — receive battery, record condition, assign triage path
+- [ ] Triage workflow board — Kanban-style view: Received → Testing → Classified → Routed
+- [ ] Logistics shipment creation — create pickup request with hazmat manifest, carrier, SLA
+- [ ] Carrier integration stubs — API contracts for DHL, FedEx, local logistics partners
+- [ ] Chain-of-custody record — immutable log of every custody transfer with timestamp and actor
+- [ ] GPS tracking simulation — show shipment location on map with timeline
+- [ ] SLA monitoring — flag shipments breaching 24/48-hour SLA with escalation alert
+- [ ] Logistics partner management — register carriers, set SLAs, track performance
+- [ ] Write vitest tests for triage workflow, shipment creation, SLA monitoring
+
+## Phase 48: Alerts & Notifications — Real-Time Rules Engine
+- [ ] Alert rule configuration UI — define threshold rules (SOH < X%, temperature > Y°C, cycle count > Z)
+- [ ] Rule engine — evaluate incoming telemetry against all active rules, fire alerts on breach
+- [ ] Notification delivery — send email notification when alert fires (SMTP/SendGrid)
+- [ ] In-app notification bell — real-time badge count, dropdown with unread alerts
+- [ ] Alert acknowledgement — mark alert as acknowledged, add resolution note
+- [ ] Alert escalation — re-notify if unacknowledged after configurable timeout
+- [ ] Alert history — full log with filter by type, severity, battery, date range
+- [ ] Write vitest tests for rule engine, alert creation, notification dispatch
+
+## Phase 49: Telemetry Pipeline — MQTT→DB Write Handler
+- [ ] MQTT→DB write handler — persist every incoming MQTT message to telemetry_readings table
+- [ ] Device provisioning UI — register IoT device/gateway, associate with BPAN, generate device credentials
+- [ ] REST telemetry ingest endpoint — POST /api/v1/telemetry for non-MQTT sources (SCADA, fleet software)
+- [ ] Telemetry validation — reject malformed payloads, log validation errors
+- [ ] Offline buffering strategy — document edge device buffering pattern, test replay on reconnect
+- [ ] Battery telemetry simulator — publish realistic voltage/temperature/current readings to MQTT broker for demos
+- [ ] Non-EV battery adapters — Modbus/RS-485 bridge spec for industrial batteries, SMBus spec for consumer electronics
+- [ ] Telemetry data retention policy — configurable rolling window (e.g., keep 90 days of raw readings)
+- [ ] Write vitest tests for MQTT→DB handler, REST ingest, device provisioning
+
+## Phase 50: Documents & Warranty — Full Workflow
+- [ ] Document upload UI — drag-and-drop file upload, associate with battery BPAN or compliance period
+- [ ] Document storage — upload to S3, store metadata (filename, type, size, uploader, date) in documents table
+- [ ] Document viewer — inline PDF/image preview, download button
+- [ ] Role-based document access — OEM sees own battery docs, recycler sees intake docs, admin sees all
+- [ ] Warranty claim submission — form to initiate claim with issue description, photos, invoice
+- [ ] Claim tracking — status board (Submitted → Under Review → Approved/Rejected → Resolved)
+- [ ] Warranty expiry alerts — notify owner 30/7 days before warranty expiry
+- [ ] Warranty impact on marketplace — flag batteries with active warranty as premium listings
+- [ ] Write vitest tests for document upload, warranty claim flow, expiry alerts
+
+## Phase 51: LaunchingSoon Gate — Bypass & Direct Login
+- [ ] Remove or disable LaunchingSoon gate so users land directly on /login
+- [ ] Optionally convert LaunchingSoon to a marketing landing page at /coming-soon (separate route)
+- [ ] Ensure /login and /register are the default unauthenticated entry points
+
+## Phase 52: SEO & Social Sharing Completeness
+- [ ] Generate og:image social card (1200×630 px) with logo, tagline, and brand colors
+- [ ] Add og:image meta tag to index.html
+- [ ] Add canonical link tags to all inner pages (not just homepage)
+- [ ] Add FAQPage JSON-LD schema to CirculWiki for Google rich snippets
+- [ ] Add BreadcrumbList schema to all inner pages
+
+## Phase 53: PWA & Offline Support
+- [ ] Build service worker — cache app shell, static assets, and last-visited pages
+- [ ] Register service worker in main.tsx
+- [ ] Add offline fallback page shown when network is unavailable
+- [ ] Test PWA install prompt on Chrome (desktop and Android)
+- [ ] Test Apple Touch Icon and manifest on real iOS device
+- [ ] Achieve Lighthouse PWA score ≥ 90
+
+## Phase 54: Admin Panel — Full Operational UI
+- [ ] Admin system health dashboard — DB size, active connections, MQTT status, queue depth, error rate
+- [ ] Admin audit log viewer — full audit trail with filter by user, action, resource, date range
+- [ ] Admin security events — login failures, role changes, data exports, suspicious activity
+- [ ] Admin data export — export any table as CSV for compliance audits
+- [ ] Admin platform settings — feature flags, maintenance mode toggle, rate limit configuration
+- [ ] Admin seed / reset demo data — one-click re-seed for demo environments
+- [ ] Write vitest tests for admin system health, audit log, security events
