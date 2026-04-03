@@ -19,6 +19,7 @@ import {
   getBatteryByBpan, listBatteries, getLatestTelemetry, getTelemetryHistory,
   getLatestSohPrediction, listMarketplace, getMarketplaceStats,
   listEprTokens, getEprStats, getBatteryStats, insertTelemetry, createAlert,
+  updateDeviceLastSeenByBpan,
 } from "./db";
 import { broadcastTelemetryReading } from "./telemetrySocket";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
@@ -505,6 +506,8 @@ export function createApiGateway(): Router {
         anomalyType: thermalAnomaly ? `High temperature: ${tMax}°C` : undefined,
         source: "api",
       });
+      // Update IoT device lastSeen heartbeat (fire-and-forget)
+      updateDeviceLastSeenByBpan(bpan).catch(() => {});
       broadcastTelemetryReading({
         bpan,
         batteryId: battery.id,

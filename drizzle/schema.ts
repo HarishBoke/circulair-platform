@@ -885,3 +885,38 @@ export const consentLogs = mysqlTable("consent_logs", {
 });
 export type ConsentLog = typeof consentLogs.$inferSelect;
 export type InsertConsentLog = typeof consentLogs.$inferInsert;
+
+// ─── IOT DEVICES ─────────────────────────────────────────────────────────────
+export const iotDevices = mysqlTable("iot_devices", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Auto-generated device identifier (DEV-XXXXXXXX) */
+  deviceId: varchar("deviceId", { length: 32 }).notNull().unique(),
+  /** Human-readable name */
+  name: varchar("name", { length: 256 }).notNull(),
+  /** Device type */
+  deviceType: mysqlEnum("deviceType", ["gateway", "bms", "sensor", "edge_node"]).default("gateway").notNull(),
+  /** Associated battery BPAN (nullable — can be unassociated) */
+  bpan: varchar("bpan", { length: 32 }),
+  /** MQTT credentials */
+  mqttTopic: varchar("mqttTopic", { length: 256 }).notNull(),
+  mqttUsername: varchar("mqttUsername", { length: 128 }).notNull(),
+  mqttPassword: varchar("mqttPassword", { length: 256 }).notNull(),
+  /** Device status */
+  status: mysqlEnum("status", ["active", "inactive", "pending", "revoked"]).default("pending").notNull(),
+  /** Last seen timestamp — updated on every MQTT message */
+  lastSeen: timestamp("lastSeen"),
+  /** Firmware & hardware info */
+  firmwareVersion: varchar("firmwareVersion", { length: 64 }),
+  hardwareModel: varchar("hardwareModel", { length: 128 }),
+  /** Physical location description */
+  location: varchar("location", { length: 512 }),
+  /** Free-form notes */
+  notes: text("notes"),
+  /** Who registered this device */
+  registeredBy: int("registeredBy"),
+  /** Timestamps */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type IotDevice = typeof iotDevices.$inferSelect;
+export type InsertIotDevice = typeof iotDevices.$inferInsert;

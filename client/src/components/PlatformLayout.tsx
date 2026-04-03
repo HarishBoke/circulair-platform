@@ -82,6 +82,7 @@ function useNavSections() {
       items: [
         { icon: Database, label: "Data Integration", href: "/data-integration" },
         { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
+        { icon: Cpu, label: "Device Provisioning", href: "/device-provisioning" },
       ],
     },
     {

@@ -37,7 +37,7 @@
 
 import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import { nanoid } from "nanoid";
-import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus } from "./db";
+import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus, updateDeviceLastSeenByBpan } from "./db";
 import { broadcastTelemetryReading, getSocketIO } from "./telemetrySocket";
 import type { TelemetryAnomaly } from "./telemetrySocket";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
@@ -230,6 +230,9 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
     console.error(`[MQTT] DB insert failed for BPAN ${bpan}:`, err);
     return;
   }
+
+  // Update IoT device lastSeen heartbeat (fire-and-forget)
+  updateDeviceLastSeenByBpan(bpan).catch(() => {});
 
   // Broadcast to Socket.io live dashboard
   const reading = {

@@ -717,3 +717,27 @@
 - [ ] Add /battery/:bpan route to App.tsx and link from BpanRegistry table rows
 - [ ] Write vitest tests for MQTT→DB handler, REST ingest, simulator logic
 - [ ] TypeScript: 0 errors, all tests passing
+
+## Phase 43 (COMPLETED): Battery Registration Form
+- [x] Audit existing BpanRegister page and BPAN generation logic
+- [x] Enhance registration form with guided 4-step wizard (Manufacturer → Specifications → Instance → Sustainability)
+- [x] Auto-generate BPAN on form submission using existing BPAN engine
+- [x] "Register New Battery" button already exists on BpanRegistry page header
+- [x] Success state with generated BPAN, next-step links (View Passport, Register Another, Back to Registry)
+- [x] Live BPAN preview updates as user fills in fields
+
+## Phase 43b (COMPLETED): Device lastSeen Heartbeat
+- [x] Add updateDeviceLastSeen and updateDeviceLastSeenByBpan DB helpers
+- [x] Wire MQTT subscriber to call updateDeviceLastSeenByBpan on every incoming message (fire-and-forget)
+- [x] Wire REST ingest endpoint to call updateDeviceLastSeenByBpan on every POST
+- [x] DeviceProvisioning page shows relative time for lastSeen ("Just now", "2 min ago", etc.)
+- [x] 10 vitest tests for device provisioning + lastSeen (all passing, 293 total)
+
+## Phase 49b (COMPLETED): Device Provisioning UI
+- [x] iot_devices table created in DB (raw SQL, drizzle schema synced)
+- [x] 10 DB helpers: insert, list, getById, getByDeviceId, getByMqttUsername, update, updateLastSeen, updateLastSeenByBpan, delete, getStats
+- [x] tRPC device router: register, list, get, update, regenerateCredentials, delete, stats
+- [x] DeviceProvisioning.tsx page: register form, device table, credential modal, edit modal, integration guide
+- [x] Route /device-provisioning wired in App.tsx with PlatformLayout
+- [x] Sidebar nav item added under INTEGRATIONS
+- [x] TypeScript: 0 errors

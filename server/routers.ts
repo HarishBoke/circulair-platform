@@ -22,6 +22,8 @@ import {
   getMonthlyBatteryActivity, getSohDistribution, getSohTrend,
   getChemistryDistribution, getTriageDistribution, getMarketplaceWeeklyActivity,
   insertConsentLog,
+  insertIotDevice, listIotDevices, getIotDeviceById, getIotDeviceByDeviceId,
+  updateIotDevice, deleteIotDevice, getIotDeviceStats, updateDeviceLastSeen,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -2321,8 +2323,106 @@ Rules:
     steps: publicProcedure.query(() => TUTORIAL_STEPS),
 
     /** Get tutorial stats (admin) */
-    stats: adminProcedure.query(() => getTutorialStats()),
+     stats: adminProcedure.query(() => getTutorialStats()),
   }),
 
+  // ─── IOT DEVICE PROVISIONING ────────────────────────────────────────────────
+  device: router({
+    register: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(256),
+        deviceType: z.enum(["gateway", "bms", "sensor", "edge_node"]),
+        bpan: z.string().optional(),
+        firmwareVersion: z.string().optional(),
+        hardwareModel: z.string().optional(),
+        location: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const deviceId = `DEV-${nanoid(8).toUpperCase()}`;
+        const mqttUsername = `dev_${nanoid(12)}`;
+        const mqttPassword = nanoid(24);
+        const topicPrefix = process.env.MQTT_TOPIC_PREFIX ?? "circulair/telemetry";
+        const mqttTopic = input.bpan ? `${topicPrefix}/${input.bpan}` : `${topicPrefix}/device/${deviceId}`;
+        const result = await insertIotDevice({
+          deviceId,
+          name: input.name,
+          deviceType: input.deviceType,
+          bpan: input.bpan ?? null,
+          mqttTopic,
+          mqttUsername,
+          mqttPassword,
+          status: "pending",
+          firmwareVersion: input.firmwareVersion ?? null,
+          hardwareModel: input.hardwareModel ?? null,
+          location: input.location ?? null,
+          notes: input.notes ?? null,
+          registeredBy: ctx.user.id,
+        });
+        return { id: result.id, deviceId, mqttTopic, mqttUsername, mqttPassword };
+      }),
+
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional(),
+        offset: z.number().min(0).optional(),
+        status: z.string().optional(),
+        bpan: z.string().optional(),
+      }).optional())
+      .query(({ input }) => listIotDevices(input)),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const device = await getIotDeviceById(input.id);
+        if (!device) throw new TRPCError({ code: "NOT_FOUND", message: "Device not found" });
+        return device;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(256).optional(),
+        bpan: z.string().nullable().optional(),
+        status: z.enum(["active", "inactive", "pending", "revoked"]).optional(),
+        firmwareVersion: z.string().nullable().optional(),
+        hardwareModel: z.string().nullable().optional(),
+        location: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        const device = await getIotDeviceById(id);
+        if (!device) throw new TRPCError({ code: "NOT_FOUND", message: "Device not found" });
+        // If BPAN changed, update MQTT topic
+        const updates: any = { ...data };
+        if (data.bpan !== undefined && data.bpan !== device.bpan) {
+          const topicPrefix = process.env.MQTT_TOPIC_PREFIX ?? "circulair/telemetry";
+          updates.mqttTopic = data.bpan ? `${topicPrefix}/${data.bpan}` : `${topicPrefix}/device/${device.deviceId}`;
+        }
+        await updateIotDevice(id, updates);
+        return { success: true };
+      }),
+
+    regenerateCredentials: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const device = await getIotDeviceById(input.id);
+        if (!device) throw new TRPCError({ code: "NOT_FOUND", message: "Device not found" });
+        const mqttUsername = `dev_${nanoid(12)}`;
+        const mqttPassword = nanoid(24);
+        await updateIotDevice(input.id, { mqttUsername, mqttPassword });
+        return { mqttUsername, mqttPassword, mqttTopic: device.mqttTopic };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteIotDevice(input.id);
+        return { success: true };
+      }),
+
+    stats: protectedProcedure.query(() => getIotDeviceStats()),
+  }),
 });
 export type AppRouter = typeof appRouter;

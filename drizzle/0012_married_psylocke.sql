@@ -1,0 +1,21 @@
+CREATE TABLE `iot_devices` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`deviceId` varchar(32) NOT NULL,
+	`name` varchar(256) NOT NULL,
+	`deviceType` enum('gateway','bms','sensor','edge_node') NOT NULL DEFAULT 'gateway',
+	`bpan` varchar(32),
+	`mqttTopic` varchar(256) NOT NULL,
+	`mqttUsername` varchar(128) NOT NULL,
+	`mqttPassword` varchar(256) NOT NULL,
+	`deviceStatus` enum('active','inactive','pending','revoked') NOT NULL DEFAULT 'pending',
+	`lastSeen` timestamp,
+	`firmwareVersion` varchar(64),
+	`hardwareModel` varchar(128),
+	`location` varchar(512),
+	`notes` text,
+	`registeredBy` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `iot_devices_id` PRIMARY KEY(`id`),
+	CONSTRAINT `iot_devices_deviceId_unique` UNIQUE(`deviceId`)
+);

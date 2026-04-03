@@ -15,6 +15,7 @@ import {
   chatSessions, chatMessages,
   roleAuditLog, InsertRoleAuditLog,
   consentLogs, InsertConsentLog,
+  iotDevices, InsertIotDevice,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -621,4 +622,90 @@ export async function listConsentLogs(limit = 100) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(consentLogs).orderBy(desc(consentLogs.createdAt)).limit(limit);
+}
+
+// ─── IOT DEVICES ─────────────────────────────────────────────────────────────
+export async function insertIotDevice(data: InsertIotDevice) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(iotDevices).values(data).$returningId();
+  return result;
+}
+
+export async function listIotDevices(opts?: { limit?: number; offset?: number; status?: string; bpan?: string }) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const conditions: any[] = [];
+  if (opts?.status) conditions.push(eq(iotDevices.status, opts.status as any));
+  if (opts?.bpan) conditions.push(eq(iotDevices.bpan, opts.bpan));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [items, countResult] = await Promise.all([
+    db.select().from(iotDevices).where(where).orderBy(desc(iotDevices.createdAt)).limit(opts?.limit ?? 50).offset(opts?.offset ?? 0),
+    db.select({ count: sql<number>`count(*)` }).from(iotDevices).where(where),
+  ]);
+  return { items, total: Number(countResult[0]?.count ?? 0) };
+}
+
+export async function getIotDeviceById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(iotDevices).where(eq(iotDevices.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getIotDeviceByDeviceId(deviceId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(iotDevices).where(eq(iotDevices.deviceId, deviceId)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getIotDeviceByMqttUsername(mqttUsername: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(iotDevices).where(eq(iotDevices.mqttUsername, mqttUsername)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateIotDevice(id: number, data: Partial<InsertIotDevice>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(iotDevices).set(data).where(eq(iotDevices.id, id));
+}
+
+export async function updateDeviceLastSeen(deviceId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(iotDevices).set({ lastSeen: new Date(), status: "active" as const }).where(eq(iotDevices.deviceId, deviceId));
+}
+
+export async function updateDeviceLastSeenByBpan(bpan: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(iotDevices).set({ lastSeen: new Date(), status: "active" as const }).where(eq(iotDevices.bpan, bpan));
+}
+
+export async function deleteIotDevice(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(iotDevices).where(eq(iotDevices.id, id));
+}
+
+export async function getIotDeviceStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, active: 0, inactive: 0, pending: 0, revoked: 0 };
+  const rows = await db.select({
+    status: iotDevices.status,
+    count: sql<number>`count(*)`,
+  }).from(iotDevices).groupBy(iotDevices.status);
+  const stats = { total: 0, active: 0, inactive: 0, pending: 0, revoked: 0 };
+  for (const r of rows) {
+    const c = Number(r.count);
+    stats.total += c;
+    if (r.status === "active") stats.active = c;
+    else if (r.status === "inactive") stats.inactive = c;
+    else if (r.status === "pending") stats.pending = c;
+    else if (r.status === "revoked") stats.revoked = c;
+  }
+  return stats;
 }

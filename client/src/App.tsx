@@ -24,6 +24,7 @@ import ServiceHistory from "./pages/ServiceHistory";
 import Home from "./pages/Home";
 import DataIntegration from "./pages/DataIntegration";
 import MqttFlowTester from "./pages/MqttFlowTester";
+import DeviceProvisioning from "./pages/DeviceProvisioning";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import PlatformSettings from "./pages/PlatformSettings";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/documents" component={() => <PlatformLayout><Documents /></PlatformLayout>} />
       <Route path="/data-integration" component={DataIntegration} />
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
+      <Route path="/device-provisioning" component={() => <PlatformLayout><DeviceProvisioning /></PlatformLayout>} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
       <Route path="/admin/system" component={() => <PlatformLayout><SuperAdmin /></PlatformLayout>} />
       <Route path="/admin/feedback" component={() => <PlatformLayout><AdminFeedbackReview /></PlatformLayout>} />
