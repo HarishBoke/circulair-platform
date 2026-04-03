@@ -699,3 +699,571 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
 
   return htmlToPdf(html);
 }
+
+
+// ─── EPR COMPLIANCE REPORT (Multi-Jurisdiction) ───────────────────────────────
+
+export interface EprComplianceReportData {
+  jurisdiction: "india_cpcb" | "eu_battery_reg" | "generic";
+  reportPeriod: { year: number; quarter: number }; // Q1-Q4
+  organization: { name: string; registrationId?: string; address?: string; contactEmail?: string };
+  batteries: Array<{
+    bpan: string;
+    chemistry: string;
+    capacityKwh: string | number;
+    status: string;
+    currentSoh: string | number | null;
+    manufacturer: string | null;
+    registeredAt: Date;
+  }>;
+  eprTokens: Array<{
+    tokenId: string;
+    bpan: string | null;
+    weightKg: string | number;
+    chemistry: string | null;
+    status: string;
+    issuedAt: Date;
+  }>;
+  yieldVerifications: Array<{
+    bpan: string | null;
+    blackMassKg: string | number;
+    lithiumRecoveredKg: string | number | null;
+    cobaltRecoveredKg: string | number | null;
+    nickelRecoveredKg: string | number | null;
+    verifiedAt: Date;
+  }>;
+  stats: {
+    totalBatteries: number;
+    operationalCount: number;
+    secondLifeCount: number;
+    endOfLifeCount: number;
+    totalEprTokens: number;
+    totalWeightKg: number;
+    totalYieldKg: number;
+    complianceRate: number; // 0-100
+  };
+  generatedAt: Date;
+  generatedBy: string;
+}
+
+const QUARTER_LABELS: Record<number, string> = { 1: "Q1 (Jan-Mar)", 2: "Q2 (Apr-Jun)", 3: "Q3 (Jul-Sep)", 4: "Q4 (Oct-Dec)" };
+
+const JURISDICTION_META: Record<string, { title: string; subtitle: string; regulation: string; authority: string; color: string; accentColor: string }> = {
+  india_cpcb: {
+    title: "Extended Producer Responsibility (EPR) Compliance Report",
+    subtitle: "Battery Waste Management Rules, 2022 — Central Pollution Control Board",
+    regulation: "BWM Rules 2022, S.O. 1801(E)",
+    authority: "Central Pollution Control Board (CPCB), Ministry of Environment, Forest and Climate Change",
+    color: "#1a3a6b",
+    accentColor: "#f97316",
+  },
+  eu_battery_reg: {
+    title: "Battery Passport Compliance Report",
+    subtitle: "EU Battery Regulation 2023/1542 — Digital Product Passport",
+    regulation: "Regulation (EU) 2023/1542",
+    authority: "European Commission — DG Environment",
+    color: "#003399",
+    accentColor: "#ffcc00",
+  },
+  generic: {
+    title: "Battery Lifecycle Compliance Report",
+    subtitle: "Circular Economy Compliance — Extended Producer Responsibility",
+    regulation: "Platform Standard v1.0",
+    authority: "Circul-AI-r Platform",
+    color: "#0a0a1a",
+    accentColor: "#00e5a0",
+  },
+};
+
+export async function generateEprComplianceReportPdf(data: EprComplianceReportData): Promise<Buffer> {
+  const { jurisdiction, reportPeriod, organization, batteries, eprTokens, yieldVerifications, stats, generatedAt, generatedBy } = data;
+  const meta = JURISDICTION_META[jurisdiction] ?? JURISDICTION_META.generic;
+  const quarterLabel = QUARTER_LABELS[reportPeriod.quarter] ?? `Q${reportPeriod.quarter}`;
+  const reportId = `EPR-${jurisdiction.toUpperCase().replace(/_/g, "")}-${reportPeriod.year}${reportPeriod.quarter}-${Date.now().toString(36).toUpperCase()}`;
+
+  const totalLiRecovered = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.lithiumRecoveredKg ?? 0)), 0);
+  const totalCoRecovered = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.cobaltRecoveredKg ?? 0)), 0);
+  const totalNiRecovered = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.nickelRecoveredKg ?? 0)), 0);
+  const totalBlackMass = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.blackMassKg ?? 0)), 0);
+
+  const complianceStatus = stats.complianceRate >= 85 ? "COMPLIANT" : stats.complianceRate >= 60 ? "PARTIALLY COMPLIANT" : "NON-COMPLIANT";
+  const complianceColor = stats.complianceRate >= 85 ? "#059669" : stats.complianceRate >= 60 ? "#d97706" : "#dc2626";
+  const complianceBg = stats.complianceRate >= 85 ? "#ecfdf5" : stats.complianceRate >= 60 ? "#fffbeb" : "#fef2f2";
+  const complianceBorder = stats.complianceRate >= 85 ? "#6ee7b7" : stats.complianceRate >= 60 ? "#fcd34d" : "#fca5a5";
+
+  // Chemistry breakdown
+  const chemistryMap = new Map<string, number>();
+  batteries.forEach((b) => {
+    const c = b.chemistry || "Unknown";
+    chemistryMap.set(c, (chemistryMap.get(c) ?? 0) + 1);
+  });
+  const chemistryRows = Array.from(chemistryMap.entries()).sort((a, b) => b[1] - a[1]);
+
+  // Status breakdown
+  const statusMap = new Map<string, number>();
+  batteries.forEach((b) => {
+    statusMap.set(b.status, (statusMap.get(b.status) ?? 0) + 1);
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${meta.title} — ${quarterLabel} ${reportPeriod.year}</title>
+<style>${baseStyles}
+  .jurisdiction-header { background: ${meta.color}; color: white; padding: 24px 32px; text-align: center; }
+  .jurisdiction-title { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+  .jurisdiction-sub { font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+  .jurisdiction-accent { color: ${meta.accentColor}; }
+  .report-band { background: ${meta.accentColor}; color: ${meta.color}; padding: 8px 32px; font-size: 10px; font-weight: 600; display: flex; justify-content: space-between; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; }
+  .kpi-value { font-size: 22px; font-weight: 800; color: ${meta.color}; }
+  .kpi-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .compliance-box { background: ${complianceBg}; border: 2px solid ${complianceBorder}; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+  .compliance-status { font-size: 14px; font-weight: 800; color: ${complianceColor}; }
+  .compliance-rate { font-size: 32px; font-weight: 800; color: ${complianceColor}; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .mineral-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #86efac; border-radius: 8px; padding: 12px; text-align: center; }
+  .mineral-value { font-size: 18px; font-weight: 700; color: #166534; }
+  .mineral-label { font-size: 9px; color: #6b7280; margin-top: 2px; }
+  .chemistry-bar { height: 6px; border-radius: 3px; background: #e2e8f0; overflow: hidden; margin-top: 4px; }
+  .chemistry-fill { height: 100%; border-radius: 3px; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- JURISDICTION HEADER -->
+  <div class="jurisdiction-header">
+    <div class="jurisdiction-title">${meta.title}</div>
+    <div class="jurisdiction-sub">${meta.subtitle}</div>
+    <div class="jurisdiction-sub" style="margin-top:8px;font-weight:600;color:${meta.accentColor}">
+      ${quarterLabel} ${reportPeriod.year} &nbsp;|&nbsp; Document ID: ${reportId}
+    </div>
+  </div>
+  <div class="report-band">
+    <span>Regulation: ${meta.regulation}</span>
+    <span>Authority: ${meta.authority}</span>
+  </div>
+  <!-- PLATFORM + ORG HEADER -->
+  <div class="header" style="padding:16px 32px">
+    <div class="header-logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-text">Circul-AI-r</div>
+        <div class="logo-sub">Battery Intelligence Platform</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <strong>${organization.name}</strong>
+      ${organization.registrationId ? `<div>Registration: ${organization.registrationId}</div>` : ""}
+      ${organization.address ? `<div>${organization.address}</div>` : ""}
+      ${organization.contactEmail ? `<div>${organization.contactEmail}</div>` : ""}
+      <div>Generated: ${generatedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</div>
+    </div>
+  </div>
+
+  <!-- COMPLIANCE STATUS -->
+  <div class="section">
+    <div class="compliance-box">
+      <div class="compliance-rate">${stats.complianceRate.toFixed(0)}%</div>
+      <div>
+        <div class="compliance-status">${complianceStatus}</div>
+        <p style="font-size:10px;color:#6b7280;margin-top:4px">
+          EPR compliance rate for ${quarterLabel} ${reportPeriod.year}. ${stats.totalEprTokens} EPR tokens issued covering ${stats.totalWeightKg.toFixed(1)} kg of battery waste processed across ${stats.totalBatteries} registered batteries.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI SUMMARY -->
+  <div class="section">
+    <div class="section-title">Section A — Battery Inventory Summary</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.totalBatteries}</div>
+        <div class="kpi-label">Total Batteries</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.operationalCount}</div>
+        <div class="kpi-label">Operational</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.secondLifeCount}</div>
+        <div class="kpi-label">Second Life</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.endOfLifeCount}</div>
+        <div class="kpi-label">End of Life</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHEMISTRY BREAKDOWN -->
+  <div class="section">
+    <div class="section-title">Section B — Chemistry Distribution</div>
+    <table class="table">
+      <thead>
+        <tr><th>Chemistry</th><th>Count</th><th>Percentage</th><th>Distribution</th></tr>
+      </thead>
+      <tbody>
+        ${chemistryRows.map(([chem, count]) => {
+          const pct = batteries.length > 0 ? ((count / batteries.length) * 100).toFixed(1) : "0";
+          const colors: Record<string, string> = { NMC: "#3b82f6", LFP: "#22c55e", NCA: "#f59e0b", LCO: "#8b5cf6", LMO: "#ef4444" };
+          const barColor = colors[chem] ?? "#94a3b8";
+          return `<tr>
+            <td style="font-weight:600">${chem}</td>
+            <td>${count}</td>
+            <td>${pct}%</td>
+            <td style="width:200px"><div class="chemistry-bar"><div class="chemistry-fill" style="width:${pct}%;background:${barColor}"></div></div></td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EPR TOKEN SUMMARY -->
+  <div class="section">
+    <div class="section-title">Section C — EPR Token Issuance</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.totalEprTokens}</div>
+        <div class="kpi-label">Tokens Issued</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.totalWeightKg.toFixed(0)} kg</div>
+        <div class="kpi-label">Weight Processed</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${totalBlackMass.toFixed(0)} kg</div>
+        <div class="kpi-label">Black Mass Yield</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${stats.totalYieldKg.toFixed(0)} kg</div>
+        <div class="kpi-label">Total Yield Verified</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MINERAL RECOVERY -->
+  <div class="section">
+    <div class="section-title">Section D — Mineral Recovery</div>
+    <div class="grid-3">
+      <div class="mineral-card">
+        <div class="mineral-value">${totalLiRecovered.toFixed(2)} kg</div>
+        <div class="mineral-label">Lithium Recovered</div>
+      </div>
+      <div class="mineral-card">
+        <div class="mineral-value">${totalCoRecovered.toFixed(2)} kg</div>
+        <div class="mineral-label">Cobalt Recovered</div>
+      </div>
+      <div class="mineral-card">
+        <div class="mineral-value">${totalNiRecovered.toFixed(2)} kg</div>
+        <div class="mineral-label">Nickel Recovered</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EPR TOKEN LEDGER -->
+  ${eprTokens.length > 0 ? `
+  <div class="section page-break">
+    <div class="section-title">Section E — EPR Token Ledger (${Math.min(eprTokens.length, 20)} of ${eprTokens.length})</div>
+    <table class="table">
+      <thead>
+        <tr><th>Token ID</th><th>BPAN</th><th>Chemistry</th><th>Weight (kg)</th><th>Status</th><th>Issued</th></tr>
+      </thead>
+      <tbody>
+        ${eprTokens.slice(0, 20).map((t) => `
+        <tr>
+          <td style="font-family:monospace;font-size:9px">${t.tokenId}</td>
+          <td style="font-family:monospace;font-size:9px">${t.bpan ?? "\u2014"}</td>
+          <td>${t.chemistry ?? "\u2014"}</td>
+          <td>${parseFloat(String(t.weightKg)).toFixed(2)}</td>
+          <td><span class="badge ${t.status === "issued" ? "badge-green" : t.status === "redeemed" ? "badge-blue" : "badge-yellow"}">${t.status}</span></td>
+          <td>${new Date(t.issuedAt).toLocaleDateString("en-IN")}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    ${eprTokens.length > 20 ? `<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${eprTokens.length - 20} more tokens. Full ledger available in the platform.</div>` : ""}
+  </div>` : ""}
+
+  <!-- BATTERY INVENTORY -->
+  ${batteries.length > 0 ? `
+  <div class="section${eprTokens.length === 0 ? " page-break" : ""}">
+    <div class="section-title">Section F — Battery Inventory (${Math.min(batteries.length, 25)} of ${batteries.length})</div>
+    <table class="table">
+      <thead>
+        <tr><th>BPAN</th><th>Chemistry</th><th>Capacity</th><th>SOH</th><th>Status</th><th>Manufacturer</th><th>Registered</th></tr>
+      </thead>
+      <tbody>
+        ${batteries.slice(0, 25).map((b) => {
+          const soh = b.currentSoh != null ? parseFloat(String(b.currentSoh)) : null;
+          const sohColor = soh == null ? "#9ca3af" : soh > 75 ? "#059669" : soh > 50 ? "#d97706" : "#dc2626";
+          return `<tr>
+            <td style="font-family:monospace;font-size:9px">${b.bpan}</td>
+            <td>${b.chemistry}</td>
+            <td>${parseFloat(String(b.capacityKwh)).toFixed(1)} kWh</td>
+            <td style="color:${sohColor};font-weight:600">${soh != null ? soh.toFixed(1) + "%" : "\u2014"}</td>
+            <td><span class="badge ${b.status === "operational" ? "badge-green" : b.status === "second_life" ? "badge-blue" : "badge-yellow"}">${b.status.replace(/_/g, " ")}</span></td>
+            <td style="font-size:9px">${b.manufacturer ?? "\u2014"}</td>
+            <td>${new Date(b.registeredAt).toLocaleDateString("en-IN")}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    ${batteries.length > 25 ? `<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${batteries.length - 25} more batteries. Full inventory available in the platform.</div>` : ""}
+  </div>` : ""}
+
+  <!-- YIELD VERIFICATION -->
+  ${yieldVerifications.length > 0 ? `
+  <div class="section">
+    <div class="section-title">Section G — Yield Verification Records</div>
+    <table class="table">
+      <thead>
+        <tr><th>BPAN</th><th>Black Mass (kg)</th><th>Li (kg)</th><th>Co (kg)</th><th>Ni (kg)</th><th>Verified</th></tr>
+      </thead>
+      <tbody>
+        ${yieldVerifications.slice(0, 15).map((v) => `
+        <tr>
+          <td style="font-family:monospace;font-size:9px">${v.bpan ?? "\u2014"}</td>
+          <td>${parseFloat(String(v.blackMassKg)).toFixed(2)}</td>
+          <td>${v.lithiumRecoveredKg != null ? parseFloat(String(v.lithiumRecoveredKg)).toFixed(2) : "\u2014"}</td>
+          <td>${v.cobaltRecoveredKg != null ? parseFloat(String(v.cobaltRecoveredKg)).toFixed(2) : "\u2014"}</td>
+          <td>${v.nickelRecoveredKg != null ? parseFloat(String(v.nickelRecoveredKg)).toFixed(2) : "\u2014"}</td>
+          <td>${new Date(v.verifiedAt).toLocaleDateString("en-IN")}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>` : ""}
+
+  <!-- DECLARATION -->
+  <div class="section">
+    <div class="section-title">Section H — Declaration & Certification</div>
+    <div class="warning-box">
+      <p style="font-size:10px;color:#92400e;line-height:1.6">
+        I hereby declare that the information furnished in this EPR Compliance Report is true, correct and complete to the best of my knowledge and belief. 
+        All battery waste has been processed in accordance with applicable regulations (${meta.regulation}) and guidelines issued by ${meta.authority}. 
+        EPR obligations for ${quarterLabel} ${reportPeriod.year} have been fulfilled through the Circul-AI-r Platform's blockchain-verified token system.
+      </p>
+      <div style="margin-top:16px;display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:9px;color:#9ca3af">Authorized Signatory</div>
+          <div style="font-size:11px;font-weight:600;margin-top:2px">${generatedBy}</div>
+          <div style="font-size:9px;color:#9ca3af">${organization.name}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#9ca3af">Date of Submission</div>
+          <div style="font-size:11px;font-weight:600;margin-top:2px">${generatedAt.toLocaleDateString("en-IN")}</div>
+          <div style="font-size:9px;color:#9ca3af">Digital Signature via Circul-AI-r</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div style="font-weight:600;color:#374151;margin-bottom:2px">${meta.title}</div>
+      <div>${meta.authority}</div>
+      <div>Generated via Circul-AI-r Platform | Document ID: ${reportId}</div>
+    </div>
+    <div class="footer-seal">
+      <div class="seal-box">
+        <div class="seal-text" style="color:${complianceColor}">${complianceStatus}</div>
+        <div class="seal-text">${quarterLabel} ${reportPeriod.year}</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="watermark-valid" style="color:${complianceColor}">${complianceStatus === "COMPLIANT" ? "\u2713 OFFICIAL DOCUMENT" : "\u26A0 REVIEW REQUIRED"}</div>
+      <div>Compliance Rate: ${stats.complianceRate.toFixed(0)}%</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+  return htmlToPdf(html);
+}
+
+// ─── PER-BATTERY EPR COMPLIANCE CERTIFICATE ───────────────────────────────────
+
+export interface BatteryComplianceCertData {
+  battery: {
+    bpan: string;
+    chemistry: string;
+    capacityKwh: string | number;
+    manufacturer: string | null;
+    model: string | null;
+    status: string;
+    currentSoh: string | number | null;
+    registeredAt: Date;
+  };
+  eprTokens: Array<{
+    tokenId: string;
+    weightKg: string | number;
+    status: string;
+    issuedAt: Date;
+  }>;
+  serviceHistory: Array<{
+    serviceType: string;
+    description: string | null;
+    performedAt: Date;
+    performedBy: string | null;
+  }>;
+  complianceStatus: "compliant" | "pending" | "non_compliant";
+  generatedAt: Date;
+  generatedBy: string;
+}
+
+export async function generateBatteryComplianceCertPdf(data: BatteryComplianceCertData): Promise<Buffer> {
+  const { battery, eprTokens, serviceHistory, complianceStatus, generatedAt, generatedBy } = data;
+  const certId = `CERT-${battery.bpan}-${Date.now().toString(36).toUpperCase()}`;
+  const soh = battery.currentSoh != null ? parseFloat(String(battery.currentSoh)) : null;
+  const statusLabel = complianceStatus === "compliant" ? "COMPLIANT" : complianceStatus === "pending" ? "PENDING REVIEW" : "NON-COMPLIANT";
+  const statusColor = complianceStatus === "compliant" ? "#059669" : complianceStatus === "pending" ? "#d97706" : "#dc2626";
+  const statusBg = complianceStatus === "compliant" ? "#ecfdf5" : complianceStatus === "pending" ? "#fffbeb" : "#fef2f2";
+  const statusBorder = complianceStatus === "compliant" ? "#6ee7b7" : complianceStatus === "pending" ? "#fcd34d" : "#fca5a5";
+  const totalEprWeight = eprTokens.reduce((s, t) => s + parseFloat(String(t.weightKg ?? 0)), 0);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Battery Compliance Certificate — ${battery.bpan}</title>
+<style>${baseStyles}
+  .cert-header { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%); color: white; padding: 28px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .cert-badge { background: ${statusBg}; border: 2px solid ${statusBorder}; border-radius: 12px; padding: 20px; text-align: center; }
+  .cert-status { font-size: 18px; font-weight: 800; color: ${statusColor}; letter-spacing: 1px; }
+  .cert-id { font-size: 9px; color: #9ca3af; margin-top: 4px; font-family: monospace; }
+  .bpan-display { font-family: monospace; font-size: 20px; font-weight: 700; color: #00e5a0; letter-spacing: 1px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .detail-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+  .detail-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-value { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
+  .soh-gauge { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .soh-fill { height: 100%; border-radius: 4px; }
+  .timeline { border-left: 2px solid #e2e8f0; padding-left: 16px; margin-left: 8px; }
+  .timeline-item { position: relative; padding-bottom: 12px; }
+  .timeline-dot { position: absolute; left: -22px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #00e5a0; border: 2px solid white; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- HEADER -->
+  <div class="cert-header">
+    <div>
+      <div class="header-logo" style="display:flex;align-items:center;gap:12px">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <div class="logo-text">Circul-AI-r</div>
+          <div class="logo-sub">Battery Compliance Certificate</div>
+        </div>
+      </div>
+      <div class="bpan-display" style="margin-top:12px">${battery.bpan}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="cert-badge">
+        <div class="cert-status">${statusLabel}</div>
+        <div class="cert-id">${certId}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BATTERY DETAILS -->
+  <div class="section">
+    <div class="section-title">Battery Information</div>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <div class="detail-label">Chemistry</div>
+        <div class="detail-value">${battery.chemistry}</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Capacity</div>
+        <div class="detail-value">${parseFloat(String(battery.capacityKwh)).toFixed(1)} kWh</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Manufacturer</div>
+        <div class="detail-value">${battery.manufacturer ?? "\u2014"}</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Model</div>
+        <div class="detail-value">${battery.model ?? "\u2014"}</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Current Status</div>
+        <div class="detail-value" style="text-transform:capitalize">${battery.status.replace(/_/g, " ")}</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Registered</div>
+        <div class="detail-value">${new Date(battery.registeredAt).toLocaleDateString("en-IN")}</div>
+      </div>
+    </div>
+    ${soh != null ? `
+    <div style="margin-top:12px">
+      <div class="detail-label">State of Health (SOH)</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <div style="font-size:24px;font-weight:800;color:${soh > 75 ? "#059669" : soh > 50 ? "#d97706" : "#dc2626"}">${soh.toFixed(1)}%</div>
+        <div class="soh-gauge" style="flex:1">
+          <div class="soh-fill" style="width:${Math.min(soh, 100)}%;background:${soh > 75 ? "#059669" : soh > 50 ? "#d97706" : "#dc2626"}"></div>
+        </div>
+      </div>
+    </div>` : ""}
+  </div>
+
+  <!-- EPR TOKEN HISTORY -->
+  <div class="section">
+    <div class="section-title">EPR Token History (${eprTokens.length} tokens, ${totalEprWeight.toFixed(2)} kg total)</div>
+    ${eprTokens.length > 0 ? `
+    <table class="table">
+      <thead>
+        <tr><th>Token ID</th><th>Weight (kg)</th><th>Status</th><th>Issued</th></tr>
+      </thead>
+      <tbody>
+        ${eprTokens.slice(0, 10).map((t) => `
+        <tr>
+          <td style="font-family:monospace;font-size:9px">${t.tokenId}</td>
+          <td>${parseFloat(String(t.weightKg)).toFixed(2)}</td>
+          <td><span class="badge ${t.status === "issued" ? "badge-green" : t.status === "redeemed" ? "badge-blue" : "badge-yellow"}">${t.status}</span></td>
+          <td>${new Date(t.issuedAt).toLocaleDateString("en-IN")}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>` : `<p style="font-size:10px;color:#9ca3af">No EPR tokens issued for this battery.</p>`}
+  </div>
+
+  <!-- SERVICE HISTORY -->
+  <div class="section">
+    <div class="section-title">Service & Maintenance History</div>
+    ${serviceHistory.length > 0 ? `
+    <div class="timeline">
+      ${serviceHistory.slice(0, 8).map((s) => `
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div style="font-size:10px;font-weight:600">${s.serviceType.replace(/_/g, " ")}</div>
+        <div style="font-size:9px;color:#6b7280">${s.description ?? ""}</div>
+        <div style="font-size:9px;color:#9ca3af;margin-top:2px">${new Date(s.performedAt).toLocaleDateString("en-IN")} ${s.performedBy ? `\u2014 ${s.performedBy}` : ""}</div>
+      </div>`).join("")}
+    </div>` : `<p style="font-size:10px;color:#9ca3af">No service records available.</p>`}
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div style="font-weight:600;color:#374151;margin-bottom:2px">Battery Compliance Certificate</div>
+      <div>Circul-AI-r Platform | ${certId}</div>
+      <div>Generated by ${generatedBy} on ${generatedAt.toLocaleDateString("en-IN")}</div>
+    </div>
+    <div class="footer-seal">
+      <div class="seal-box">
+        <div class="seal-text" style="color:${statusColor}">${statusLabel}</div>
+        <div class="seal-text">${battery.bpan}</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="watermark-valid" style="color:${statusColor}">${complianceStatus === "compliant" ? "\u2713 CERTIFIED" : "\u26A0 REVIEW REQUIRED"}</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+  return htmlToPdf(html);
+}

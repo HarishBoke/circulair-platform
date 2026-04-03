@@ -29,7 +29,7 @@ import {
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
-import { generateHealthPassportPdf, generateCpcbReportPdf } from "./pdfGenerator";
+import { generateHealthPassportPdf, generateCpcbReportPdf, generateEprComplianceReportPdf, generateBatteryComplianceCertPdf } from "./pdfGenerator";
 import { storagePut } from "./storage";
 import {
   logAgentAction, listAgentActions, countAgentActions,
@@ -1306,13 +1306,160 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
 
     listReports: protectedProcedure
       .input(z.object({
-        type: z.enum(["health_passport", "cpcb_form", "all"]).default("all"),
+        type: z.enum(["health_passport", "cpcb_form", "epr_compliance", "battery_cert", "all"]).default("all"),
         limit: z.number().int().min(1).max(100).default(20),
       }))
       .query(async ({ input }) => {
         const filters: { type?: string; limit?: number } = { limit: input.limit };
         if (input.type !== "all") filters.type = input.type;
         return listDocuments(filters);
+      }),
+
+    eprComplianceReport: protectedProcedure
+      .input(z.object({
+        jurisdiction: z.enum(["india_cpcb", "eu_battery_reg", "generic"]),
+        year: z.number().int().min(2020).max(2099),
+        quarter: z.number().int().min(1).max(4),
+        organizationName: z.string().optional(),
+        registrationId: z.string().optional(),
+        address: z.string().optional(),
+        contactEmail: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const [eprTokens, eprStats, batteryStats, allBatteries] = await Promise.all([
+          listEprTokens({ limit: 500 }),
+          getEprStats(),
+          getBatteryStats(),
+          listBatteries({ limit: 500 }),
+        ]);
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        let yieldData: any[] = [];
+        if (db) {
+          const { yieldVerifications } = await import("../drizzle/schema");
+          yieldData = await db.select().from(yieldVerifications).limit(200);
+        }
+        const verifiedCount = eprTokens.filter((t) => t.status === "verified").length;
+        const complianceRate = eprTokens.length > 0 ? (verifiedCount / eprTokens.length) * 100 : 100;
+
+        const pdfBuffer = await generateEprComplianceReportPdf({
+          jurisdiction: input.jurisdiction,
+          reportPeriod: { year: input.year, quarter: input.quarter },
+          organization: {
+            name: input.organizationName ?? ctx.user?.name ?? "Circul-AI-r Platform",
+            registrationId: input.registrationId,
+            address: input.address,
+            contactEmail: input.contactEmail,
+          },
+          batteries: allBatteries.items.map((b: any) => ({
+            bpan: b.bpan,
+            chemistry: b.chemistry,
+            capacityKwh: b.capacityKwh,
+            status: b.status,
+            currentSoh: b.currentSoh,
+            manufacturer: b.manufacturerId,
+            registeredAt: b.createdAt,
+          })),
+          eprTokens: eprTokens.map((t) => ({
+            tokenId: t.tokenId,
+            bpan: t.bpan,
+            weightKg: t.actualYieldKg ?? 0,
+            chemistry: null,
+            status: t.status,
+            issuedAt: t.createdAt,
+          })),
+          yieldVerifications: yieldData.map((v: any) => ({
+            bpan: Array.isArray(v.bpanList) ? (v.bpanList as string[])[0] ?? null : null,
+            blackMassKg: v.blackMassYieldKg ?? 0,
+            lithiumRecoveredKg: v.lithiumYieldKg,
+            cobaltRecoveredKg: v.cobaltYieldKg,
+            nickelRecoveredKg: v.nickelYieldKg,
+            verifiedAt: v.completedAt ?? v.createdAt,
+          })),
+          stats: {
+            totalBatteries: batteryStats.total,
+            operationalCount: batteryStats.operational,
+            secondLifeCount: batteryStats.secondLife,
+            endOfLifeCount: batteryStats.endOfLife,
+            totalEprTokens: eprStats.total,
+            totalWeightKg: eprStats.totalYieldKg,
+            totalYieldKg: yieldData.reduce((s: number, v: any) => s + parseFloat(String(v.totalActualYieldKg ?? 0)), 0),
+            complianceRate,
+          },
+          generatedAt: new Date(),
+          generatedBy: ctx.user?.name ?? "Platform System",
+        });
+        const QUARTER_LABELS: Record<number, string> = { 1: "Q1", 2: "Q2", 3: "Q3", 4: "Q4" };
+        const fileKey = `epr-reports/${input.jurisdiction}-${input.year}-${QUARTER_LABELS[input.quarter]}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+        await createDocument({
+          name: `EPR Compliance Report \u2014 ${input.jurisdiction.toUpperCase()} ${QUARTER_LABELS[input.quarter]} ${input.year}`,
+          type: "compliance_report",
+          uploadedById: ctx.user!.id,
+          fileUrl: url,
+          fileKey,
+          fileSizeBytes: pdfBuffer.length,
+          mimeType: "application/pdf",
+          accessLevel: "government",
+        });
+        return { url, fileKey, sizeBytes: pdfBuffer.length };
+      }),
+
+    batteryComplianceCert: protectedProcedure
+      .input(z.object({ bpan: z.string().length(21) }))
+      .mutation(async ({ input, ctx }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new Error("Battery not found");
+        const [eprTokens, serviceHistory] = await Promise.all([
+          listEprTokens({ limit: 100 }),
+          getServiceHistory(input.bpan),
+        ]);
+        const batteryTokens = eprTokens.filter((t) => t.bpan === input.bpan);
+        const hasVerified = batteryTokens.some((t) => t.status === "verified");
+        const complianceStatus = hasVerified ? "compliant" as const : batteryTokens.length > 0 ? "pending" as const : "pending" as const;
+
+        const pdfBuffer = await generateBatteryComplianceCertPdf({
+          battery: {
+            bpan: battery.bpan,
+            chemistry: battery.chemistry,
+            capacityKwh: battery.capacityKwh,
+            manufacturer: battery.manufacturerId,
+            model: null,
+            status: battery.status,
+            currentSoh: battery.currentSoh,
+            registeredAt: battery.createdAt,
+          },
+          eprTokens: batteryTokens.map((t) => ({
+            tokenId: t.tokenId,
+            weightKg: t.actualYieldKg ?? 0,
+            status: t.status,
+            issuedAt: t.createdAt,
+          })),
+          serviceHistory: (serviceHistory ?? []).map((s: any) => ({
+            serviceType: s.serviceType ?? "maintenance",
+            description: s.description,
+            performedAt: s.performedAt ?? s.createdAt,
+            performedBy: s.performedBy,
+          })),
+          complianceStatus,
+          generatedAt: new Date(),
+          generatedBy: ctx.user?.name ?? "Platform System",
+        });
+        const fileKey = `compliance-certs/${input.bpan}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+        await createDocument({
+          name: `Compliance Certificate \u2014 ${input.bpan}`,
+          type: "battery_certificate",
+          bpan: input.bpan,
+          batteryId: battery.id,
+          uploadedById: ctx.user!.id,
+          fileUrl: url,
+          fileKey,
+          fileSizeBytes: pdfBuffer.length,
+          mimeType: "application/pdf",
+          accessLevel: "organization",
+        });
+        return { url, fileKey, sizeBytes: pdfBuffer.length };
       }),
   }),
 

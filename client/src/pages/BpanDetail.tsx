@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Brain, Truck, ShoppingCart, QrCode, Activity, Thermometer,
   Zap, RefreshCw, FileDown, Leaf, Recycle, Wifi, WifiOff, Loader2,
-  Database, Clock, AlertTriangle, Play, Square,
+  Database, Clock, AlertTriangle, Play, Square, Shield,
 } from "lucide-react";
 import CarbonFootprintForm from "@/components/CarbonFootprintForm";
 import RecycledContentForm from "@/components/RecycledContentForm";
@@ -101,6 +101,13 @@ export default function BpanDetail() {
       refetchHistory();
     },
     onError: (e) => toast.error(e.message),
+  });
+  const complianceCertMutation = trpc.pdf.batteryComplianceCert.useMutation({
+    onSuccess: (d) => {
+      toast.success("Compliance Certificate ready!", { description: "Opening in new tab..." });
+      window.open(d.url, "_blank");
+    },
+    onError: (e) => toast.error("Certificate generation failed", { description: e.message }),
   });
   const pdfMutation = trpc.pdf.healthPassport.useMutation({
     onSuccess: (d) => {
@@ -209,6 +216,15 @@ export default function BpanDetail() {
           >
             <FileDown className="w-3.5 h-3.5 mr-1.5" />
             {pdfMutation.isPending ? "Generating..." : "Health Passport"}
+          </Button>
+          <Button
+            size="sm" variant="outline"
+            className="border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs"
+            disabled={complianceCertMutation.isPending}
+            onClick={() => complianceCertMutation.mutate({ bpan })}
+          >
+            <Shield className="w-3.5 h-3.5 mr-1.5" />
+            {complianceCertMutation.isPending ? "Generating..." : "Compliance Cert"}
           </Button>
           <Button
             size="sm"

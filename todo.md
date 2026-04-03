@@ -754,3 +754,14 @@
 - [x] Add Browse / My Listings tabs to Marketplace page with withdraw action
 - [x] Write 18 vitest tests for marketplace listing CRUD (all passing)
 - [x] TypeScript: 0 errors, 311 tests passing total
+
+## Phase 46 (COMPLETED): EPR Compliance PDF Export
+- [x] Audit existing PDF generator (pdfGenerator.ts), EPR compliance page, and data structures
+- [x] Build EPR compliance report HTML template — 3 jurisdictions (India CPCB, EU Battery Reg, Generic) with battery inventory, EPR tokens, yield data, mineral recovery, regulatory fields
+- [x] Add tRPC procedure: pdf.eprComplianceReport (jurisdiction, year, quarter, org details) → S3 URL
+- [x] Add tRPC procedure: pdf.batteryComplianceCert (bpan) → per-battery compliance certificate PDF → S3 URL
+- [x] Wire "Export Report" dialog on EprCompliance page with jurisdiction selector, period picker, organization details form, and report preview
+- [x] Wire "Compliance Cert" button on BpanDetail page (opens cert PDF in new tab)
+- [x] Store PDF metadata in documents table (compliance_report / battery_certificate types)
+- [x] Write 8 vitest tests for EPR PDF generation (all passing)
+- [x] TypeScript: 0 errors, 319 tests passing total
