@@ -169,6 +169,11 @@ export const marketplaceListings = mysqlTable("marketplace_listings", {
   chemistry: varchar("chemistry", { length: 20 }),
   healthPassportUrl: text("healthPassportUrl"),
   description: text("description"),
+  conditionGrade: varchar("condition_grade", { length: 20 }),
+  conditionNotes: text("condition_notes"),
+  location: varchar("location", { length: 256 }),
+  photoCount: int("photoCount").default(0),
+  primaryPhotoUrl: text("primaryPhotoUrl"),
   status: mysqlEnum("status", ["active", "sold", "reserved", "expired", "withdrawn"]).default("active").notNull(),
   buyerId: int("buyerId"),
   transactionDate: timestamp("transactionDate"),
@@ -920,3 +925,25 @@ export const iotDevices = mysqlTable("iot_devices", {
 });
 export type IotDevice = typeof iotDevices.$inferSelect;
 export type InsertIotDevice = typeof iotDevices.$inferInsert;
+
+
+// ─── LISTING PHOTOS ───────────────────────────────────────────────────────────
+export const listingPhotos = mysqlTable("listing_photos", {
+  id: int("id").autoincrement().primaryKey(),
+  listingId: int("listingId").notNull(),
+  /** S3 URL of the photo */
+  url: text("url").notNull(),
+  /** S3 key for deletion */
+  fileKey: varchar("fileKey", { length: 512 }),
+  /** Caption / alt text */
+  caption: varchar("caption", { length: 256 }),
+  /** Display order (0 = primary photo) */
+  sortOrder: int("sortOrder").default(0).notNull(),
+  /** File size in bytes */
+  fileSizeBytes: int("fileSizeBytes"),
+  /** MIME type */
+  mimeType: varchar("mimeType", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ListingPhoto = typeof listingPhotos.$inferSelect;
+export type InsertListingPhoto = typeof listingPhotos.$inferInsert;

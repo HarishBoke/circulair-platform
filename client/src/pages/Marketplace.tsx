@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign, Download } from "lucide-react";
+import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign, Download, Package } from "lucide-react";
 import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useLocation } from "wouter";
 import { usePlatformSettings } from "@/contexts/PlatformSettingsContext";
 import { CURRENCIES } from "@shared/currencies";
 
@@ -62,6 +63,8 @@ export default function Marketplace() {
   const [listingType, setListingType] = useState("all");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 12;
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState<"browse" | "my">("browse");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { displayCurrency } = usePlatformSettings();
   const [createForm, setCreateForm] = useState({
@@ -103,11 +106,12 @@ export default function Marketplace() {
           <h1 className="font-display text-2xl font-bold">Second-Life Marketplace</h1>
           <p className="text-muted-foreground text-sm mt-1">AI-priced battery listings with health passport certification</p>
         </div>
+        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/marketplace/create")}>
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> List Battery for Sale
+        </Button>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Listing
-            </Button>
+            <span className="hidden" />
           </DialogTrigger>
           <DialogContent className="bg-card border-border max-w-md">
             <DialogHeader>
@@ -194,6 +198,27 @@ export default function Marketplace() {
         </Dialog>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("browse")}
+          className={`px-4 py-1.5 text-sm rounded-md transition-all font-medium ${
+            activeTab === "browse" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <ShoppingCart className="w-3.5 h-3.5 inline mr-1.5" /> Browse
+        </button>
+        <button
+          onClick={() => setActiveTab("my")}
+          className={`px-4 py-1.5 text-sm rounded-md transition-all font-medium ${
+            activeTab === "my" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Package className="w-3.5 h-3.5 inline mr-1.5" /> My Listings
+        </button>
+      </div>
+
+      {activeTab === "browse" && <>
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -353,6 +378,90 @@ export default function Marketplace() {
           </div>
         </div>
       )}
+      </>}
+
+      {/* My Listings Tab */}
+      {activeTab === "my" && <MyListingsTab navigate={navigate} />}
+    </div>
+  );
+}
+
+function MyListingsTab({ navigate }: { navigate: (path: string) => void }) {
+  const { data, isLoading } = trpc.marketplace.myListings.useQuery({ limit: 50 });
+  const withdrawMutation = trpc.marketplace.withdraw.useMutation({
+    onSuccess: () => toast.success("Listing withdrawn"),
+  });
+  const utils = trpc.useUtils();
+
+  const items = data?.items ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-card border border-border rounded-xl animate-pulse" />)}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-16 text-center">
+        <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+        <h3 className="font-display text-lg font-bold mb-2">No Listings Yet</h3>
+        <p className="text-muted-foreground text-sm mb-4">List your first battery on the marketplace.</p>
+        <Button onClick={() => navigate("/marketplace/create")} className="bg-primary text-primary-foreground">
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> List Battery for Sale
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((listing) => {
+        const soh = Number(listing.sohAtListing ?? 0);
+        return (
+          <div key={listing.id} className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <div className="font-mono text-sm text-primary">{listing.bpan}</div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-xs text-muted-foreground capitalize">{listing.listingType.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-muted-foreground">SOH: {soh.toFixed(1)}%</span>
+                    <span className="text-xs text-muted-foreground">{listing.capacityKwh} kWh</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-display text-lg font-bold">
+                    {listing.askingPriceInr ? `\u20B9${Number(listing.askingPriceInr).toLocaleString()}` : "Market Price"}
+                  </div>
+                  <Badge variant="outline" className={`font-mono text-[9px] capitalize ${LISTING_STATUS_STYLES[listing.status] ?? ""}`}>
+                    {listing.status}
+                  </Badge>
+                </div>
+                {listing.status === "active" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs"
+                    disabled={withdrawMutation.isPending}
+                    onClick={() => {
+                      withdrawMutation.mutate({ listingId: listing.id }, {
+                        onSuccess: () => utils.marketplace.myListings.invalidate(),
+                      });
+                    }}
+                  >
+                    Withdraw
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

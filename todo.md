@@ -741,3 +741,16 @@
 - [x] Route /device-provisioning wired in App.tsx with PlatformLayout
 - [x] Sidebar nav item added under INTEGRATIONS
 - [x] TypeScript: 0 errors
+
+## Phase 44 (COMPLETED): Marketplace Listing Creation
+- [x] Audit existing marketplace schema, DB helpers, tRPC procedures, and page
+- [x] Add listing_photos table and enhance marketplace_listings with condition, location, photoCount, primaryPhotoUrl
+- [x] Add DB helpers: getListingById, listUserListings, updateListing, withdrawListing, insertListingPhoto, getListingPhotos, deleteListingPhoto, listUserBatteries
+- [x] Add tRPC procedures: marketplace.uploadPhoto, marketplace.getPhotos, marketplace.deletePhoto, marketplace.getById, marketplace.myListings, marketplace.myBatteries, marketplace.update, marketplace.withdraw
+- [x] Photo upload via S3 storagePut with max 6 photos per listing
+- [x] Build MarketplaceCreate.tsx — 4-section guided form (Battery Selection, Condition & Pricing, Photos, Description & Submit)
+- [x] Wire /marketplace/create route in App.tsx
+- [x] Replace old Create Listing dialog with "List Battery for Sale" button linking to /marketplace/create
+- [x] Add Browse / My Listings tabs to Marketplace page with withdraw action
+- [x] Write 18 vitest tests for marketplace listing CRUD (all passing)
+- [x] TypeScript: 0 errors, 311 tests passing total

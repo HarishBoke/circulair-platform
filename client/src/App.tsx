@@ -13,6 +13,7 @@ import BpanRegister from "./pages/BpanRegister";
 import Telemetry from "./pages/Telemetry";
 import AiSoh from "./pages/AiSoh";
 import Marketplace from "./pages/Marketplace";
+import MarketplaceCreate from "./pages/MarketplaceCreate";
 import Logistics from "./pages/Logistics";
 import EprCompliance from "./pages/EprCompliance";
 import Analytics from "./pages/Analytics";
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/telemetry" component={() => <PlatformLayout><Telemetry /></PlatformLayout>} />
       <Route path="/ai-soh" component={() => <PlatformLayout><AiSoh /></PlatformLayout>} />
       <Route path="/marketplace" component={() => <PlatformLayout><Marketplace /></PlatformLayout>} />
+      <Route path="/marketplace/create" component={() => <PlatformLayout><MarketplaceCreate /></PlatformLayout>} />
       <Route path="/logistics" component={() => <PlatformLayout><Logistics /></PlatformLayout>} />
       <Route path="/epr-compliance" component={() => <PlatformLayout><EprCompliance /></PlatformLayout>} />
       <Route path="/yield-verification" component={() => <PlatformLayout><YieldVerification /></PlatformLayout>} />

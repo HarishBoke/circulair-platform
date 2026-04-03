@@ -24,6 +24,8 @@ import {
   insertConsentLog,
   insertIotDevice, listIotDevices, getIotDeviceById, getIotDeviceByDeviceId,
   updateIotDevice, deleteIotDevice, getIotDeviceStats, updateDeviceLastSeen,
+  insertListingPhoto, getListingPhotos, deleteListingPhoto,
+  getListingById, listUserListings, updateListing, withdrawListing, listUserBatteries,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -623,9 +625,104 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         } as any).where(eq(marketplaceListings.id, input.listingId));
         return { success: true };
       }),
+    // Photo upload for listings
+    uploadPhoto: protectedProcedure
+      .input(z.object({
+        listingId: z.number(),
+        base64Data: z.string(),
+        mimeType: z.string().default("image/jpeg"),
+        caption: z.string().optional(),
+        sortOrder: z.number().default(0),
+        fileSizeBytes: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.sellerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your listing" });
+        const buffer = Buffer.from(input.base64Data, "base64");
+        const ext = input.mimeType.split("/")[1] ?? "jpg";
+        const fileKey = `marketplace/${input.listingId}/${nanoid(12)}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        const photo = await insertListingPhoto({
+          listingId: input.listingId,
+          url,
+          fileKey,
+          caption: input.caption ?? null,
+          sortOrder: input.sortOrder,
+          fileSizeBytes: input.fileSizeBytes ?? buffer.length,
+          mimeType: input.mimeType,
+        });
+        // Update primary photo and count on listing
+        if (input.sortOrder === 0) {
+          await updateListing(input.listingId, { primaryPhotoUrl: url, photoCount: (listing.photoCount ?? 0) + 1 } as any);
+        } else {
+          await updateListing(input.listingId, { photoCount: (listing.photoCount ?? 0) + 1 } as any);
+        }
+        return { photo, url };
+      }),
+    getPhotos: protectedProcedure
+      .input(z.object({ listingId: z.number() }))
+      .query(({ input }) => getListingPhotos(input.listingId)),
+    deletePhoto: protectedProcedure
+      .input(z.object({ photoId: z.number(), listingId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.sellerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your listing" });
+        await deleteListingPhoto(input.photoId);
+        await updateListing(input.listingId, { photoCount: Math.max(0, (listing.photoCount ?? 1) - 1) } as any);
+        return { success: true };
+      }),
+    getById: publicProcedure
+      .input(z.object({ listingId: z.number() }))
+      .query(async ({ input }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        const photos = await getListingPhotos(input.listingId);
+        const battery = await getBatteryById(listing.batteryId);
+        return { listing, photos, battery };
+      }),
+    myListings: protectedProcedure
+      .input(z.object({ status: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
+      .query(({ input, ctx }) => listUserListings(ctx.user.id, input)),
+    myBatteries: protectedProcedure
+      .query(({ ctx }) => listUserBatteries(ctx.user.id)),
+    update: protectedProcedure
+      .input(z.object({
+        listingId: z.number(),
+        description: z.string().optional(),
+        askingPrice: z.number().optional(),
+        currency: z.string().optional(),
+        conditionGrade: z.string().optional(),
+        conditionNotes: z.string().optional(),
+        location: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.sellerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your listing" });
+        const updateData: Record<string, unknown> = {};
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.conditionGrade !== undefined) updateData.conditionGrade = input.conditionGrade;
+        if (input.conditionNotes !== undefined) updateData.conditionNotes = input.conditionNotes;
+        if (input.location !== undefined) updateData.location = input.location;
+        if (input.askingPrice !== undefined) {
+          if (input.currency === "INR") updateData.askingPriceInr = String(input.askingPrice);
+        }
+        await updateListing(input.listingId, updateData as any);
+        return { success: true };
+      }),
+    withdraw: protectedProcedure
+      .input(z.object({ listingId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.sellerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your listing" });
+        await withdrawListing(input.listingId);
+        return { success: true };
+      }),
   }),
-
-  // ─── LOGISTICS ──────────────────────────────────────────────────────────────
+  // ─── LOGISTICS ───────────────────────────────────────────────────────────────
   logistics: router({
     requestPickup: protectedProcedure
       .input(z.object({

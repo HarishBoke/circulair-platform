@@ -16,6 +16,7 @@ import {
   roleAuditLog, InsertRoleAuditLog,
   consentLogs, InsertConsentLog,
   iotDevices, InsertIotDevice,
+  listingPhotos, InsertListingPhoto,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -708,4 +709,73 @@ export async function getIotDeviceStats() {
     else if (r.status === "revoked") stats.revoked = c;
   }
   return stats;
+}
+
+
+// ─── LISTING PHOTO HELPERS ───────────────────────────────────────────────────
+export async function insertListingPhoto(data: InsertListingPhoto) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(listingPhotos).values(data);
+  const result = await db.select().from(listingPhotos)
+    .where(and(eq(listingPhotos.listingId, data.listingId), eq(listingPhotos.url, data.url)))
+    .limit(1);
+  return result[0];
+}
+
+export async function getListingPhotos(listingId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(listingPhotos)
+    .where(eq(listingPhotos.listingId, listingId))
+    .orderBy(listingPhotos.sortOrder);
+}
+
+export async function deleteListingPhoto(photoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(listingPhotos).where(eq(listingPhotos.id, photoId));
+}
+
+export async function getListingById(listingId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(marketplaceListings)
+    .where(eq(marketplaceListings.id, listingId)).limit(1);
+  return result[0];
+}
+
+export async function listUserListings(userId: number, filters?: { status?: string; limit?: number; offset?: number }) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  const conditions = [eq(marketplaceListings.sellerId, userId)];
+  if (filters?.status) conditions.push(eq(marketplaceListings.status, filters.status as any));
+  const query = and(...conditions);
+  const [items, totalResult] = await Promise.all([
+    db.select().from(marketplaceListings).where(query).orderBy(desc(marketplaceListings.createdAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(marketplaceListings).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function updateListing(listingId: number, data: Partial<InsertMarketplaceListing>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(marketplaceListings).set(data as any).where(eq(marketplaceListings.id, listingId));
+}
+
+export async function withdrawListing(listingId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(marketplaceListings).set({ status: "withdrawn" } as any).where(eq(marketplaceListings.id, listingId));
+}
+
+export async function listUserBatteries(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(batteries)
+    .where(or(eq(batteries.registeredById, userId), eq(batteries.ownerId, userId)))
+    .orderBy(desc(batteries.createdAt));
 }
