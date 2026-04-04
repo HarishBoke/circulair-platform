@@ -11,6 +11,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "../email";
 import { SignJWT, jwtVerify } from "jose";
 import { nanoid } from "nanoid";
 import * as db from "../db";
@@ -258,7 +259,23 @@ export function registerPasswordResetRoutes(app: Express) {
       const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, "") || "https://circulair.energy";
       const resetUrl = `${origin}/reset-password?token=${token}`;
 
-      // Notify the owner (best-effort — no SMTP configured yet)
+      // Send the reset email via Resend (best-effort — failure must not block the response)
+      const recipientEmail: string = user.email ?? email; // email is already validated above
+      try {
+        const emailResult = await sendPasswordResetEmail(
+          recipientEmail,
+          resetUrl,
+          user.name ?? "",
+          15
+        );
+        if (!emailResult.success) {
+          console.warn(`[Auth] Resend delivery failed for ${user.email}:`, emailResult.error);
+        }
+      } catch (emailErr) {
+        console.error("[Auth] Unexpected error sending reset email:", emailErr);
+      }
+
+      // Also notify the owner as a secondary audit trail (best-effort)
       try {
         const { notifyOwner } = await import("./notification");
         await notifyOwner({

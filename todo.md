@@ -828,3 +828,16 @@
 - [x] Show graceful "Session expired" toast with description before redirect (sonner toast)
 - [x] Distinguish between initial-load unauthenticated (silent) vs mid-session expiry (toast)
 - [x] TypeScript: 0 errors
+
+## Phase 55 (COMPLETED): Resend Email Integration
+- [x] Install resend npm package (v6.10.0)
+- [x] Add RESEND_API_KEY secret via webdev_request_secrets
+- [x] Add RESEND_FROM_EMAIL secret (sender address)
+- [x] Add resendApiKey and resendFromEmail to ENV in server/_core/env.ts
+- [x] Build server/email.ts helper with sendPasswordResetEmail() function
+- [x] Create branded dark-themed HTML email template with plain-text fallback
+- [x] Wire sendPasswordResetEmail() into POST /api/auth/forgot-password
+- [x] Graceful fallback: Resend failure logs a warning but still returns 200
+- [x] Owner notification kept as secondary audit trail
+- [x] Write 7 vitest tests for email helper (all mocked, all passing)
+- [x] TypeScript: 0 errors, 385 tests passing across 26 test files
