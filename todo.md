@@ -780,3 +780,13 @@
 - [x] tRPC procedures: mqtt.startDemo, mqtt.stopDemo, mqtt.demoStatus
 - [x] Write 16 vitest tests for simulator physics and lifecycle (all passing)
 - [x] TypeScript: 0 errors, 335 tests passing total
+
+## Phase 50 (COMPLETED): Gateway Firmware & Modbus Adapter Field Guide
+- [x] ESP32/Arduino CAN bus gateway firmware (gateway/esp32-can/circul_air_can_gateway.ino) — CAN bus read, MQTT publish, OTA update, watchdog, TLS
+- [x] Raspberry Pi Modbus RS-485 gateway agent (gateway/rpi-modbus/circul_air_modbus_gateway.py) — register maps for Pylontech/BYD/CATL/Victron, offline buffer, systemd service
+- [x] Python host-system agent (gateway/python-agent/circul_air_host_agent.py) — Modbus TCP/RTU, SNMP, REST API, CSV, zero new hardware
+- [x] Lead-acid inference agent (gateway/lead-acid/circul_air_lead_acid_agent.py) — voltage clamp + shunt, Peukert's law, Ah counting, temperature correction
+- [x] Gateway Docs page at /gateway-docs — interactive battery type selector, step-by-step setup guide, credential auto-fill from registered devices, payload schema reference
+- [x] Sidebar nav item (BookOpen) under INTEGRATIONS
+- [x] 18 vitest tests for physics model validation (all passing)
+- [x] TypeScript: 0 errors, 353 tests passing total

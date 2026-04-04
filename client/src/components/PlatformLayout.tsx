@@ -84,6 +84,7 @@ function useNavSections() {
         { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
         { icon: Cpu, label: "Device Provisioning", href: "/device-provisioning" },
         { icon: Play, label: "Demo Mode", href: "/demo" },
+        { icon: BookOpen, label: "Gateway Docs", href: "/gateway-docs" },
       ],
     },
     {

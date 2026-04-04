@@ -27,6 +27,7 @@ import DataIntegration from "./pages/DataIntegration";
 import MqttFlowTester from "./pages/MqttFlowTester";
 import DeviceProvisioning from "./pages/DeviceProvisioning";
 import DemoMode from "./pages/DemoMode";
+import GatewayDocs from "./pages/GatewayDocs";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import PlatformSettings from "./pages/PlatformSettings";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/device-provisioning" component={() => <PlatformLayout><DeviceProvisioning /></PlatformLayout>} />
       <Route path="/demo" component={() => <PlatformLayout><DemoMode /></PlatformLayout>} />
+      <Route path="/gateway-docs" component={() => <PlatformLayout><GatewayDocs /></PlatformLayout>} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />
       <Route path="/admin/system" component={() => <PlatformLayout><SuperAdmin /></PlatformLayout>} />
       <Route path="/admin/feedback" component={() => <PlatformLayout><AdminFeedbackReview /></PlatformLayout>} />
