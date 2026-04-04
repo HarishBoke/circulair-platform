@@ -14,6 +14,7 @@ import Telemetry from "./pages/Telemetry";
 import AiSoh from "./pages/AiSoh";
 import Marketplace from "./pages/Marketplace";
 import MarketplaceCreate from "./pages/MarketplaceCreate";
+import MarketplaceDetail from "./pages/MarketplaceDetail";
 import Logistics from "./pages/Logistics";
 import EprCompliance from "./pages/EprCompliance";
 import Analytics from "./pages/Analytics";
@@ -40,7 +41,7 @@ import BulkOnboarding from "./pages/BulkOnboarding";
 import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
-import LaunchingSoon, { isAccessGranted } from "./pages/LaunchingSoon";
+import LaunchingSoon from "./pages/LaunchingSoon";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/ai-soh" component={() => <PlatformLayout><AiSoh /></PlatformLayout>} />
       <Route path="/marketplace" component={() => <PlatformLayout><Marketplace /></PlatformLayout>} />
       <Route path="/marketplace/create" component={() => <PlatformLayout><MarketplaceCreate /></PlatformLayout>} />
+      <Route path="/marketplace/:id" component={() => <PlatformLayout><MarketplaceDetail /></PlatformLayout>} />
       <Route path="/logistics" component={() => <PlatformLayout><Logistics /></PlatformLayout>} />
       <Route path="/epr-compliance" component={() => <PlatformLayout><EprCompliance /></PlatformLayout>} />
       <Route path="/yield-verification" component={() => <PlatformLayout><YieldVerification /></PlatformLayout>} />
@@ -89,6 +91,8 @@ function Router() {
       <Route path="/wiki" component={CirculWiki} />
       {/* Getting Started Tutorial */}
       <Route path="/getting-started" component={() => <PlatformLayout><GettingStarted /></PlatformLayout>} />
+      {/* Marketing / pre-launch page kept for reference */}
+      <Route path="/coming-soon" component={() => <LaunchingSoon onAccessGranted={() => {}} />} />
       {/* Public legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
@@ -101,7 +105,6 @@ function Router() {
 }
 
 function App() {
-  const [accessGranted, setAccessGranted] = useState(isAccessGranted());
   const [analyticsEnabled, setAnalyticsEnabled] = useState(hasAnalyticsConsent());
 
   // Gate the Umami analytics script on consent
@@ -135,17 +138,6 @@ function App() {
       existing?.remove();
     }
   }, [analyticsEnabled]);
-
-  if (!accessGranted) {
-    return (
-      <ErrorBoundary>
-        <ThemeProvider defaultTheme="dark">
-          <LaunchingSoon onAccessGranted={() => setAccessGranted(true)} />
-          <CookieConsent onConsentChange={(level) => setAnalyticsEnabled(level === "all")} />
-        </ThemeProvider>
-      </ErrorBoundary>
-    );
-  }
 
   return (
     <ErrorBoundary>

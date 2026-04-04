@@ -339,11 +339,11 @@ export default function Marketplace() {
                 )}
 
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 text-xs h-7">
+                  <Button size="sm" className="flex-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 text-xs h-7" onClick={() => navigate(`/marketplace/${listing.id}`)}>
                     View Details
                   </Button>
                   {listing.status === "active" && (
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-7">
+                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-7" onClick={() => navigate(`/marketplace/${listing.id}`)}>
                       Make Offer
                     </Button>
                   )}

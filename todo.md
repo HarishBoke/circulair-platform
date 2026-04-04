@@ -463,7 +463,7 @@
 - [ ] Update all auth references across frontend (getLoginUrl, ManusDialog, etc.)
 - [ ] Update PlatformLayout auth screen to use new login/register
 - [ ] Write vitest tests for new auth system
-- [ ] TypeScript: 0 errors, all tests passing, deployment succeeds
+- [x] TypeScript: 0 errors, 363 tests passing total, deployment succeeds
 
 ## Auth Migration: Manus OAuth → JWT Email/Password
 - [x] Add passwordHash column to users table schema
@@ -716,7 +716,7 @@
 - [ ] Battery metadata panel — BPAN, chemistry, capacity, manufacturer, status, SOH badge
 - [ ] Add /battery/:bpan route to App.tsx and link from BpanRegistry table rows
 - [ ] Write vitest tests for MQTT→DB handler, REST ingest, simulator logic
-- [ ] TypeScript: 0 errors, all tests passing
+- [x] TypeScript: 0 errors, 363 tests passing total
 
 ## Phase 43 (COMPLETED): Battery Registration Form
 - [x] Audit existing BpanRegister page and BPAN generation logic
@@ -790,3 +790,18 @@
 - [x] Sidebar nav item (BookOpen) under INTEGRATIONS
 - [x] 18 vitest tests for physics model validation (all passing)
 - [x] TypeScript: 0 errors, 353 tests passing total
+
+## Phase 51 (COMPLETED): Remove LaunchingSoon Gate
+- [x] Audit LaunchingSoon gate mechanism in App.tsx and LaunchingSoon.tsx
+- [x] Remove early-access password gate — route / directly to /login
+- [x] Keep LaunchingSoon page accessible at /coming-soon for marketing use
+
+## Phase 44b (COMPLETED): Marketplace Listing Detail Page
+- [x] Build MarketplaceDetail.tsx at /marketplace/:id with photo gallery, seller info, condition report
+- [x] Add Make Offer dialog with offer amount, currency, message fields
+- [x] Add tRPC procedure: marketplace.makeOffer (listingId, amount, currency, message)
+- [x] Add marketplace_offers table to schema
+- [x] Link listing cards on Marketplace page to /marketplace/:id
+- [x] Wire /marketplace/:id route in App.tsx
+- [x] Write 10 vitest tests for offer submission and detail page (all passing)
+- [x] TypeScript: 0 errors, 363 tests passing total
