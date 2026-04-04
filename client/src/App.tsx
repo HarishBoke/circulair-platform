@@ -44,6 +44,8 @@ import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 import LaunchingSoon from "./pages/LaunchingSoon";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -54,6 +56,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={() => <PlatformLayout><Dashboard /></PlatformLayout>} />
       <Route path="/batteries" component={() => <PlatformLayout><BpanRegistry /></PlatformLayout>} />
       <Route path="/batteries/register" component={() => <PlatformLayout><BpanRegister /></PlatformLayout>} />

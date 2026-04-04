@@ -947,3 +947,39 @@ export const listingPhotos = mysqlTable("listing_photos", {
 });
 export type ListingPhoto = typeof listingPhotos.$inferSelect;
 export type InsertListingPhoto = typeof listingPhotos.$inferInsert;
+
+// ─── PASSWORD RESET TOKENS ────────────────────────────────────────────────────
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The user this token belongs to */
+  userId: int("userId").notNull(),
+  /** Cryptographically random 64-hex-char token */
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  /** When the token expires (15 minutes from creation) */
+  expiresAt: timestamp("expiresAt").notNull(),
+  /** When the token was consumed (null = still valid) */
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ─── MARKETPLACE OFFERS ───────────────────────────────────────────────────────
+export const marketplaceOffers = mysqlTable("marketplace_offers", {
+  id: int("id").autoincrement().primaryKey(),
+  listingId: int("listingId").notNull(),
+  buyerId: int("buyerId").notNull(),
+  /** Offer amount in the specified currency */
+  offerAmount: decimal("offerAmount", { precision: 14, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("INR").notNull(),
+  /** Optional message from buyer to seller */
+  message: text("message"),
+  /** pending | accepted | rejected | withdrawn | expired */
+  status: mysqlEnum("status", ["pending", "accepted", "rejected", "withdrawn", "expired"])
+    .default("pending")
+    .notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MarketplaceOffer = typeof marketplaceOffers.$inferSelect;
+export type InsertMarketplaceOffer = typeof marketplaceOffers.$inferInsert;

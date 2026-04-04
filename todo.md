@@ -805,3 +805,26 @@
 - [x] Wire /marketplace/:id route in App.tsx
 - [x] Write 10 vitest tests for offer submission and detail page (all passing)
 - [x] TypeScript: 0 errors, 363 tests passing total
+
+## Phase 52 (COMPLETED): Audit unguarded protectedProcedure calls on public routes
+- [x] Scan all React contexts and providers for tRPC queries that fire unconditionally
+- [x] Fix TelemetrySocketContext — disable socket connection when unauthenticated
+- [x] Verify no other context/provider fires a protectedProcedure on /login or /register
+- [x] TypeScript: 0 errors
+
+## Phase 53 (COMPLETED): Forgot Password / Reset Flow
+- [x] Add password_reset_tokens table to drizzle schema (token, userId, expiresAt, usedAt)
+- [x] Create tables via SQL migration (drizzle-kit reports no diff for already-tracked tables)
+- [x] Add DB helpers: createPasswordResetToken, getPasswordResetToken, markPasswordResetTokenUsed, updateUserPassword
+- [x] Add REST routes: POST /api/auth/forgot-password, POST /api/auth/reset-password, GET /api/auth/reset-password/validate
+- [x] Build ForgotPassword.tsx page at /forgot-password with email input form and success state
+- [x] Build ResetPassword.tsx page at /reset-password?token=... with token validation, password strength meter, confirm fields
+- [x] Add "Forgot password?" link on Login.tsx
+- [x] Wire /forgot-password and /reset-password routes in App.tsx
+- [x] TypeScript: 0 errors
+
+## Phase 54 (COMPLETED): Session Expiry Toast
+- [x] Detect mid-session 401 from auth.me (not initial page load 401) via hadActiveSession flag
+- [x] Show graceful "Session expired" toast with description before redirect (sonner toast)
+- [x] Distinguish between initial-load unauthenticated (silent) vs mid-session expiry (toast)
+- [x] TypeScript: 0 errors

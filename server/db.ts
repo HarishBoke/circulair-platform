@@ -17,6 +17,8 @@ import {
   consentLogs, InsertConsentLog,
   iotDevices, InsertIotDevice,
   listingPhotos, InsertListingPhoto,
+  passwordResetTokens, InsertPasswordResetToken,
+  marketplaceOffers, InsertMarketplaceOffer,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -778,4 +780,87 @@ export async function listUserBatteries(userId: number) {
   return db.select().from(batteries)
     .where(or(eq(batteries.registeredById, userId), eq(batteries.ownerId, userId)))
     .orderBy(desc(batteries.createdAt));
+}
+
+// ─── PASSWORD RESET TOKEN HELPERS ─────────────────────────────────────────────
+
+export async function createPasswordResetToken(data: {
+  userId: number;
+  token: string;
+  expiresAt: Date;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(passwordResetTokens).values({
+    userId: data.userId,
+    token: data.token,
+    expiresAt: data.expiresAt,
+  });
+}
+
+export async function getPasswordResetToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.token, token))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function markPasswordResetTokenUsed(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(passwordResetTokens.token, token));
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(users)
+    .set({ passwordHash, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
+// ─── MARKETPLACE OFFER HELPERS ────────────────────────────────────────────────
+
+export async function createMarketplaceOffer(data: InsertMarketplaceOffer) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(marketplaceOffers).values(data);
+  const result = await db
+    .select()
+    .from(marketplaceOffers)
+    .where(and(
+      eq(marketplaceOffers.listingId, data.listingId),
+      eq(marketplaceOffers.buyerId, data.buyerId),
+    ))
+    .orderBy(desc(marketplaceOffers.createdAt))
+    .limit(1);
+  return result[0];
+}
+
+export async function getOffersForListing(listingId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(marketplaceOffers)
+    .where(eq(marketplaceOffers.listingId, listingId))
+    .orderBy(desc(marketplaceOffers.createdAt));
+}
+
+export async function getOffersByBuyer(buyerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(marketplaceOffers)
+    .where(eq(marketplaceOffers.buyerId, buyerId))
+    .orderBy(desc(marketplaceOffers.createdAt));
 }

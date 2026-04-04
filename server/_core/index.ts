@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerAuthRoutes } from "./auth";
+import { registerAuthRoutes, registerPasswordResetRoutes } from "./auth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -43,6 +43,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Custom JWT auth routes under /api/auth/*
   registerAuthRoutes(app);
+  // Forgot / reset password routes
+  registerPasswordResetRoutes(app);
   // REST API v1 Gateway (microservices)
   app.use("/api/v1", createApiGateway());
   // MCP Server (Model Context Protocol for AI agents)

@@ -6,10 +6,23 @@
  *
  * The socket is created lazily on first use and shared across the entire app.
  * It automatically reconnects on network interruptions.
+ *
+ * The socket is intentionally NOT opened on public routes (/login, /register,
+ * /forgot-password, /reset-password) to avoid unnecessary WebSocket connections
+ * before the user is authenticated.
  */
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { io, type Socket } from "socket.io-client";
+import { trpc } from "@/lib/trpc";
+
+// Public routes where the socket should NOT be opened
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/coming-soon", "/privacy", "/terms"];
+function isPublicRoute(): boolean {
+  if (typeof window === "undefined") return true;
+  const path = window.location.pathname;
+  return PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "?"));
+}
 
 // ─── Types (mirrored from server/telemetrySocket.ts) ─────────────────────────
 
@@ -57,9 +70,33 @@ const TelemetrySocketContext = createContext<TelemetrySocketContextValue>({
 
 export function TelemetrySocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
-  const [connectionState, setConnectionState] = useState<SocketConnectionState>("connecting");
+  const [connectionState, setConnectionState] = useState<SocketConnectionState>("disconnected");
+
+  // Read auth state from the TanStack Query cache — no new network request.
+  const meData = trpc.auth.me.useQuery(undefined, {
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
+  const isAuthenticated = Boolean(meData.data);
 
   useEffect(() => {
+    // Don't open a socket on public routes or when unauthenticated
+    if (!isAuthenticated || isPublicRoute()) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+        setConnectionState("disconnected");
+      }
+      return;
+    }
+
+    // Avoid creating a duplicate socket
+    if (socketRef.current) return;
+
+    setConnectionState("connecting");
+
     // Derive the WebSocket server URL from the current window origin
     const serverUrl = window.location.origin;
 
@@ -95,7 +132,7 @@ export function TelemetrySocketProvider({ children }: { children: ReactNode }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <TelemetrySocketContext.Provider value={{ socket: socketRef.current, connectionState }}>
