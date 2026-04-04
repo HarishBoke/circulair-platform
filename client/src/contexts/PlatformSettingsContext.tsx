@@ -5,6 +5,11 @@
  * to the entire React tree. Settings are loaded from the backend
  * (trpc.platformSettings.get) and cached in context.
  *
+ * The query is intentionally disabled when the user is not yet
+ * authenticated (e.g. on /login or /register) to prevent a
+ * TRPCClientError "Please login (10001)" from appearing in the
+ * console and the global error handler.
+ *
  * Usage:
  *   const { displayCurrency, formatCurrency, locale, activeJurisdictions } = usePlatformSettings();
  */
@@ -55,7 +60,24 @@ const defaultSettings: PlatformSettingsContextValue = {
 const PlatformSettingsContext = createContext<PlatformSettingsContextValue>(defaultSettings);
 
 export function PlatformSettingsProvider({ children }: { children: React.ReactNode }) {
+  // Check whether the user is already known to be authenticated by looking at
+  // the auth.me cache. We deliberately avoid calling useAuth() here (which
+  // would trigger its own auth.me query) and instead use the raw tRPC cache so
+  // we don't create a second parallel query.
+  const meData = trpc.auth.me.useQuery(undefined, {
+    // Never fire a new network request from this provider — just read whatever
+    // auth.me has already fetched elsewhere in the tree.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
+
+  const isAuthenticated = Boolean(meData.data);
+
   const { data, isLoading } = trpc.platformSettings.get.useQuery(undefined, {
+    // Only run when the user is authenticated to avoid a 401 on /login.
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
@@ -96,9 +118,10 @@ export function PlatformSettingsProvider({ children }: { children: React.ReactNo
       organisationCountry: data?.organisationCountry ?? null,
       formatCurrency,
       formatDate,
-      isLoading,
+      // Only show loading when authenticated (avoids perpetual spinner on /login)
+      isLoading: isAuthenticated && isLoading,
     };
-  }, [data, isLoading]);
+  }, [data, isLoading, isAuthenticated]);
 
   return (
     <PlatformSettingsContext.Provider value={value}>

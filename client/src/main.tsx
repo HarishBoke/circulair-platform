@@ -30,7 +30,13 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    // Suppress expected 401 "Please login" errors — these fire on /login before
+    // auth is established and are not actionable by the user or developer.
+    const isExpectedAuthError =
+      error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG;
+    if (!isExpectedAuthError) {
+      console.error("[API Query Error]", error);
+    }
   }
 });
 
