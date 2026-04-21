@@ -983,3 +983,42 @@ export const marketplaceOffers = mysqlTable("marketplace_offers", {
 });
 export type MarketplaceOffer = typeof marketplaceOffers.$inferSelect;
 export type InsertMarketplaceOffer = typeof marketplaceOffers.$inferInsert;
+
+// ─── ALERT RULES ─────────────────────────────────────────────────────────────
+// Per-battery or per-chemistry configurable alert thresholds.
+// When bpan is set, the rule applies only to that specific battery.
+// When chemistry is set (and bpan is null), the rule applies to all batteries of that chemistry.
+// When both are null, the rule is a platform-wide default.
+export const alertRules = mysqlTable("alert_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  /** The telemetry metric this rule evaluates */
+  metric: mysqlEnum("metric", [
+    "temperature",
+    "voltage",
+    "current",
+    "soc",
+    "soh",
+    "cycleCount",
+    "internalResistance",
+  ]).notNull(),
+  /** Comparison operator */
+  operator: mysqlEnum("operator", ["gt", "lt", "gte", "lte", "eq"]).notNull(),
+  /** Threshold value for the metric */
+  threshold: decimal("threshold", { precision: 12, scale: 4 }).notNull(),
+  /** Alert severity level */
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("warning").notNull(),
+  /** Optional: scope to a specific battery BPAN (null = applies to chemistry or all) */
+  bpan: varchar("bpan", { length: 21 }),
+  /** Optional: scope to a specific chemistry (null = applies to all chemistries) */
+  chemistry: mysqlEnum("chemistry", ["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID"]),
+  /** Whether this rule is active */
+  enabled: boolean("enabled").default(true).notNull(),
+  /** User who created this rule */
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AlertRule = typeof alertRules.$inferSelect;
+export type InsertAlertRule = typeof alertRules.$inferInsert;

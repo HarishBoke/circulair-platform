@@ -19,6 +19,7 @@ import {
   listingPhotos, InsertListingPhoto,
   passwordResetTokens, InsertPasswordResetToken,
   marketplaceOffers, InsertMarketplaceOffer,
+  alertRules, InsertAlertRule, AlertRule,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -863,4 +864,106 @@ export async function getOffersByBuyer(buyerId: number) {
     .from(marketplaceOffers)
     .where(eq(marketplaceOffers.buyerId, buyerId))
     .orderBy(desc(marketplaceOffers.createdAt));
+}
+
+// ─── ALERT RULE HELPERS ───────────────────────────────────────────────────────
+export async function createAlertRule(data: InsertAlertRule): Promise<AlertRule> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(alertRules).values(data);
+  const inserted = await db.select().from(alertRules).where(eq(alertRules.id, (result[0] as any).insertId)).limit(1);
+  return inserted[0];
+}
+
+export async function listAlertRules(filters?: {
+  chemistry?: string;
+  bpan?: string;
+  metric?: string;
+  enabled?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: AlertRule[]; total: number }> {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const limit = filters?.limit ?? 50;
+  const offset = filters?.offset ?? 0;
+  const conditions = [];
+  if (filters?.chemistry) conditions.push(eq(alertRules.chemistry, filters.chemistry as any));
+  if (filters?.bpan) conditions.push(eq(alertRules.bpan, filters.bpan));
+  if (filters?.metric) conditions.push(eq(alertRules.metric, filters.metric as any));
+  if (filters?.enabled !== undefined) conditions.push(eq(alertRules.enabled, filters.enabled));
+  const query = conditions.length > 0 ? and(...conditions) : undefined;
+  const [items, totalResult] = await Promise.all([
+    db.select().from(alertRules).where(query).orderBy(desc(alertRules.createdAt)).limit(limit).offset(offset),
+    db.select({ count: count() }).from(alertRules).where(query),
+  ]);
+  return { items, total: totalResult[0]?.count ?? 0 };
+}
+
+export async function getAlertRuleById(id: number): Promise<AlertRule | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(alertRules).where(eq(alertRules.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateAlertRule(id: number, data: Partial<InsertAlertRule>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(alertRules).set(data as any).where(eq(alertRules.id, id));
+}
+
+export async function deleteAlertRule(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(alertRules).where(eq(alertRules.id, id));
+}
+
+export async function toggleAlertRule(id: number, enabled: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(alertRules).set({ enabled }).where(eq(alertRules.id, id));
+}
+
+/**
+ * Get all enabled alert rules that apply to a specific battery.
+ * Returns rules scoped to the BPAN, rules scoped to the chemistry, and platform-wide rules.
+ */
+export async function getActiveRulesForBpan(bpan: string, chemistry: string): Promise<AlertRule[]> {
+  const db = await getDb();
+  if (!db) return [];
+  // Fetch all enabled rules and filter in JS for clarity
+  const all = await db.select().from(alertRules).where(eq(alertRules.enabled, true));
+  return all.filter((r) => {
+    if (r.bpan) return r.bpan === bpan; // BPAN-specific rule
+    if (r.chemistry) return r.chemistry === chemistry; // Chemistry-wide rule
+    return true; // Platform-wide rule (no bpan, no chemistry)
+  });
+}
+
+/**
+ * Evaluate a set of alert rules against a telemetry reading.
+ * Returns the list of rules that were triggered.
+ */
+export function evaluateAlertRules(
+  rules: AlertRule[],
+  reading: { temperature?: number | null; voltage?: number | null; current?: number | null; soc?: number | null; soh?: number | null; cycleCount?: number | null; internalResistance?: number | null }
+): AlertRule[] {
+  const triggered: AlertRule[] = [];
+  for (const rule of rules) {
+    const rawValue = reading[rule.metric as keyof typeof reading];
+    if (rawValue === null || rawValue === undefined) continue;
+    const value = Number(rawValue);
+    const threshold = Number(rule.threshold);
+    let fired = false;
+    switch (rule.operator) {
+      case "gt": fired = value > threshold; break;
+      case "lt": fired = value < threshold; break;
+      case "gte": fired = value >= threshold; break;
+      case "lte": fired = value <= threshold; break;
+      case "eq": fired = value === threshold; break;
+    }
+    if (fired) triggered.push(rule);
+  }
+  return triggered;
 }

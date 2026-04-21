@@ -37,7 +37,7 @@
 
 import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import { nanoid } from "nanoid";
-import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus, updateDeviceLastSeenByBpan } from "./db";
+import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus, updateDeviceLastSeenByBpan, getActiveRulesForBpan, evaluateAlertRules } from "./db";
 import { broadcastTelemetryReading, getSocketIO } from "./telemetrySocket";
 import type { TelemetryAnomaly } from "./telemetrySocket";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
@@ -187,6 +187,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
 
   // Look up battery in DB to get batteryId
   let batteryId: number;
+  let batteryChemistry = "NMC";
   try {
     const battery = await getBatteryByBpan(bpan);
     if (!battery) {
@@ -197,13 +198,35 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
       return;
     }
     batteryId = battery.id;
+    batteryChemistry = battery.chemistry ?? "NMC";
   } catch (err) {
     console.error(`[MQTT] DB lookup failed for BPAN ${bpan}:`, err);
     return;
   }
 
-  // Detect anomalies
-  const thermalAnomaly = (payload.tMax ?? 0) > 51;
+  // ─── Dynamic alert rule evaluation (replaces hard-coded 51°C threshold) ────
+  let triggeredRules: Awaited<ReturnType<typeof evaluateAlertRules>> = [];
+  try {
+    const activeRules = await getActiveRulesForBpan(bpan, batteryChemistry);
+    const telemetryReading = {
+      temperature: payload.tMax ?? payload.tPack ?? null,
+      voltage: payload.vPack ?? null,
+      current: payload.iPack ?? null,
+      soc: null, // not in MQTT payload currently
+      soh: payload.sohEstimate ?? null,
+      cycleCount: payload.cycleCount ?? null,
+      internalResistance: payload.irPack ?? null,
+    };
+    triggeredRules = evaluateAlertRules(activeRules, telemetryReading);
+  } catch (err) {
+    console.warn(`[MQTT] Alert rule evaluation failed for ${bpan}:`, err);
+  }
+
+  // Detect anomalies — thermalAnomaly is now driven by rules if any temperature rule fired;
+  // fall back to legacy 51°C check only when NO temperature rules are configured.
+  const tempRuleFired = triggeredRules.some((r) => r.metric === "temperature");
+  const legacyThermalAnomaly = (payload.tMax ?? 0) > 51;
+  const thermalAnomaly = tempRuleFired || (!triggeredRules.some((r) => r.metric === "temperature") && legacyThermalAnomaly);
   const anomalyType = thermalAnomaly ? "over_temperature" : null;
   const sohBelowThreshold = (payload.sohEstimate ?? 100) < 70;
 
@@ -254,31 +277,38 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
   };
   broadcastTelemetry(bpan, reading);
 
-  // Thermal anomaly — create alert + broadcast anomaly event (5-min dedup cooldown)
+  // ─── Fire alerts for triggered rules (5-min dedup per rule) ────────────────
+  for (const rule of triggeredRules) {
+    const cooldownKey = `rule_${rule.id}`;
+    try {
+      if (await shouldCreateAlert(bpan, cooldownKey)) {
+        const metricLabel = rule.metric.charAt(0).toUpperCase() + rule.metric.slice(1);
+        const operatorLabel: Record<string, string> = { gt: ">", lt: "<", gte: "≥", lte: "≤", eq: "=" };
+        await createAlert({
+          bpan,
+          batteryId,
+          type: rule.metric === "temperature" ? "thermal_anomaly" : "system",
+          severity: rule.severity as "info" | "warning" | "critical",
+          title: `${rule.name} — ${bpan}`,
+          message: `${metricLabel} ${operatorLabel[rule.operator] ?? rule.operator} ${rule.threshold} triggered by rule "${rule.name}". Actual value received from device.`,
+          metadata: { ruleId: rule.id, metric: rule.metric, threshold: rule.threshold, source: "mqtt" },
+        });
+        recordAlert(bpan, cooldownKey);
+      }
+    } catch (err) {
+      console.error(`[MQTT] Rule alert creation failed for rule ${rule.id} on BPAN ${bpan}:`, err);
+    }
+  }
+
+  // Thermal anomaly broadcast (Socket.io) — kept for live dashboard widgets
   if (thermalAnomaly) {
     broadcastAnomaly(bpan, {
       bpan,
       tMax: payload.tMax ?? 0,
       tPack: payload.tPack ?? 0,
       recordedAt: new Date().toISOString(),
-      message: `Thermal anomaly: T_max ${payload.tMax?.toFixed(1)}°C exceeds 51°C threshold`,
+      message: `Thermal anomaly detected for ${bpan}. T_max = ${payload.tMax?.toFixed(1)}°C`,
     });
-    try {
-      if (await shouldCreateAlert(bpan, "thermal_anomaly")) {
-        await createAlert({
-          bpan,
-          batteryId,
-          type: "thermal_anomaly",
-          severity: "critical",
-          title: `Thermal Anomaly — ${bpan}`,
-          message: `Pack temperature T_max = ${payload.tMax?.toFixed(1)}°C exceeds 51°C safety threshold. Immediate inspection required.`,
-          metadata: { tMax: payload.tMax, tPack: payload.tPack, source: "mqtt" },
-        });
-        recordAlert(bpan, "thermal_anomaly");
-      }
-    } catch (err) {
-      console.error(`[MQTT] Alert creation failed for BPAN ${bpan}:`, err);
-    }
   }
 
   // SOH below EOL threshold — create alert (5-min dedup cooldown)

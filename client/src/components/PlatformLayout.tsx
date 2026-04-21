@@ -12,7 +12,7 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play, AlertTriangle
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -74,6 +74,7 @@ function useNavSections() {
         { icon: BarChart3, label: "Analytics", href: "/analytics" },
         { icon: FileText, label: "Documents", href: "/documents" },
         { icon: Bell, label: "Alerts", href: "/alerts", badge: true },
+        { icon: AlertTriangle, label: "Alert Rules", href: "/alert-rules" },
       ],
     },
     {

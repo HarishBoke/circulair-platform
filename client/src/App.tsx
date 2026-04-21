@@ -42,6 +42,7 @@ import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 import LaunchingSoon from "./pages/LaunchingSoon";
+import AlertRules from "./pages/AlertRules";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/service-history" component={() => <PlatformLayout><ServiceHistory /></PlatformLayout>} />
       <Route path="/analytics" component={() => <PlatformLayout><Analytics /></PlatformLayout>} />
       <Route path="/alerts" component={() => <PlatformLayout><Alerts /></PlatformLayout>} />
+      <Route path="/alert-rules" component={() => <PlatformLayout><AlertRules /></PlatformLayout>} />
       <Route path="/assistant" component={() => <PlatformLayout><AiAssistant /></PlatformLayout>} />
       <Route path="/documents" component={() => <PlatformLayout><Documents /></PlatformLayout>} />
       <Route path="/data-integration" component={DataIntegration} />

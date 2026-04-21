@@ -26,6 +26,8 @@ import {
   updateIotDevice, deleteIotDevice, getIotDeviceStats, updateDeviceLastSeen,
   insertListingPhoto, getListingPhotos, deleteListingPhoto,
   getListingById, listUserListings, updateListing, withdrawListing, listUserBatteries,
+  createAlertRule, listAlertRules, getAlertRuleById, updateAlertRule, deleteAlertRule,
+  toggleAlertRule, getActiveRulesForBpan, evaluateAlertRules,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -2719,6 +2721,136 @@ Rules:
       }),
 
     stats: protectedProcedure.query(() => getIotDeviceStats()),
+  }),
+
+  // ─── ALERT RULES ────────────────────────────────────────────────────────────
+  alertRules: router({
+    list: protectedProcedure
+      .input(z.object({
+        chemistry: z.string().optional(),
+        bpan: z.string().optional(),
+        metric: z.string().optional(),
+        enabled: z.boolean().optional(),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(async ({ input }) => {
+        return listAlertRules(input);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const rule = await getAlertRuleById(input.id);
+        if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
+        return rule;
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        description: z.string().optional(),
+        metric: z.enum(["temperature", "voltage", "current", "soc", "soh", "cycleCount", "internalResistance"]),
+        operator: z.enum(["gt", "lt", "gte", "lte", "eq"]),
+        threshold: z.number(),
+        severity: z.enum(["info", "warning", "critical"]).default("warning"),
+        bpan: z.string().length(21).optional(),
+        chemistry: z.enum(["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID"]).optional(),
+        enabled: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const rule = await createAlertRule({
+          ...input,
+          threshold: String(input.threshold),
+          bpan: input.bpan ?? null,
+          chemistry: input.chemistry ?? null,
+          description: input.description ?? null,
+          createdBy: ctx.user.id,
+        });
+        return rule;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(255).optional(),
+        description: z.string().optional(),
+        metric: z.enum(["temperature", "voltage", "current", "soc", "soh", "cycleCount", "internalResistance"]).optional(),
+        operator: z.enum(["gt", "lt", "gte", "lte", "eq"]).optional(),
+        threshold: z.number().optional(),
+        severity: z.enum(["info", "warning", "critical"]).optional(),
+        bpan: z.string().length(21).nullable().optional(),
+        chemistry: z.enum(["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID"]).nullable().optional(),
+        enabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, threshold, ...rest } = input;
+        const rule = await getAlertRuleById(id);
+        if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
+        await updateAlertRule(id, {
+          ...rest,
+          ...(threshold !== undefined ? { threshold: String(threshold) } : {}),
+        } as any);
+        return { success: true };
+      }),
+
+    toggle: protectedProcedure
+      .input(z.object({ id: z.number(), enabled: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await toggleAlertRule(input.id, input.enabled);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const rule = await getAlertRuleById(input.id);
+        if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
+        await deleteAlertRule(input.id);
+        return { success: true };
+      }),
+
+    /** Returns the default recommended thresholds per chemistry */
+    getDefaults: protectedProcedure.query(() => {
+      return {
+        NMC: [
+          { metric: "temperature", operator: "gt", threshold: 45, severity: "warning", name: "NMC High Temp Warning" },
+          { metric: "temperature", operator: "gt", threshold: 55, severity: "critical", name: "NMC Critical Temp" },
+          { metric: "soh", operator: "lt", threshold: 70, severity: "warning", name: "NMC Low SOH" },
+          { metric: "soh", operator: "lt", threshold: 50, severity: "critical", name: "NMC Critical SOH" },
+          { metric: "voltage", operator: "gt", threshold: 4.25, severity: "critical", name: "NMC Overvoltage" },
+          { metric: "voltage", operator: "lt", threshold: 2.5, severity: "critical", name: "NMC Undervoltage" },
+        ],
+        LFP: [
+          { metric: "temperature", operator: "gt", threshold: 50, severity: "warning", name: "LFP High Temp Warning" },
+          { metric: "temperature", operator: "gt", threshold: 60, severity: "critical", name: "LFP Critical Temp" },
+          { metric: "soh", operator: "lt", threshold: 70, severity: "warning", name: "LFP Low SOH" },
+          { metric: "soh", operator: "lt", threshold: 50, severity: "critical", name: "LFP Critical SOH" },
+          { metric: "voltage", operator: "gt", threshold: 3.65, severity: "critical", name: "LFP Overvoltage" },
+          { metric: "voltage", operator: "lt", threshold: 2.5, severity: "critical", name: "LFP Undervoltage" },
+        ],
+        NCA: [
+          { metric: "temperature", operator: "gt", threshold: 45, severity: "warning", name: "NCA High Temp Warning" },
+          { metric: "temperature", operator: "gt", threshold: 55, severity: "critical", name: "NCA Critical Temp" },
+          { metric: "soh", operator: "lt", threshold: 75, severity: "warning", name: "NCA Low SOH" },
+          { metric: "soh", operator: "lt", threshold: 55, severity: "critical", name: "NCA Critical SOH" },
+        ],
+        LCO: [
+          { metric: "temperature", operator: "gt", threshold: 40, severity: "warning", name: "LCO High Temp Warning" },
+          { metric: "temperature", operator: "gt", threshold: 50, severity: "critical", name: "LCO Critical Temp" },
+          { metric: "soh", operator: "lt", threshold: 70, severity: "warning", name: "LCO Low SOH" },
+        ],
+        LMO: [
+          { metric: "temperature", operator: "gt", threshold: 50, severity: "warning", name: "LMO High Temp Warning" },
+          { metric: "temperature", operator: "gt", threshold: 60, severity: "critical", name: "LMO Critical Temp" },
+          { metric: "soh", operator: "lt", threshold: 65, severity: "warning", name: "LMO Low SOH" },
+        ],
+        LEAD_ACID: [
+          { metric: "temperature", operator: "gt", threshold: 45, severity: "warning", name: "Lead-Acid High Temp" },
+          { metric: "soh", operator: "lt", threshold: 60, severity: "warning", name: "Lead-Acid Low SOH" },
+        ],
+      };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

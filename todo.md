@@ -850,3 +850,24 @@
 - [x] Write DEPLOYMENT.md: pre-deployment checklist, secrets config, DNS setup, publish steps, rollback, ops runbook, monitoring, DB ops
 - [x] Write API.md: all 100+ tRPC procedures documented with auth levels, REST API v1, MCP server, WebSocket, MQTT, error codes
 - [x] TypeScript: 0 errors, 385 tests passing across 26 test files
+
+## Phase 57 (COMPLETED): Resend DNS Verification Guide
+- [x] Fetched Resend domain verification documentation (SPF, DKIM, DMARC record formats)
+- [x] Produced clear DNS verification instructions for circulair.energy (delivered in result message)
+- [x] Documented how to verify domain status in Resend dashboard
+
+## Phase 58 (COMPLETED): Alert Rule Configuration UI
+- [x] Add alert_rules table to drizzle schema (metric, operator, threshold, chemistry, bpan, enabled, severity)
+- [x] Create table directly via SQL (drizzle-kit skips already-tracked tables)
+- [x] Add alertRules import and DB helpers to db.ts (createAlertRule, listAlertRules, getAlertRuleById, updateAlertRule, deleteAlertRule, toggleAlertRule, getActiveRulesForBpan, evaluateAlertRules)
+- [x] Add alertRules tRPC router with list, getById, create, update, toggle, delete, getDefaults procedures
+- [x] Build AlertRules.tsx page at /alert-rules with full CRUD table, create/edit dialog, enable/disable toggle
+- [x] Add chemistry defaults panel with one-click pre-fill for NMC, LFP, NCA, LCO, LMO, LEAD_ACID
+- [x] Add stats row (total, active, disabled, critical counts)
+- [x] Add info banner explaining rule priority and legacy threshold removal
+- [x] Add AlertRules route to App.tsx at /alert-rules
+- [x] Add "Alert Rules" nav item to PlatformLayout.tsx sidebar (REPORTING section)
+- [x] Replace hard-coded 51°C threshold in mqttSubscriber.ts with dynamic rule evaluation
+- [x] Extend alertCooldown.ts to support dynamic rule keys (rule_42 etc.) with string union type
+- [x] Write 19 vitest tests (evaluateAlertRules, alertCooldown dynamic keys, scope priority)
+- [x] TypeScript: 0 errors, 404 tests passing across 27 test files

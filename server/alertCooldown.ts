@@ -20,6 +20,9 @@
  *     await createAlert({ ... });
  *     recordAlert(bpan, "thermal_anomaly");   // sync — no await needed
  *   }
+ *
+ *   // Dynamic rule-based keys are also supported:
+ *   if (await shouldCreateAlert(bpan, "rule_42")) { ... }
  */
 
 import { and, desc, eq, gte } from "drizzle-orm";
@@ -28,15 +31,33 @@ import { getDb } from "./db";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
-/** Alert types that are subject to deduplication. */
-export type DeduplicatedAlertType = "thermal_anomaly" | "eol_detected" | "soh_degradation";
+/**
+ * Alert types that are subject to deduplication.
+ * The `string & {}` union allows arbitrary dynamic keys (e.g. "rule_42")
+ * while still providing autocomplete for the well-known types.
+ */
+export type DeduplicatedAlertType =
+  | "thermal_anomaly"
+  | "eol_detected"
+  | "soh_degradation"
+  | "threshold_breach"
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
 
-/** Cooldown durations per alert type (milliseconds). */
-const COOLDOWN_MS: Record<DeduplicatedAlertType, number> = {
-  thermal_anomaly: 5 * 60 * 1000,   // 5 minutes
-  eol_detected:    5 * 60 * 1000,   // 5 minutes
-  soh_degradation: 5 * 60 * 1000,   // 5 minutes
+/** Default cooldown duration for unknown/dynamic types (5 minutes). */
+const DEFAULT_COOLDOWN_MS = 5 * 60 * 1000;
+
+/** Cooldown durations per well-known alert type (milliseconds). */
+const COOLDOWN_MS_MAP: Record<string, number> = {
+  thermal_anomaly:  5 * 60 * 1000,
+  eol_detected:     5 * 60 * 1000,
+  soh_degradation:  5 * 60 * 1000,
+  threshold_breach: 5 * 60 * 1000,
 };
+
+function getCooldownMs(type: string): number {
+  return COOLDOWN_MS_MAP[type] ?? DEFAULT_COOLDOWN_MS;
+}
 
 // ─── In-memory cooldown map ───────────────────────────────────────────────────
 
@@ -49,7 +70,7 @@ const _cooldownMap = new Map<string, number>();
 /** Set of keys whose DB check has already been performed this process lifetime. */
 const _dbChecked = new Set<string>();
 
-function cooldownKey(bpan: string, type: DeduplicatedAlertType): string {
+function cooldownKey(bpan: string, type: string): string {
   return `${bpan}::${type}`;
 }
 
@@ -66,7 +87,7 @@ export async function shouldCreateAlert(
   type: DeduplicatedAlertType
 ): Promise<boolean> {
   const key = cooldownKey(bpan, type);
-  const cooldownMs = COOLDOWN_MS[type];
+  const cooldownMs = getCooldownMs(type);
   const now = Date.now();
 
   // ── Layer 1: in-memory check (fast path) ──────────────────────────────────
@@ -85,7 +106,9 @@ export async function shouldCreateAlert(
   }
 
   // ── Layer 2: DB-backed check (first call after server restart) ────────────
-  if (!_dbChecked.has(key)) {
+  // Only perform DB check for well-known alert types (not dynamic rule keys)
+  const isWellKnownType = type in COOLDOWN_MS_MAP;
+  if (isWellKnownType && !_dbChecked.has(key)) {
     _dbChecked.add(key);
     try {
       const db = await getDb();
@@ -136,7 +159,7 @@ export async function shouldCreateAlert(
  */
 export function recordAlert(bpan: string, type: DeduplicatedAlertType): void {
   const key = cooldownKey(bpan, type);
-  const cooldownMs = COOLDOWN_MS[type];
+  const cooldownMs = getCooldownMs(type);
   const now = Date.now();
 
   _cooldownMap.set(key, now);
@@ -176,8 +199,10 @@ export function getActiveCooldowns(): Array<{
   const result: ReturnType<typeof getActiveCooldowns> = [];
 
   for (const [key, firedAt] of Array.from(_cooldownMap.entries())) {
-    const [bpan, type] = key.split("::") as [string, DeduplicatedAlertType];
-    const cooldownMs = COOLDOWN_MS[type] ?? 300_000;
+    const parts = key.split("::");
+    const bpan = parts[0];
+    const type = parts.slice(1).join("::");
+    const cooldownMs = getCooldownMs(type);
     const expiresAt = firedAt + cooldownMs;
     const remainingSec = Math.max(0, Math.ceil((expiresAt - now) / 1000));
     if (remainingSec > 0) {
