@@ -903,3 +903,69 @@
 - [x] breakdown field exposes calendarFade, cycleFade, irCorrection, bmsCorrectionApplied
 - [x] Wrote 16 vitest tests for sohModel (all chemistry types, edge cases, triage thresholds)
 - [x] TypeScript: 0 errors, 420 tests passing across 28 test files
+
+## Phase 62 (Active): v2.0 — Battery Digital Twin
+- [ ] Add battery_twins table to schema (bpan, simulationState JSON, lastUpdated, forecastHorizonDays)
+- [ ] Create server/digitalTwin.ts — simulation engine with Arrhenius + Wöhler trajectory forecasting
+- [ ] Add tRPC ai.getTwin, ai.runSimulation, ai.forecastTrajectory procedures
+- [ ] Build DigitalTwin.tsx page at /digital-twin with BPAN selector, scenario picker, trajectory chart
+- [ ] Show 3 scenarios: conservative / nominal / aggressive usage
+- [ ] Add Digital Twin nav item to sidebar
+- [ ] Wire /digital-twin route in App.tsx
+
+## Phase 63 (Active): v2.0 — Carbon Accounting Module
+- [ ] Add carbon_footprints table (bpan, manufacturingKgCO2, transportKgCO2, operationalKgCO2, eolKgCO2, totalKgCO2, certUrl)
+- [ ] Create server/carbonModel.ts — lifecycle carbon calculation per chemistry and grid region
+- [ ] Add tRPC carbon.calculate, carbon.getCertificate, carbon.generatePdf procedures
+- [ ] Build CarbonAccounting.tsx page at /carbon with fleet carbon overview and per-battery breakdown
+- [ ] Generate EU Article 7 carbon certificate PDF
+- [ ] Add Carbon nav item to sidebar
+
+## Phase 64 (Active): v2.0 — Federated Learning SOH
+- [ ] Add model_versions table (version, accuracy, rmse, mae, r2, trainedAt, batteryCount)
+- [ ] Create server/federatedLearning.ts — local gradient computation, model version management
+- [ ] Add tRPC ai.getModelVersions, ai.contributeData, ai.getAccuracyMetrics procedures
+- [ ] Build ModelAccuracy.tsx page at /model-accuracy with version history, accuracy charts, contribution stats
+- [ ] Add Model Accuracy nav item to sidebar
+
+## Phase 65 (Active): v3.0 — Blockchain Anchoring
+- [ ] Create server/blockchain.ts — SHA-256 hash anchoring with simulated Polygon L2 tx hash
+- [ ] Add blockchain_anchors table (bpan, eventType, dataHash, txHash, blockNumber, anchoredAt)
+- [ ] Add tRPC blockchain.anchorEvent, blockchain.verifyAnchor, blockchain.getAnchorHistory procedures
+- [ ] Build BlockchainAudit.tsx page at /blockchain-audit with anchor explorer, verify hash UI
+- [ ] Auto-anchor: BPAN registration, SOH prediction, EPR token issuance
+- [ ] Add Blockchain Audit nav item to sidebar
+
+## Phase 66 (Active): v3.0 — Multi-OEM Data Exchange
+- [ ] Add data_sharing_agreements table (fromOrgId, toOrgId, bpan, scope, status, expiresAt)
+- [ ] Add tRPC dataExchange.requestAccess, dataExchange.approveRequest, dataExchange.getSharedHistory procedures
+- [ ] Build DataExchange.tsx page at /data-exchange with incoming/outgoing requests, consent management
+- [ ] Add Data Exchange nav item to sidebar
+
+## Phase 67 (Active): v3.0 — Public API Marketplace
+- [ ] Add api_keys table (userId, keyHash, name, permissions, callCount, rateLimit, lastUsedAt)
+- [ ] Create server/apiMarketplace.ts — key generation, rate limiting, per-call logging
+- [ ] Add tRPC apiMarketplace.createKey, apiMarketplace.listKeys, apiMarketplace.revokeKey, apiMarketplace.getUsage procedures
+- [ ] Build ApiMarketplace.tsx page at /api-marketplace with developer portal, key management, usage stats
+- [ ] Add API Marketplace nav item to sidebar
+
+## Phase 68 (Active): v4.0 — Autonomous Triage Routing
+- [ ] Add triage_jobs table (bpan, recommendedPath, status, approvedBy, approvedAt, autoActionsLog)
+- [ ] Create server/autonomousTriage.ts — auto-create listing, match buyer, initiate logistics, generate docs
+- [ ] Add tRPC triage.runAutonomous, triage.getPendingApprovals, triage.approve, triage.reject procedures
+- [ ] Build AutonomousTriage.tsx page at /autonomous-triage with approval queue, action log, confidence scores
+- [ ] Add Autonomous Triage nav item to sidebar
+
+## Phase 69 (Active): v4.0 — Predictive Procurement
+- [ ] Add forward_orders table (buyerId, targetSohMin, targetSohMax, chemistry, quantity, deliveryMonth, pricePerKwh, status)
+- [ ] Create server/predictiveProcurement.ts — supply pipeline forecast, forward order matching
+- [ ] Add tRPC procurement.forecastSupply, procurement.createForwardOrder, procurement.getMatches procedures
+- [ ] Build PredictiveProcurement.tsx page at /procurement with supply forecast chart, forward order form, match list
+- [ ] Add Predictive Procurement nav item to sidebar
+
+## Phase 70 (Active): v4.0 — Solid-State Battery Support
+- [ ] Add SOLID_STATE chemistry to schema enum and sohModel.ts parameters
+- [ ] Add new telemetry metrics: interfaceResistance, dendriteProbability, lithiumPlatingIndex
+- [ ] Update alert rules defaults with solid-state specific thresholds
+- [ ] Update BpanRegister.tsx and BpanDetail.tsx to show solid-state metrics
+- [ ] Add solid-state chemistry option to marketplace listing form

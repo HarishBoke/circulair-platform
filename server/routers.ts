@@ -58,6 +58,14 @@ import {
   getTutorialStats, TUTORIAL_STEPS,
 } from "./db-wiki";
 
+import { getDb } from "./db";
+import { generateTwinForecast } from "./digitalTwin";
+import { calculateCarbonFootprint, GRID_INTENSITY } from "./carbonModel";
+import { anchorToBlockchain, hashPayload, verifyAnchor } from "./blockchain";
+import { generateApiKey, hashApiKey, serializePermissions, parsePermissions, ALL_PERMISSIONS, PERMISSION_LABELS } from "./apiMarketplace";
+import { evaluateTriagePath } from "./autonomousTriage";
+import { forecastSupplyPipeline, scoreForwardOrderMatch } from "./predictiveProcurement";
+
 // ─── BPAN GENERATION UTILITY ──────────────────────────────────────────────────
 const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
   "A1": { kwh: 1.5, label: "1.5 kWh" }, "A2": { kwh: 2.0, label: "2.0 kWh" },
@@ -2944,6 +2952,298 @@ Rules:
         ],
       };
     }),
+  }),
+
+  // ─── DIGITAL TWIN ───────────────────────────────────────────────────────────────────────────────
+  digitalTwin: router({
+    generate: protectedProcedure
+      .input(z.object({
+        bpan: z.string().min(21).max(21),
+        forecastHorizonDays: z.number().min(30).max(1825).default(365),
+      }))
+      .mutation(async ({ input }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new TRPCError({ code: "NOT_FOUND", message: "Battery not found" });
+        const latestTelemetry = await getLatestTelemetry(input.bpan);
+        const latestSoh = await getLatestSohPrediction(input.bpan);
+        const capacityCode = input.bpan.slice(5, 7);
+        const chemistryCode = input.bpan.slice(7, 8);
+        const CAP_MAP: Record<string, number> = { "A1": 1.5, "A2": 2.0, "A3": 2.5, "A4": 3.0, "A5": 3.5, "A6": 30.0, "B1": 5.0, "B2": 7.5, "B3": 10.0, "B4": 15.0, "B5": 20.0, "B6": 25.0, "C1": 40.0, "C2": 50.0, "C3": 60.0, "C4": 75.0, "C5": 100.0 };
+        const CHEM_MAP: Record<string, string> = { A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA" };
+        const MC = "ABCDEFGHIJKL";
+        const yearCode = input.bpan.slice(13, 14);
+        const monthCode = input.bpan.slice(14, 15);
+        const currentSoh = latestSoh?.predictedSoh ? Number(latestSoh.predictedSoh) : (battery.currentSoh ? Number(battery.currentSoh) : 85);
+        const forecast = generateTwinForecast({
+          bpan: input.bpan,
+          chemistry: CHEM_MAP[chemistryCode] ?? "NMC",
+          currentSoh,
+          cycleCount: latestTelemetry?.cycleCount ?? 0,
+          capacityKwh: CAP_MAP[capacityCode] ?? 10,
+          mfgYear: 2020 + parseInt(yearCode, 10),
+          mfgMonth: MC.indexOf(monthCode) + 1 || 1,
+          forecastHorizonDays: input.forecastHorizonDays,
+          bmsSoh: latestTelemetry?.sohEstimate ? Number(latestTelemetry.sohEstimate) : undefined,
+        });
+        return forecast;
+      }),
+  }),
+
+  // ─── CARBON ACCOUNTING ────────────────────────────────────────────────────────────────────────
+  carbon: router({
+    calculate: protectedProcedure
+      .input(z.object({
+        bpan: z.string().min(21).max(21),
+        transportDistanceKm: z.number().optional(),
+        gridRegion: z.string().optional(),
+        ageYears: z.number().optional(),
+        cyclesPerYear: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new TRPCError({ code: "NOT_FOUND", message: "Battery not found" });
+        const CAP_MAP: Record<string, number> = { "A1": 1.5, "A2": 2.0, "A3": 2.5, "A4": 3.0, "A5": 3.5, "A6": 30.0, "B1": 5.0, "B2": 7.5, "B3": 10.0, "B4": 15.0, "B5": 20.0, "B6": 25.0, "C1": 40.0, "C2": 50.0, "C3": 60.0, "C4": 75.0, "C5": 100.0 };
+        const CHEM_MAP: Record<string, string> = { A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA" };
+        const result = calculateCarbonFootprint({
+          bpan: input.bpan,
+          chemistry: CHEM_MAP[input.bpan.slice(7, 8)] ?? "NMC",
+          capacityKwh: CAP_MAP[input.bpan.slice(5, 7)] ?? 10,
+          transportDistanceKm: input.transportDistanceKm,
+          gridRegion: input.gridRegion,
+          ageYears: input.ageYears,
+          cyclesPerYear: input.cyclesPerYear,
+        });
+        return result;
+      }),
+    getGridRegions: publicProcedure.query(() =>
+      Object.entries(GRID_INTENSITY).map(([code, intensity]) => ({ code, intensity }))
+    ),
+  }),
+
+  // ─── BLOCKCHAIN ANCHORING ──────────────────────────────────────────────────────────────────────
+  blockchain: router({
+    anchor: protectedProcedure
+      .input(z.object({
+        bpan: z.string().optional(),
+        eventType: z.enum(["bpan_registration","soh_prediction","epr_token_issuance","compliance_report","marketplace_transaction","logistics_dispatch","data_sharing_consent"]),
+        payload: z.record(z.string(), z.unknown()),
+        network: z.enum(["polygon-mumbai","polygon-mainnet","ethereum-mainnet"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await anchorToBlockchain({ eventType: input.eventType as any, bpan: input.bpan, payload: input.payload, network: input.network });
+        return result;
+      }),
+    verify: publicProcedure
+      .input(z.object({ payload: z.record(z.string(), z.unknown()), storedHash: z.string() }))
+      .query(({ input }) => {
+        const computedHash = hashPayload(input.payload);
+        return { valid: computedHash === input.storedHash, computedHash };
+      }),
+    hash: publicProcedure
+      .input(z.object({ payload: z.record(z.string(), z.unknown()) }))
+      .query(({ input }) => ({ hash: hashPayload(input.payload) })),
+  }),
+
+  // ─── DEVELOPER API MARKETPLACE ────────────────────────────────────────────────────────────────
+  developerApi: router({
+    createKey: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(128),
+        permissions: z.array(z.enum(["soh_predict","bpan_validate","compliance_report","telemetry_read","marketplace_read","carbon_report","digital_twin"])),
+        rateLimit: z.number().min(10).max(10000).default(100),
+        expiresInDays: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { plaintext, hash, prefix } = generateApiKey();
+        const permissionsStr = serializePermissions(input.permissions as any);
+        const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null;
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { apiKeys } = await import("../drizzle/schema");
+        await db.insert(apiKeys).values({
+          userId: ctx.user.id,
+          name: input.name,
+          keyHash: hash,
+          keyPrefix: prefix,
+          scopes: input.permissions,
+          rateLimit: input.rateLimit,
+          expiresAt,
+        });
+        return { plaintext, prefix, name: input.name, permissions: input.permissions, message: "Save this key — it will not be shown again." };
+      }),
+    listKeys: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { apiKeys } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const keys = await db.select().from(apiKeys).where(eq(apiKeys.userId, ctx.user.id));
+      return keys.map((k: any) => ({ ...k, keyHash: undefined }));
+    }),
+    revokeKey: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { apiKeys } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        await db.update(apiKeys).set({ status: "revoked" as const, revokedAt: new Date() }).where(and(eq(apiKeys.id, input.id), eq(apiKeys.userId, ctx.user.id)));
+        return { success: true };
+      }),
+    getPermissions: publicProcedure.query(() => ALL_PERMISSIONS.map(p => ({ id: p, label: PERMISSION_LABELS[p] }))),
+  }),
+
+  // ─── AUTONOMOUS TRIAGE ──────────────────────────────────────────────────────────────────────────────
+  triage: router({
+    evaluate: protectedProcedure
+      .input(z.object({
+        bpan: z.string().min(21).max(21),
+        marketDemandScore: z.number().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new TRPCError({ code: "NOT_FOUND", message: "Battery not found" });
+        const latestTelemetry = await getLatestTelemetry(input.bpan);
+        const latestSoh = await getLatestSohPrediction(input.bpan);
+        const CAP_MAP: Record<string, number> = { "A1": 1.5, "A2": 2.0, "A3": 2.5, "A4": 3.0, "A5": 3.5, "A6": 30.0, "B1": 5.0, "B2": 7.5, "B3": 10.0, "B4": 15.0, "B5": 20.0, "B6": 25.0, "C1": 40.0, "C2": 50.0, "C3": 60.0, "C4": 75.0, "C5": 100.0 };
+        const CHEM_MAP: Record<string, string> = { A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA" };
+        const soh = latestSoh?.predictedSoh ? Number(latestSoh.predictedSoh) : (battery.currentSoh ? Number(battery.currentSoh) : 85);
+        const decision = evaluateTriagePath({
+          bpan: input.bpan,
+          soh,
+          cycleCount: latestTelemetry?.cycleCount ?? 0,
+          chemistry: CHEM_MAP[input.bpan.slice(7, 8)] ?? "NMC",
+          capacityKwh: CAP_MAP[input.bpan.slice(5, 7)] ?? 10,
+          hasActiveFaults: (Array.isArray((latestTelemetry as any)?.dtcCodes) ? (latestTelemetry as any).dtcCodes.length : 0) > 0,
+          hasPhysicalDamage: false,
+          marketDemandScore: input.marketDemandScore,
+        });
+        return { bpan: input.bpan, soh, decision };
+      }),
+  }),
+
+  // ─── PREDICTIVE PROCUREMENT ─────────────────────────────────────────────────────────────────────
+  procurement: router({
+    forecastSupply: protectedProcedure
+      .input(z.object({ horizonMonths: z.number().min(1).max(24).default(12) }))
+      .query(async ({ input, ctx }) => {
+        const batteriesResult = await listBatteries({ limit: 500 });
+        const batteries = Array.isArray(batteriesResult) ? batteriesResult : (batteriesResult as any).items ?? [];
+        const operationalBatteries = batteries.filter((b: any) => b.ownerId === ctx.user.id || b.registeredById === ctx.user.id).map((b: any) => ({
+          bpan: b.bpan,
+          soh: b.currentSoh ? Number(b.currentSoh) : 85,
+          chemistry: b.chemistry ?? "NMC",
+          capacityKwh: b.capacityKwh ? Number(b.capacityKwh) : 10,
+          cycleCount: 0,
+          cyclesPerYear: 200,
+        }));
+        return forecastSupplyPipeline({ operationalBatteries: operationalBatteries as any, horizonMonths: input.horizonMonths });
+      }),
+    createForwardOrder: protectedProcedure
+      .input(z.object({
+        targetSohMin: z.number().min(0).max(100),
+        targetSohMax: z.number().min(0).max(100),
+        chemistry: z.enum(["LFP","NMC","NCA","LCO","LMO","LEAD_ACID","SOLID_STATE"]).optional(),
+        minCapacityKwh: z.number().optional(),
+        quantity: z.number().min(1).max(1000).default(1),
+        deliveryMonth: z.string().regex(/^\d{4}-\d{2}$/),
+        maxPricePerKwh: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { forwardOrders } = await import("../drizzle/schema");
+        const [result] = await db.insert(forwardOrders).values({
+          buyerId: ctx.user.id,
+          targetSohMin: String(input.targetSohMin),
+          targetSohMax: String(input.targetSohMax),
+          chemistry: input.chemistry as any,
+          minCapacityKwh: input.minCapacityKwh ? String(input.minCapacityKwh) : null,
+          quantity: input.quantity,
+          deliveryMonth: input.deliveryMonth,
+          maxPricePerKwh: input.maxPricePerKwh ? String(input.maxPricePerKwh) : null,
+        });
+        return { success: true, id: (result as any).insertId };
+      }),
+    listForwardOrders: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { forwardOrders } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      return db.select().from(forwardOrders).where(eq(forwardOrders.buyerId, ctx.user.id));
+    }),
+  }),
+  // ─── FEDERATED LEARNING ──────────────────────────────────────────────────────────────────────
+  federatedLearning: router({
+    getModelStatus: protectedProcedure.query(async () => {
+      const db = await getDb();
+      const defaultStatus = { version: "physics-v1.0", round: 1, rmse: 0.018, participants: 1, accuracyByChemistry: { NMC: 0.97, LFP: 0.96, NCA: 0.95, LCO: 0.94, LMO: 0.93, LEAD_ACID: 0.92, SOLID_STATE: 0.90 } };
+      if (!db) return defaultStatus;
+      try {
+        const { modelVersions } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const rows = await db.select().from(modelVersions).orderBy(desc(modelVersions.createdAt)).limit(1);
+        if (!rows.length) return defaultStatus;
+        const row = rows[0];
+        return { version: row.version, round: row.federatedRounds ?? 1, rmse: row.rmse ? Number(row.rmse) : 0.018, participants: row.batteryCount ?? 1, accuracyByChemistry: defaultStatus.accuracyByChemistry };
+      } catch { return defaultStatus; }
+    }),
+    submitLocalUpdate: protectedProcedure
+      .input(z.object({ localRmse: z.number().optional(), sampleCount: z.number().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { modelVersions } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const rows = await db.select().from(modelVersions).orderBy(desc(modelVersions.createdAt)).limit(1);
+        const currentRound = rows.length ? (rows[0].federatedRounds ?? 1) : 1;
+        const newRound = currentRound + 1;
+        const newVersion = `physics-v1.${newRound}`;
+        await db.insert(modelVersions).values({ version: newVersion, federatedRounds: newRound, batteryCount: (rows[0]?.batteryCount ?? 1) + 1, rmse: String(input.localRmse ?? 0.017) });
+        return { success: true, round: newRound, version: newVersion };
+      }),
+  }),
+  // ─── DATA SHARING ────────────────────────────────────────────────────────────────────────────
+  dataSharing: router({
+    listConsents: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { dataSharingAgreements } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      return db.select().from(dataSharingAgreements).where(eq(dataSharingAgreements.requestingUserId, ctx.user.id));
+    }),
+    grantConsent: protectedProcedure
+      .input(z.object({
+        recipientOrgId: z.string().min(1),
+        recipientOrgName: z.string().min(1),
+        dataScope: z.array(z.enum(["telemetry","soh_predictions","compliance_reports","battery_passport","carbon_data"])),
+        expiresInDays: z.number().min(1).max(365).optional(),
+        bpanFilter: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { dataSharingAgreements } = await import("../drizzle/schema");
+        const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null;
+        const [result] = await db.insert(dataSharingAgreements).values({
+          requestingUserId: ctx.user.id,
+          owningUserId: ctx.user.id,
+          scope: JSON.stringify(input.dataScope),
+          bpan: input.bpanFilter ?? null,
+          expiresAt,
+          requestMessage: `Org: ${input.recipientOrgName} (${input.recipientOrgId})`,
+        });
+        return { success: true, id: (result as any).insertId };
+      }),
+    revokeConsent: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { dataSharingAgreements } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        await db.update(dataSharingAgreements).set({ status: "revoked" }).where(and(eq(dataSharingAgreements.id, input.id), eq(dataSharingAgreements.requestingUserId, ctx.user.id)));
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

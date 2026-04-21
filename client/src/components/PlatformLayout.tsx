@@ -12,7 +12,8 @@ import {
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play, AlertTriangle
+  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play, AlertTriangle,
+  GitBranch, Leaf, Network, Link2, Share2, Code2, Zap, TrendingUp, Bot
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -94,6 +95,33 @@ function useNavSections() {
       items: [
         { icon: Rocket, label: "Getting Started", href: "/getting-started" },
         { icon: BookOpen, label: "CirculWiki", href: "/wiki" },
+      ],
+    },
+    {
+      label: "NEXT-GEN v2.0",
+      sectionKey: "NEXTGEN_V2",
+      items: [
+        { icon: GitBranch, label: "Digital Twin", href: "/digital-twin" },
+        { icon: Leaf, label: "Carbon Accounting", href: "/carbon-accounting" },
+        { icon: Network, label: "Federated Learning", href: "/federated-learning" },
+      ],
+    },
+    {
+      label: "NEXT-GEN v3.0",
+      sectionKey: "NEXTGEN_V3",
+      items: [
+        { icon: Link2, label: "Blockchain Audit", href: "/blockchain-audit" },
+        { icon: Share2, label: "Data Sharing", href: "/data-sharing" },
+        { icon: Code2, label: "Developer Portal", href: "/developer-portal" },
+      ],
+    },
+    {
+      label: "NEXT-GEN v4.0",
+      sectionKey: "NEXTGEN_V4",
+      items: [
+        { icon: Bot, label: "Autonomous Triage", href: "/autonomous-triage" },
+        { icon: TrendingUp, label: "Predictive Procurement", href: "/predictive-procurement" },
+        { icon: Zap, label: "Solid-State Batteries", href: "/solid-state" },
       ],
     },
     {

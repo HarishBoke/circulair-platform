@@ -52,6 +52,15 @@ import ResetPassword from "./pages/ResetPassword";
 import CookieConsent, { hasAnalyticsConsent, type ConsentLevel } from "./components/CookieConsent";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import DigitalTwin from "./pages/DigitalTwin";
+import CarbonAccounting from "./pages/CarbonAccounting";
+import FederatedLearning from "./pages/FederatedLearning";
+import BlockchainAudit from "./pages/BlockchainAudit";
+import DataSharing from "./pages/DataSharing";
+import DeveloperPortal from "./pages/DeveloperPortal";
+import AutonomousTriage from "./pages/AutonomousTriage";
+import PredictiveProcurement from "./pages/PredictiveProcurement";
+import SolidStateBattery from "./pages/SolidStateBattery";
 
 function Router() {
   return (
@@ -103,6 +112,18 @@ function Router() {
       <Route path="/getting-started" component={() => <PlatformLayout><GettingStarted /></PlatformLayout>} />
       {/* Marketing / pre-launch page kept for reference */}
       <Route path="/coming-soon" component={() => <LaunchingSoon onAccessGranted={() => {}} />} />
+      {/* v2.0 Next-Gen Features */}
+      <Route path="/digital-twin" component={() => <PlatformLayout><DigitalTwin /></PlatformLayout>} />
+      <Route path="/carbon-accounting" component={() => <PlatformLayout><CarbonAccounting /></PlatformLayout>} />
+      <Route path="/federated-learning" component={() => <PlatformLayout><FederatedLearning /></PlatformLayout>} />
+      {/* v3.0 Next-Gen Features */}
+      <Route path="/blockchain-audit" component={() => <PlatformLayout><BlockchainAudit /></PlatformLayout>} />
+      <Route path="/data-sharing" component={() => <PlatformLayout><DataSharing /></PlatformLayout>} />
+      <Route path="/developer-portal" component={() => <PlatformLayout><DeveloperPortal /></PlatformLayout>} />
+      {/* v4.0 Next-Gen Features */}
+      <Route path="/autonomous-triage" component={() => <PlatformLayout><AutonomousTriage /></PlatformLayout>} />
+      <Route path="/predictive-procurement" component={() => <PlatformLayout><PredictiveProcurement /></PlatformLayout>} />
+      <Route path="/solid-state" component={() => <PlatformLayout><SolidStateBattery /></PlatformLayout>} />
       {/* Public legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />

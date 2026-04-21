@@ -1049,3 +1049,146 @@ export const stripePaymentIntents = mysqlTable("stripe_payment_intents", {
 });
 export type StripePaymentIntent = typeof stripePaymentIntents.$inferSelect;
 export type InsertStripePaymentIntent = typeof stripePaymentIntents.$inferInsert;
+
+// ─── BATTERY DIGITAL TWINS ────────────────────────────────────────────────────
+export const batteryTwins = mysqlTable("battery_twins", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull().unique(),
+  simulatedSoh: decimal("simulated_soh", { precision: 5, scale: 2 }),
+  forecastHorizonDays: int("forecast_horizon_days").default(365).notNull(),
+  forecastData: json("forecast_data"),
+  modelVersion: varchar("model_version", { length: 32 }).default("physics-v1.0").notNull(),
+  confidence: decimal("confidence", { precision: 4, scale: 3 }),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BatteryTwin = typeof batteryTwins.$inferSelect;
+export type InsertBatteryTwin = typeof batteryTwins.$inferInsert;
+
+// ─── CARBON FOOTPRINTS ────────────────────────────────────────────────────────
+export const carbonFootprints = mysqlTable("carbon_footprints", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull().unique(),
+  manufacturingKgCo2: decimal("manufacturing_kg_co2", { precision: 10, scale: 3 }),
+  transportKgCo2: decimal("transport_kg_co2", { precision: 10, scale: 3 }),
+  operationalKgCo2: decimal("operational_kg_co2", { precision: 10, scale: 3 }),
+  eolKgCo2: decimal("eol_kg_co2", { precision: 10, scale: 3 }),
+  totalKgCo2: decimal("total_kg_co2", { precision: 10, scale: 3 }),
+  gridCarbonIntensity: decimal("grid_carbon_intensity", { precision: 8, scale: 2 }),
+  gridRegion: varchar("grid_region", { length: 64 }),
+  certUrl: varchar("cert_url", { length: 512 }),
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CarbonFootprint = typeof carbonFootprints.$inferSelect;
+export type InsertCarbonFootprint = typeof carbonFootprints.$inferInsert;
+
+// ─── MODEL VERSIONS (Federated Learning) ─────────────────────────────────────
+export const modelVersions = mysqlTable("model_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 32 }).notNull().unique(),
+  rmse: decimal("rmse", { precision: 6, scale: 4 }),
+  mae: decimal("mae", { precision: 6, scale: 4 }),
+  r2: decimal("r2", { precision: 6, scale: 4 }),
+  batteryCount: int("battery_count").default(0).notNull(),
+  federatedRounds: int("federated_rounds").default(0).notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
+  trainedAt: timestamp("trained_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ModelVersion = typeof modelVersions.$inferSelect;
+export type InsertModelVersion = typeof modelVersions.$inferInsert;
+
+// ─── BLOCKCHAIN ANCHORS ───────────────────────────────────────────────────────
+export const blockchainAnchors = mysqlTable("blockchain_anchors", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }),
+  eventType: mysqlEnum("event_type", [
+    "bpan_registration",
+    "soh_prediction",
+    "epr_token_issuance",
+    "compliance_report",
+    "marketplace_transaction",
+    "logistics_dispatch",
+    "data_sharing_consent",
+  ]).notNull(),
+  dataHash: varchar("data_hash", { length: 64 }).notNull(),
+  txHash: varchar("tx_hash", { length: 66 }).notNull().unique(),
+  blockNumber: int("block_number"),
+  network: varchar("network", { length: 32 }).default("polygon-mumbai").notNull(),
+  payload: json("payload"),
+  anchoredAt: timestamp("anchored_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BlockchainAnchor = typeof blockchainAnchors.$inferSelect;
+export type InsertBlockchainAnchor = typeof blockchainAnchors.$inferInsert;
+
+// ─── DATA SHARING AGREEMENTS ──────────────────────────────────────────────────
+export const dataSharingAgreements = mysqlTable("data_sharing_agreements", {
+  id: int("id").autoincrement().primaryKey(),
+  requestingUserId: int("requesting_user_id").notNull(),
+  owningUserId: int("owning_user_id").notNull(),
+  bpan: varchar("bpan", { length: 21 }),
+  scope: varchar("scope", { length: 256 }).notNull(),
+  status: mysqlEnum("dsa_status", ["pending", "approved", "rejected", "revoked", "expired"])
+    .default("pending").notNull(),
+  requestMessage: text("request_message"),
+  responseMessage: text("response_message"),
+  expiresAt: timestamp("expires_at"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DataSharingAgreement = typeof dataSharingAgreements.$inferSelect;
+export type InsertDataSharingAgreement = typeof dataSharingAgreements.$inferInsert;
+
+// ─── TRIAGE JOBS (Autonomous Routing) ────────────────────────────────────────
+export const triageJobs = mysqlTable("triage_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  bpan: varchar("bpan", { length: 21 }).notNull(),
+  recommendedPath: mysqlEnum("recommended_path", [
+    "direct_reuse",
+    "module_repurposing",
+    "material_recycling",
+  ]).notNull(),
+  confidence: decimal("confidence", { precision: 4, scale: 3 }),
+  status: mysqlEnum("triage_status", [
+    "pending_approval",
+    "approved",
+    "rejected",
+    "executing",
+    "completed",
+    "failed",
+  ]).default("pending_approval").notNull(),
+  autoActionsLog: json("auto_actions_log"),
+  reviewedBy: int("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNote: text("review_note"),
+  createdListingId: int("created_listing_id"),
+  createdLogisticsId: int("created_logistics_id"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TriageJob = typeof triageJobs.$inferSelect;
+export type InsertTriageJob = typeof triageJobs.$inferInsert;
+
+// ─── FORWARD ORDERS (Predictive Procurement) ─────────────────────────────────
+export const forwardOrders = mysqlTable("forward_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  buyerId: int("buyer_id").notNull(),
+  targetSohMin: decimal("target_soh_min", { precision: 5, scale: 2 }).notNull(),
+  targetSohMax: decimal("target_soh_max", { precision: 5, scale: 2 }).notNull(),
+  chemistry: mysqlEnum("fo_chemistry", ["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID", "SOLID_STATE"]),
+  minCapacityKwh: decimal("min_capacity_kwh", { precision: 10, scale: 2 }),
+  quantity: int("quantity").default(1).notNull(),
+  deliveryMonth: varchar("delivery_month", { length: 7 }).notNull(),
+  maxPricePerKwh: decimal("max_price_per_kwh", { precision: 10, scale: 2 }),
+  status: mysqlEnum("fo_status", ["pending", "matched", "fulfilled", "cancelled", "expired"])
+    .default("pending").notNull(),
+  matchedListingIds: json("matched_listing_ids"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ForwardOrder = typeof forwardOrders.$inferSelect;
+export type InsertForwardOrder = typeof forwardOrders.$inferInsert;
