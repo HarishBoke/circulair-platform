@@ -841,3 +841,12 @@
 - [x] Owner notification kept as secondary audit trail
 - [x] Write 7 vitest tests for email helper (all mocked, all passing)
 - [x] TypeScript: 0 errors, 385 tests passing across 26 test files
+
+## Phase 56 (COMPLETED): Production Readiness Audit & Documentation
+- [x] Full codebase audit: security, trust proxy, rate limiter, CSP, unguarded procedures
+- [x] Fix trust proxy: added app.set("trust proxy", 1) before security middleware in index.ts
+- [x] Enable CSP in production mode (permissive policy allowing CDN assets, inline scripts, wss)
+- [x] Write README.md: architecture, tech stack, quick start, env vars, DB schema, auth, API ref, testing, deployment, compliance, i18n
+- [x] Write DEPLOYMENT.md: pre-deployment checklist, secrets config, DNS setup, publish steps, rollback, ops runbook, monitoring, DB ops
+- [x] Write API.md: all 100+ tRPC procedures documented with auth levels, REST API v1, MCP server, WebSocket, MQTT, error codes
+- [x] TypeScript: 0 errors, 385 tests passing across 26 test files

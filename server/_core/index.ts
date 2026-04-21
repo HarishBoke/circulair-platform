@@ -36,6 +36,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // Trust the first proxy hop (Manus reverse proxy / Cloudflare)
+  // Required for express-rate-limit to correctly identify client IPs from X-Forwarded-For
+  app.set("trust proxy", 1);
   // Security headers + rate limiting
   applySecurityMiddleware(app);
   // Configure body parser with larger size limit for file uploads

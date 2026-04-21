@@ -8,10 +8,27 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 export function applySecurityMiddleware(app: Express): void {
+  const isProd = process.env.NODE_ENV === "production";
   // ── Helmet: security headers ──────────────────────────────────────────────
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Vite HMR + inline scripts need this off in dev
+      // CSP is disabled in development (Vite HMR + inline scripts require it off)
+      // In production, enable a permissive policy that allows CDN assets and inline scripts
+      contentSecurityPolicy: isProd
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+              styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+              imgSrc: ["'self'", "data:", "blob:", "https:"],
+              connectSrc: ["'self'", "wss:", "https:"],
+              fontSrc: ["'self'", "https:", "data:"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'", "https:"],
+              frameSrc: ["'none'"],
+            },
+          }
+        : false,
       crossOriginEmbedderPolicy: false, // Allow embedding external images (CDN assets)
     })
   );
