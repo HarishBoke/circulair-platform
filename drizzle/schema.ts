@@ -1022,3 +1022,30 @@ export const alertRules = mysqlTable("alert_rules", {
 });
 export type AlertRule = typeof alertRules.$inferSelect;
 export type InsertAlertRule = typeof alertRules.$inferInsert;
+
+// ─── STRIPE PAYMENT INTENTS ───────────────────────────────────────────────────
+// Minimal Stripe identifier store — only IDs and business-critical metadata.
+// All amounts, status, and card details are fetched from Stripe API on demand.
+export const stripePaymentIntents = mysqlTable("stripe_payment_intents", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Stripe PaymentIntent ID (pi_xxxx) */
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 64 }).notNull().unique(),
+  /** Stripe Checkout Session ID (cs_xxxx) */
+  stripeSessionId: varchar("stripe_session_id", { length: 128 }),
+  /** The marketplace offer this payment settles */
+  offerId: int("offer_id").notNull(),
+  /** The marketplace listing being purchased */
+  listingId: int("listing_id").notNull(),
+  /** Buyer user ID */
+  buyerId: int("buyer_id").notNull(),
+  /** Seller user ID */
+  sellerId: int("seller_id").notNull(),
+  /** Payment status: pending | succeeded | failed | cancelled */
+  status: mysqlEnum("payment_status", ["pending", "succeeded", "failed", "cancelled"])
+    .default("pending")
+    .notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StripePaymentIntent = typeof stripePaymentIntents.$inferSelect;
+export type InsertStripePaymentIntent = typeof stripePaymentIntents.$inferInsert;

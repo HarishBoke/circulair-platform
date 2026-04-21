@@ -135,13 +135,34 @@ The exact CNAME target is shown in the Manus Management UI under **Settings → 
 
 ### Resend Email DNS Records
 
-To prevent password reset emails from landing in spam, add these records at your DNS provider:
+To prevent password reset emails from landing in spam, you must add four DNS records to `circulair.energy`. These records authorise Resend to send on your behalf and prevent spoofing.
 
-| Type | Name | Value |
-|---|---|---|
-| `TXT` | `@` | `v=spf1 include:_spf.resend.com ~all` |
-| `TXT` | `resend._domainkey` | DKIM public key from Resend dashboard |
-| `TXT` | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:dmarc@circulair.energy` |
+**Step 1 — Add the domain in Resend**
+
+1. Log in to [resend.com/domains](https://resend.com/domains) and click **Add Domain**.
+2. Enter `circulair.energy` (or `send.circulair.energy` if you prefer a subdomain for isolation).
+3. Resend will display the exact record values for your account. The DKIM public key is unique per account and must be copied from the dashboard — never use a value from a third-party guide.
+
+**Step 2 — Add DNS records at your registrar**
+
+| Type | Name | Value | Notes |
+|---|---|---|---|
+| `TXT` | `circulair.energy` | `v=spf1 include:_spf.resend.com ~all` | Authorises Resend IPs to send |
+| `TXT` | `resend._domainkey.circulair.energy` | *(copy from Resend dashboard)* | 2048-bit RSA DKIM public key |
+| `MX` | `send.circulair.energy` | `feedback-smtp.us-east-1.amazonses.com` (priority 10) | Bounce/complaint return path |
+| `TXT` | `_dmarc.circulair.energy` | `v=DMARC1; p=none; rua=mailto:dmarc@circulair.energy` | Start with `p=none` during rollout |
+
+**Step 3 — Verify in Resend**
+
+Return to the Resend Domains dashboard and click **Verify DNS Records**. DNS propagation typically takes 5–30 minutes but can take up to 48 hours. The domain status will change from `pending` to `verified` once all records are detected. Use [dnschecker.org](https://dnschecker.org) to monitor propagation.
+
+**Step 4 — Upgrade DMARC policy after 2 weeks**
+
+Once you have confirmed that emails are reaching inboxes and headers show `dmarc=pass`, upgrade the DMARC policy to `p=quarantine` to improve deliverability reputation and unlock BIMI eligibility:
+
+```
+v=DMARC1; p=quarantine; rua=mailto:dmarc@circulair.energy
+```
 
 Verify domain status in the [Resend dashboard](https://resend.com/domains) before going live.
 

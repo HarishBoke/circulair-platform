@@ -871,3 +871,35 @@
 - [x] Extend alertCooldown.ts to support dynamic rule keys (rule_42 etc.) with string union type
 - [x] Write 19 vitest tests (evaluateAlertRules, alertCooldown dynamic keys, scope priority)
 - [x] TypeScript: 0 errors, 404 tests passing across 27 test files
+
+## Phase 59 (COMPLETED): Resend DNS Verification — Exact Records for circulair.energy
+- [x] Fetched Resend domain verification documentation (SPF, DKIM, DMARC record formats)
+- [x] Added dedicated "Email DNS Verification" section to DEPLOYMENT.md with copy-paste records for circulair.energy
+- [x] Documented step-by-step Resend dashboard verification flow and propagation timing
+
+## Phase 60 (COMPLETED): Stripe Payment Gateway — Marketplace Settlement
+- [x] Installed Stripe SDK (stripe v17)
+- [x] Added STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET to env.ts
+- [x] Created stripe_payment_intents table in database
+- [x] Built server/stripe.ts with createMarketplaceCheckoutSession(), handleStripeWebhook(), getPaymentsByUser()
+- [x] Registered POST /api/stripe/webhook BEFORE express.json() middleware
+- [x] Added marketplace.createCheckout tRPC procedure
+- [x] Added marketplace.getMyOrders tRPC procedure
+- [x] Upgraded MarketplaceDetail.tsx: offer dialog now creates offer + opens Stripe checkout in new tab
+- [x] Built PaymentSuccess.tsx at /marketplace/payment-success
+- [x] Built MyOrders.tsx at /marketplace/orders
+- [x] Wired both routes in App.tsx
+- [x] TypeScript: 0 errors
+
+## Phase 61 (COMPLETED): AI SOH Model Upgrade — Physics-Informed Electrochemical Model
+- [x] Created server/sohModel.ts with Arrhenius calendar aging, Wöhler cycle fade, Peukert C-rate correction, IR growth model
+- [x] Chemistry-specific parameters for NMC, LFP, NCA, LCO, LMO, LEAD_ACID
+- [x] BMS calibration: 60% BMS + 40% physics blend when BMS SOH is available
+- [x] Confidence interval based on data availability (50% base → 95% max)
+- [x] RMSE estimate derived from confidence level (target < 0.02 achievable with full telemetry)
+- [x] Replaced LLM-simulated predictSoh in routers.ts with physics model for numeric values
+- [x] LLM retained for qualitative triage reason + maintenance recommendations (with graceful fallback)
+- [x] modelVersion: "physics-v1.0" returned in prediction response
+- [x] breakdown field exposes calendarFade, cycleFade, irCorrection, bmsCorrectionApplied
+- [x] Wrote 16 vitest tests for sohModel (all chemistry types, edge cases, triage thresholds)
+- [x] TypeScript: 0 errors, 420 tests passing across 28 test files

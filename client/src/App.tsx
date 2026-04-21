@@ -43,6 +43,8 @@ import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
 import LaunchingSoon from "./pages/LaunchingSoon";
 import AlertRules from "./pages/AlertRules";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import MyOrders from "./pages/MyOrders";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -67,6 +69,8 @@ function Router() {
       <Route path="/ai-soh" component={() => <PlatformLayout><AiSoh /></PlatformLayout>} />
       <Route path="/marketplace" component={() => <PlatformLayout><Marketplace /></PlatformLayout>} />
       <Route path="/marketplace/create" component={() => <PlatformLayout><MarketplaceCreate /></PlatformLayout>} />
+      <Route path="/marketplace/payment-success" component={PaymentSuccess} />
+      <Route path="/marketplace/orders" component={() => <PlatformLayout><MyOrders /></PlatformLayout>} />
       <Route path="/marketplace/:id" component={() => <PlatformLayout><MarketplaceDetail /></PlatformLayout>} />
       <Route path="/logistics" component={() => <PlatformLayout><Logistics /></PlatformLayout>} />
       <Route path="/epr-compliance" component={() => <PlatformLayout><EprCompliance /></PlatformLayout>} />

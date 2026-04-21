@@ -412,66 +412,86 @@ export const appRouter = router({
           getLatestTelemetry(input.bpan),
         ]);
         if (!battery) throw new Error("Battery not found");
-        const telemetryContext = latestTelemetry ? `
-          Latest telemetry:
-          - Pack Voltage: ${latestTelemetry.vPack}V
-          - Pack Current: ${latestTelemetry.iPack}A
-          - Max Temperature: ${latestTelemetry.tMax}°C
-          - Cycle Count: ${latestTelemetry.cycleCount}
-          - Internal Resistance: ${latestTelemetry.irPack}mΩ
-          - BMS SOH Estimate: ${latestTelemetry.sohEstimate}%
-        ` : "No telemetry available";
-        const prompt = `You are a CNN-LSTM battery SOH prediction model (v3.2.1). Analyze this battery and provide predictions.
 
-Battery: ${input.bpan}
-Chemistry: ${battery.chemistry}
-Capacity: ${battery.capacityKwh} kWh
-Voltage: ${battery.voltageV}V
-Manufacture Date: ${battery.mfgYear}-${battery.mfgMonth}-${battery.mfgDay}
-Current Status: ${battery.status}
-Current SOH: ${battery.currentSoh}%
-${telemetryContext}
-
-Provide a JSON response with:
-- predictedSoh: number (0-100, percentage)
-- rulCycles: number (remaining useful life in cycles)
-- confidence: number (0-100, model confidence)
-- rmse: number (prediction error, target < 0.02)
-- triagePath: "direct_reuse" | "module_repurposing" | "material_recycling"
-- triageReason: string (explanation)
-- maintenanceRecommendations: array of strings (3-5 recommendations)
-
-Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_recycling`;
-
-        const response = await invokeLLM({
-          messages: [
-            { role: "system", content: "You are a battery AI prediction system. Always respond with valid JSON only." },
-            { role: "user", content: prompt },
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "soh_prediction",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: {
-                  predictedSoh: { type: "number" },
-                  rulCycles: { type: "number" },
-                  confidence: { type: "number" },
-                  rmse: { type: "number" },
-                  triagePath: { type: "string", enum: ["direct_reuse", "module_repurposing", "material_recycling"] },
-                  triageReason: { type: "string" },
-                  maintenanceRecommendations: { type: "array", items: { type: "string" } },
-                },
-                required: ["predictedSoh", "rulCycles", "confidence", "rmse", "triagePath", "triageReason", "maintenanceRecommendations"],
-                additionalProperties: false,
-              },
-            },
-          } as any,
+        // ── Step 1: Physics-informed electrochemical model ──────────────────
+        const { predictSohPhysics } = await import("./sohModel");
+        const physicsResult = predictSohPhysics({
+          chemistry: battery.chemistry ?? "NMC",
+          capacityKwh: Number(battery.capacityKwh ?? 10),
+          mfgYear: battery.mfgYear ?? new Date().getFullYear(),
+          mfgMonth: battery.mfgMonth ?? 1,
+          bmsReportedSoh: latestTelemetry?.sohEstimate ? Number(latestTelemetry.sohEstimate) : undefined,
+          cycleCount: latestTelemetry?.cycleCount ?? undefined,
+          irPack: latestTelemetry?.irPack ? Number(latestTelemetry.irPack) : undefined,
+          tMax: latestTelemetry?.tMax ? Number(latestTelemetry.tMax) : undefined,
         });
-        const content = response.choices[0]?.message?.content;
-        const prediction = typeof content === "string" ? JSON.parse(content) : content;
+
+        // ── Step 2: LLM for qualitative triage reason + maintenance recs ────
+        const telemetrySummary = latestTelemetry
+          ? `Voltage: ${latestTelemetry.vPack}V | Current: ${latestTelemetry.iPack}A | Temp: ${latestTelemetry.tMax}°C | Cycles: ${latestTelemetry.cycleCount} | IR: ${latestTelemetry.irPack}mΩ | BMS SOH: ${latestTelemetry.sohEstimate}%`
+          : "No telemetry available";
+        const llmPrompt = `You are a battery health expert reviewing a physics model output. Provide a concise triage reason and 3-5 maintenance recommendations.
+
+Battery: ${input.bpan} | Chemistry: ${battery.chemistry} | Capacity: ${battery.capacityKwh} kWh
+Age: ${battery.mfgYear}-${battery.mfgMonth} | Telemetry: ${telemetrySummary}
+
+Physics model results:
+- Predicted SOH: ${physicsResult.predictedSoh}%
+- Calendar fade: ${physicsResult.breakdown.calendarFade}% | Cycle fade: ${physicsResult.breakdown.cycleFade}% | IR penalty: ${physicsResult.breakdown.irCorrection}%
+- BMS calibration applied: ${physicsResult.breakdown.bmsCorrectionApplied}
+- Triage: ${physicsResult.triagePath} | RUL: ${physicsResult.rulCycles} cycles | Confidence: ${physicsResult.confidence}%
+
+Respond with JSON only: { "triageReason": string, "maintenanceRecommendations": string[] }`;
+
+        let triageReason = `SOH ${physicsResult.predictedSoh.toFixed(1)}% — ${physicsResult.triagePath.replace(/_/g, " ")} recommended based on ${physicsResult.breakdown.calendarFade.toFixed(1)}% calendar fade and ${physicsResult.breakdown.cycleFade.toFixed(1)}% cycle fade.`;
+        let maintenanceRecommendations: string[] = [
+          "Perform capacity verification test before deployment",
+          "Inspect cell balancing and BMS firmware version",
+          "Check terminal connections for corrosion",
+        ];
+        try {
+          const llmResponse = await invokeLLM({
+            messages: [
+              { role: "system", content: "You are a battery health expert. Respond with valid JSON only." },
+              { role: "user", content: llmPrompt },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "triage_qualitative",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    triageReason: { type: "string" },
+                    maintenanceRecommendations: { type: "array", items: { type: "string" } },
+                  },
+                  required: ["triageReason", "maintenanceRecommendations"],
+                  additionalProperties: false,
+                },
+              },
+            } as any,
+          });
+          const llmContent = llmResponse.choices[0]?.message?.content;
+          const llmData = typeof llmContent === "string" ? JSON.parse(llmContent) : llmContent;
+          triageReason = llmData.triageReason;
+          maintenanceRecommendations = llmData.maintenanceRecommendations;
+        } catch (llmErr) {
+          console.warn("[SOH] LLM qualitative step failed, using physics defaults:", llmErr);
+        }
+
+        // ── Step 3: Persist and return ───────────────────────────────────────
+        const prediction = {
+          predictedSoh: physicsResult.predictedSoh,
+          rulCycles: physicsResult.rulCycles,
+          confidence: physicsResult.confidence,
+          rmse: physicsResult.rmse,
+          triagePath: physicsResult.triagePath,
+          triageReason,
+          maintenanceRecommendations,
+          modelVersion: "physics-v1.0",
+          breakdown: physicsResult.breakdown,
+        };
         const saved = await saveSohPrediction({
           bpan: input.bpan,
           batteryId: input.batteryId,
@@ -722,6 +742,79 @@ Rules: SOH > 75% = direct_reuse, 50-75% = module_repurposing, < 50% = material_r
         if (listing.sellerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your listing" });
         await withdrawListing(input.listingId);
         return { success: true };
+      }),
+    // Make an offer on a listing
+    makeOffer: protectedProcedure
+      .input(z.object({
+        listingId: z.number(),
+        offerAmount: z.number().positive(),
+        currency: z.string().default("INR"),
+        message: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Listing is no longer active" });
+        if (listing.sellerId === ctx.user.id) throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot make an offer on your own listing" });
+        const { marketplaceOffers } = await import("../drizzle/schema");
+        const { getDb } = await import("./db");
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [offer] = await dbConn.insert(marketplaceOffers).values({
+          listingId: input.listingId,
+          buyerId: ctx.user.id,
+          offerAmount: String(input.offerAmount),
+          currency: input.currency,
+          message: input.message ?? null,
+          status: "pending",
+        });
+        return { success: true, offerId: (offer as any).insertId };
+      }),
+    // Create a Stripe checkout session for an accepted/pending offer
+    createCheckout: protectedProcedure
+      .input(z.object({
+        listingId: z.number(),
+        offerId: z.number(),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const listing = await getListingById(input.listingId);
+        if (!listing) throw new TRPCError({ code: "NOT_FOUND", message: "Listing not found" });
+        if (listing.status !== "active" && listing.status !== "reserved") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Listing is no longer available for purchase" });
+        }
+        const { marketplaceOffers } = await import("../drizzle/schema");
+        const { getDb } = await import("./db");
+        const { eq } = await import("drizzle-orm");
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [offer] = await dbConn.select().from(marketplaceOffers).where(eq(marketplaceOffers.id, input.offerId)).limit(1);
+        if (!offer) throw new TRPCError({ code: "NOT_FOUND", message: "Offer not found" });
+        if (offer.buyerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "This is not your offer" });
+        const { createCheckoutSession } = await import("./stripe");
+        // Amount: use offer amount; convert to smallest unit (paise for INR, cents for USD/EUR)
+        const amount = parseFloat(String(offer.offerAmount));
+        const smallestUnit = Math.round(amount * 100);
+        const description = `Battery ${listing.bpan} — ${listing.listingType.replace(/_/g, " ")} (${listing.chemistry ?? "Unknown"} chemistry, ${listing.capacityKwh ?? "?"} kWh)`;
+        const result = await createCheckoutSession({
+          offerId: input.offerId,
+          listingId: input.listingId,
+          buyerId: ctx.user.id,
+          sellerId: listing.sellerId,
+          amountSmallestUnit: smallestUnit,
+          currency: offer.currency,
+          description,
+          buyerEmail: ctx.user.email ?? "",
+          buyerName: ctx.user.name ?? ctx.user.email ?? "Unknown",
+          origin: input.origin,
+        });
+        return result;
+      }),
+    // Get buyer's payment history
+    getMyOrders: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getPaymentsByBuyerId } = await import("./stripe");
+        return getPaymentsByBuyerId(ctx.user.id);
       }),
   }),
   // ─── LOGISTICS ───────────────────────────────────────────────────────────────

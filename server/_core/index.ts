@@ -13,6 +13,7 @@ import { startMqttSubscriber, stopMqttSubscriber } from "../mqttSubscriber";
 import { createApiGateway } from "../apiGateway";
 import { createMcpRouter } from "../mcpServer";
 import { createSitemapRouter } from "../sitemap";
+import { handleStripeWebhook } from "../stripe";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -41,6 +42,22 @@ async function startServer() {
   app.set("trust proxy", 1);
   // Security headers + rate limiting
   applySecurityMiddleware(app);
+  // Stripe webhook MUST be registered with raw body BEFORE express.json() middleware
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const signature = req.headers["stripe-signature"];
+    if (!signature || typeof signature !== "string") {
+      res.status(400).json({ error: "Missing stripe-signature header" });
+      return;
+    }
+    try {
+      const result = await handleStripeWebhook(req.body as Buffer, signature);
+      res.json(result);
+    } catch (err) {
+      console.error("[Stripe Webhook] Error:", err);
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
