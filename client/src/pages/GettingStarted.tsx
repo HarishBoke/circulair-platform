@@ -329,7 +329,7 @@ export default function GettingStarted() {
               <div>
                 <p className="text-sm text-zinc-300 font-medium">Use the AI Assistant</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Ask the AI about any platform feature — it understands batteries, compliance, and APIs.
+                  Ask the AI about any platform feature - it understands batteries, compliance, and APIs.
                 </p>
               </div>
             </div>

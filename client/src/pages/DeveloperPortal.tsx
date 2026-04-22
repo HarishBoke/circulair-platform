@@ -53,7 +53,7 @@ function SdkDownloadSection() {
           SDK Downloads
         </CardTitle>
         <CardDescription>
-          Auto-generated from the OpenAPI 3.1 spec — typed clients for TypeScript and Python
+          Auto-generated from the OpenAPI 3.1 spec - typed clients for TypeScript and Python
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

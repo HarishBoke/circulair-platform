@@ -42,15 +42,15 @@ const LOCALES = [
 ];
 
 const TIMEZONES = [
-  { value: "Asia/Kolkata",     label: "IST — Asia/Kolkata (UTC+5:30)" },
-  { value: "Europe/Berlin",    label: "CET — Europe/Berlin (UTC+1)" },
-  { value: "Europe/London",    label: "GMT — Europe/London (UTC+0)" },
-  { value: "America/New_York", label: "EST — America/New_York (UTC-5)" },
-  { value: "America/Chicago",  label: "CST — America/Chicago (UTC-6)" },
-  { value: "America/Los_Angeles", label: "PST — America/Los_Angeles (UTC-8)" },
-  { value: "Asia/Shanghai",    label: "CST — Asia/Shanghai (UTC+8)" },
-  { value: "Asia/Tokyo",       label: "JST — Asia/Tokyo (UTC+9)" },
-  { value: "Asia/Seoul",       label: "KST — Asia/Seoul (UTC+9)" },
+  { value: "Asia/Kolkata",     label: "IST - Asia/Kolkata (UTC+5:30)" },
+  { value: "Europe/Berlin",    label: "CET - Europe/Berlin (UTC+1)" },
+  { value: "Europe/London",    label: "GMT - Europe/London (UTC+0)" },
+  { value: "America/New_York", label: "EST - America/New_York (UTC-5)" },
+  { value: "America/Chicago",  label: "CST - America/Chicago (UTC-6)" },
+  { value: "America/Los_Angeles", label: "PST - America/Los_Angeles (UTC-8)" },
+  { value: "Asia/Shanghai",    label: "CST - Asia/Shanghai (UTC+8)" },
+  { value: "Asia/Tokyo",       label: "JST - Asia/Tokyo (UTC+9)" },
+  { value: "Asia/Seoul",       label: "KST - Asia/Seoul (UTC+9)" },
   { value: "UTC",              label: "UTC (UTC+0)" },
 ];
 

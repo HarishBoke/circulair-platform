@@ -270,7 +270,7 @@ export default function Home() {
             <p className="text-muted-foreground text-lg leading-relaxed max-w-xl mb-10" style={{ fontFamily: "var(--font-body)" }}>
               End-to-end traceability from cell manufacturing to material recovery.
               AI-driven health prediction, real-time IoT telemetry, regulatory
-              compliance across 7 jurisdictions, and a second-life marketplace —
+              compliance across 7 jurisdictions, and a second-life marketplace -
               all in one unified platform.
             </p>
 
@@ -555,7 +555,7 @@ export default function Home() {
               </h2>
               <p className="text-muted-foreground text-base leading-relaxed max-w-xl mx-auto mb-10">
                 Join the platform that is defining the standard for battery circular economy.
-                From cell manufacturing to material recovery — every stage, every stakeholder, one platform.
+                From cell manufacturing to material recovery - every stage, every stakeholder, one platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button

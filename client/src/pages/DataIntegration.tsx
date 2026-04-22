@@ -159,7 +159,7 @@ export default function DataIntegration() {
             <div className="border-t border-white/10 pt-4">
               <h3 className="text-sm font-semibold text-muted-foreground mb-4">Device Integration Guides</h3>
             </div>
-            <ConnectorCard icon={Wifi} title="MQTT Broker — Real-Time IoT Telemetry" description="Connect BMS/IoT devices to stream live voltage, temperature, current, and SOH data." status="live">
+            <ConnectorCard icon={Wifi} title="MQTT Broker - Real-Time IoT Telemetry" description="Connect BMS/IoT devices to stream live voltage, temperature, current, and SOH data." status="live">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Broker Host</Label><Input value={mqttHost} onChange={e=>setMqttHost(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
                 <div className="space-y-2"><Label>Port (TLS)</Label><Input value={mqttPort} onChange={e=>setMqttPort(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
@@ -264,14 +264,14 @@ client.on("message", async (topic, message) => {
 
           {/* REST API */}
           <TabsContent value="rest" className="space-y-4 mt-4">
-            <ConnectorCard icon={Globe} title="REST API — Ingest & Query Battery Data" description="Use tRPC-over-HTTP endpoints to push telemetry and query battery records programmatically." status="live">
+            <ConnectorCard icon={Globe} title="REST API - Ingest & Query Battery Data" description="Use tRPC-over-HTTP endpoints to push telemetry and query battery records programmatically." status="live">
               <div className="space-y-2"><Label>API Base URL</Label><Input value={`${baseUrl}/api/trpc`} readOnly className="bg-white/5 border-white/10 font-mono text-sm"/></div>
               <div className="space-y-2">
                 <Label>API Key</Label>
                 <Input value={apiKey} onChange={e=>setApiKey(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm" placeholder="ck_live_..."/>
                 <p className="text-xs text-muted-foreground">Pass as <code className="bg-white/10 px-1 rounded">Authorization: Bearer &lt;key&gt;</code> header.</p>
               </div>
-              <div className="space-y-2"><Label>Ingest Telemetry — cURL</Label>
+              <div className="space-y-2"><Label>Ingest Telemetry - cURL</Label>
                 <CodeBlock language="bash" code={`curl -X POST ${baseUrl}/api/trpc/telemetry.ingest \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${apiKey}" \\
@@ -285,7 +285,7 @@ client.on("message", async (topic, message) => {
     }
   }'`}/>
               </div>
-              <div className="space-y-2"><Label>Query Battery Registry — Python</Label>
+              <div className="space-y-2"><Label>Query Battery Registry - Python</Label>
                 <CodeBlock language="python" code={`import requests
 
 BASE = "${baseUrl}/api/trpc"
@@ -303,7 +303,7 @@ r = requests.get(f"{BASE}/ai.getLatestPrediction",
 pred = r.json()["result"]["data"]["json"]
 print(f"SOH: {pred['predictedSoh']}% | RUL: {pred['rulCycles']} cycles")`}/>
               </div>
-              <div className="space-y-2"><Label>Register Battery — JavaScript</Label>
+              <div className="space-y-2"><Label>Register Battery - JavaScript</Label>
                 <CodeBlock language="javascript" code={`const res = await fetch("${baseUrl}/api/trpc/battery.register", {
   method: "POST",
   headers: { "Content-Type": "application/json", "Authorization": "Bearer ${apiKey}" },
@@ -325,7 +325,7 @@ console.log("Generated BPAN:", result.data.json.bpan);`}/>
 
           {/* CSV Import */}
           <TabsContent value="csv" className="space-y-4 mt-4">
-            <ConnectorCard icon={Upload} title="CSV Bulk Import — Batteries & Telemetry" description="Upload CSV files to bulk-import battery registrations, telemetry history, or service records." status="demo">
+            <ConnectorCard icon={Upload} title="CSV Bulk Import - Batteries & Telemetry" description="Upload CSV files to bulk-import battery registrations, telemetry history, or service records." status="demo">
               <div className="space-y-2"><Label>Battery Registration CSV Format</Label>
                 <CodeBlock language="csv" code={`bpan,countryCode,manufacturerId,capacityKwh,chemistry,voltageV,mfgYear,mfgMonth,mfgDay,factoryCode,serialNumber,status,currentSoh,cycleCount,vehicleId
 INHB30N40250627A000101,IN,HB,30,NMC,400,2025,6,27,A,0001,operational,91.2,342,VIN0000000001IN
@@ -386,7 +386,7 @@ await db.end();`}/>
 
           {/* Webhooks */}
           <TabsContent value="webhook" className="space-y-4 mt-4">
-            <ConnectorCard icon={Webhook} title="Outbound Webhooks — Push Events to External Systems" description="Configure webhooks to push battery events (thermal anomalies, EOL, EPR tokens) to your systems." status="demo">
+            <ConnectorCard icon={Webhook} title="Outbound Webhooks - Push Events to External Systems" description="Configure webhooks to push battery events (thermal anomalies, EOL, EPR tokens) to your systems." status="demo">
               <div className="space-y-2"><Label>Your Webhook Endpoint</Label><Input value={webhookUrl} onChange={e=>setWebhookUrl(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
               <div className="space-y-2"><Label>Webhook Payload Examples</Label>
                 <Tabs defaultValue="thermal">
@@ -445,7 +445,7 @@ await db.end();`}/>
 }`}/></TabsContent>
                 </Tabs>
               </div>
-              <div className="space-y-2"><Label>Webhook Receiver — Express.js Example</Label>
+              <div className="space-y-2"><Label>Webhook Receiver - Express.js Example</Label>
                 <CodeBlock language="javascript" code={`app.post("/webhooks/battery", express.json(), (req, res) => {
   const { event, bpan, severity, data } = req.body;
 
@@ -475,7 +475,7 @@ await db.end();`}/>
 
           {/* SDK */}
           <TabsContent value="sdk" className="space-y-4 mt-4">
-            <ConnectorCard icon={Server} title="Mobile SDK — Offline-First Field Technician App" description="React Native / Flutter SDK for field technicians with offline-first sync and QR scanning." status="coming_soon">
+            <ConnectorCard icon={Server} title="Mobile SDK - Offline-First Field Technician App" description="React Native / Flutter SDK for field technicians with offline-first sync and QR scanning." status="coming_soon">
               <div className="space-y-2"><Label>React Native SDK (Planned)</Label>
                 <CodeBlock language="javascript" code={`// npm install @circulair/mobile-sdk
 import { CirculairSDK, BpanScanner } from "@circulair/mobile-sdk";
@@ -510,7 +510,7 @@ sdk.on("online", () => sdk.sync());`}/>
 
           {/* Direct DB */}
           <TabsContent value="database" className="space-y-4 mt-4">
-            <ConnectorCard icon={Database} title="Direct Database Access — MySQL / TiDB" description="Connect directly to the MySQL/TiDB database for bulk operations, migrations, and BI tools." status="live">
+            <ConnectorCard icon={Database} title="Direct Database Access - MySQL / TiDB" description="Connect directly to the MySQL/TiDB database for bulk operations, migrations, and BI tools." status="live">
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <div className="flex gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0"/>

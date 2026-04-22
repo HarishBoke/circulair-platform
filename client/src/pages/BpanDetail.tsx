@@ -621,7 +621,7 @@ export default function BpanDetail() {
             <h3 className="font-display text-sm font-bold">Carbon Footprint Declaration</h3>
           </div>
           <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-            EU Battery Regulation 2023/1542 — Lifecycle CO₂e per kWh · A–E Performance Class
+            EU Battery Regulation 2023/1542 - Lifecycle CO₂e per kWh · A–E Performance Class
           </p>
         </div>
         <div className="p-5">
@@ -642,7 +642,7 @@ export default function BpanDetail() {
             <h3 className="font-display text-sm font-bold">Recycled Content Declaration</h3>
           </div>
           <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-            EU Battery Regulation Art. 8 — Co, Li, Ni, Pb recycled content · 2031 & 2036 targets
+            EU Battery Regulation Art. 8 - Co, Li, Ni, Pb recycled content · 2031 & 2036 targets
           </p>
         </div>
         <div className="p-5">

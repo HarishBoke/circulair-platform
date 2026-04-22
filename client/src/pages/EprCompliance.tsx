@@ -22,7 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const JURISDICTIONS = [
-  { value: "india_cpcb" as const, label: "India — CPCB / BWMR 2016", icon: "🇮🇳" },
+  { value: "india_cpcb" as const, label: "India - CPCB / BWMR 2016", icon: "🇮🇳" },
   { value: "eu_battery_reg" as const, label: "EU Battery Regulation 2023/1542", icon: "🇪🇺" },
   { value: "generic" as const, label: "Generic / Multi-jurisdiction", icon: "🌐" },
 ];

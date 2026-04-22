@@ -1119,3 +1119,13 @@
 - [x] WCAG: role=progressbar aria-valuenow, aria-live on count, role=tablist/tab/tabpanel, aria-label on all buttons
 - [x] Added to Dashboard.tsx above KPI strip — import + <GettingStartedWidget />
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 81 (Complete): Design Refinement - Accent Restriction, Em-Dash Fix, Role Pill Removal
+- [x] NavItem active state: bg-secondary text-foreground (neutral), icon stays text-primary (green)
+- [x] Active indicator bar stays bg-primary (green left edge)
+- [x] Role label in sidebar user footer: text-muted-foreground (was text-primary)
+- [x] RoleBadge in AdminUserManagement: removed pill (bg + rounded-md), now plain text-xs with role colour only
+- [x] Em-dashes replaced with hyphens in: usePageTitle, GettingStartedWidget, OnboardingWizard, BpanRegister, AiSoh, Analytics, Dashboard, GettingStarted, Home, DataIntegration, MqttFlowTester, BpanDetail, EprCompliance, PlatformSettings, DeveloperPortal
+- [x] Null-placeholder dashes ("\u2014" for empty data values) left unchanged
+- [x] Code comments left unchanged
+- [x] TypeScript: 0 errors, 420/420 tests passing

@@ -257,7 +257,7 @@ function NavItem({
           flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium
           transition-all duration-150 cursor-pointer group relative
           ${isActive
-            ? "bg-primary/12 text-primary"
+            ? "bg-secondary text-foreground"
             : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
           }
         `}
@@ -267,7 +267,7 @@ function NavItem({
           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" aria-hidden="true" />
         )}
         <Icon
-          className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? "text-primary" : "group-hover:text-foreground"}`}
+          className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
           aria-hidden="true"
         />
         {!collapsed && (
@@ -433,7 +433,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold truncate text-foreground">{user?.name ?? "User"}</div>
-              <div className="font-mono text-[9px] text-primary truncate">
+              <div className="font-mono text-[9px] text-muted-foreground truncate">
                 {ROLE_LABELS[platformRole] ?? platformRole}
               </div>
             </div>

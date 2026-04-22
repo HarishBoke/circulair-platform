@@ -46,7 +46,7 @@ function StepRow({ step, onComplete }: { step: Step; onComplete: (key: string) =
     <div className={`flex items-start gap-3 py-2 group ${step.completed ? "opacity-60" : ""}`}>
       <button
         onClick={() => !step.completed && onComplete(step.key)}
-        aria-label={step.completed ? `${step.title} — completed` : `Mark "${step.title}" as complete`}
+        aria-label={step.completed ? `${step.title} - completed` : `Mark "${step.title}" as complete`}
         className="mt-0.5 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-primary rounded-full"
       >
         {step.completed
@@ -198,7 +198,7 @@ export default function GettingStartedWidget() {
       {!expanded && allDone && (
         <div className="px-5 py-3 flex items-center gap-2 text-sm text-muted-foreground">
           <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-          <span>All steps complete — you're ready to go!</span>
+          <span>All steps complete - you're ready to go!</span>
         </div>
       )}
 
@@ -247,7 +247,7 @@ export default function GettingStartedWidget() {
           <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
               {allDone
-                ? "All steps complete — great work!"
+                ? "All steps complete - great work!"
                 : `${totalCount - completedCount} step${totalCount - completedCount !== 1 ? "s" : ""} remaining`
               }
             </span>

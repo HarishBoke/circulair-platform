@@ -230,7 +230,7 @@ export default function BpanRegister() {
         </Link>
         <div>
           <h1 className="font-display text-2xl font-bold">Register Battery</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Step {step} of 4 — {STEPS[step - 1].title}</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Step {step} of 4 - {STEPS[step - 1].title}</p>
         </div>
       </div>
 

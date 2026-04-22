@@ -113,7 +113,7 @@ function DashboardContent({ user }: { user: any }) {
           <div className="p-5">
             {sohData.length === 0 ? (
               <div className="h-[180px] flex items-center justify-center text-muted-foreground text-xs font-mono">
-                No SOH data yet — register batteries and run AI predictions to populate this chart.
+                No SOH data yet - register batteries and run AI predictions to populate this chart.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={180}>
@@ -143,7 +143,7 @@ function DashboardContent({ user }: { user: any }) {
           <div className="p-5 flex flex-col items-center">
             {triageData.every((t) => t.value === 0) ? (
               <div className="h-[140px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
-                No triage data yet — run AI SOH predictions to see routing distribution.
+                No triage data yet - run AI SOH predictions to see routing distribution.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={140}>
@@ -185,7 +185,7 @@ function DashboardContent({ user }: { user: any }) {
           <div className="p-5">
             {marketData.every((d) => d.txns === 0) ? (
               <div className="h-[150px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
-                No marketplace transactions yet — list batteries to see weekly activity.
+                No marketplace transactions yet - list batteries to see weekly activity.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={150}>

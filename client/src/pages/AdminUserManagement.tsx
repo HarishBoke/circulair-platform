@@ -79,9 +79,7 @@ function timeAgo(date: Date | string | null | undefined): string | null {
 function RoleBadge({ role }: { role: string }) {
   const cfg = getRoleCfg(role);
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${cfg.bg} ${cfg.color}`}
-    >
+    <span className={`text-xs font-medium ${cfg.color}`}>
       {cfg.label}
     </span>
   );

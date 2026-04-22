@@ -78,7 +78,7 @@ export default function Analytics() {
           <div className="p-5">
             {monthlyData.every((d) => d.registered === 0 && d.sold === 0 && d.recycled === 0) ? (
               <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
-                No activity data yet — register batteries to populate this chart.
+                No activity data yet - register batteries to populate this chart.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
@@ -104,7 +104,7 @@ export default function Analytics() {
           <div className="p-5">
             {sohData.every((d) => d.count === 0) ? (
               <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-mono text-center px-4">
-                No SOH data yet — run AI predictions on registered batteries to see distribution.
+                No SOH data yet - run AI predictions on registered batteries to see distribution.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={200}>

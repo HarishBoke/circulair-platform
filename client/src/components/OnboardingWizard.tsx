@@ -22,7 +22,7 @@ const STEPS: Step[] = [
     icon: <Sparkles className="w-8 h-8" />,
     title: "Welcome to Circul-AI-r",
     description:
-      "A unified platform for battery lifecycle management — from registration and real-time monitoring to second-life marketplace and regulatory compliance. Let us show you around.",
+      "A unified platform for battery lifecycle management - from registration and real-time monitoring to second-life marketplace and regulatory compliance. Let us show you around.",
     color: "text-primary",
   },
   {

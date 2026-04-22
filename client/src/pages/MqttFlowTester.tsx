@@ -108,14 +108,14 @@ const SCENARIOS: Record<string, { label: string; icon: React.ReactNode; color: s
 };
 
 const KNOWN_BPANS = [
-  { bpan: "INMH1C3FKOIND5COA0001", label: "NMC 60kWh — Operational" },
-  { bpan: "INSA10L48251129000010", label: "LFP 100kWh — Operational" },
-  { bpan: "INOK60N48250767000020", label: "NMC 60kWh — Second Life" },
-  { bpan: "INEX40N72251218000030", label: "LCO 40kWh — End of Life" },
-  { bpan: "INEX75A48251188000040", label: "NCA 75kWh — End of Life" },
-  { bpan: "INLU50N96251036000060", label: "NMC 50kWh — Operational" },
-  { bpan: "INAM75N80251095000090", label: "NMC 75kWh — Operational" },
-  { bpan: "INAM50N40250110000100", label: "NMC 50kWh — Second Life" },
+  { bpan: "INMH1C3FKOIND5COA0001", label: "NMC 60kWh - Operational" },
+  { bpan: "INSA10L48251129000010", label: "LFP 100kWh - Operational" },
+  { bpan: "INOK60N48250767000020", label: "NMC 60kWh - Second Life" },
+  { bpan: "INEX40N72251218000030", label: "LCO 40kWh - End of Life" },
+  { bpan: "INEX75A48251188000040", label: "NCA 75kWh - End of Life" },
+  { bpan: "INLU50N96251036000060", label: "NMC 50kWh - Operational" },
+  { bpan: "INAM75N80251095000090", label: "NMC 75kWh - Operational" },
+  { bpan: "INAM50N40250110000100", label: "NMC 50kWh - Second Life" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────

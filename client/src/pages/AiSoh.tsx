@@ -9,9 +9,9 @@ import { Brain, Search, Zap, TrendingDown, AlertTriangle, CheckCircle2 } from "l
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 const TRIAGE_INFO = {
-  direct_reuse: { label: "Direct Reuse", color: "text-primary", bg: "bg-primary/10 border-primary/20", icon: CheckCircle2, desc: "SOH > 75% — Battery suitable for direct second-life deployment in BESS or EV applications." },
-  module_repurposing: { label: "Module Repurposing", color: "text-chart-4", bg: "bg-chart-4/10 border-chart-4/20", icon: Zap, desc: "SOH 50–75% — Individual modules can be repurposed for lower-demand stationary storage." },
-  material_recycling: { label: "Material Recycling", color: "text-destructive", bg: "bg-destructive/10 border-destructive/20", icon: AlertTriangle, desc: "SOH < 50% — Battery should be routed to certified recycler for Black Mass extraction." },
+  direct_reuse: { label: "Direct Reuse", color: "text-primary", bg: "bg-primary/10 border-primary/20", icon: CheckCircle2, desc: "SOH > 75% - Battery suitable for direct second-life deployment in BESS or EV applications." },
+  module_repurposing: { label: "Module Repurposing", color: "text-chart-4", bg: "bg-chart-4/10 border-chart-4/20", icon: Zap, desc: "SOH 50-75% - Individual modules can be repurposed for lower-demand stationary storage." },
+  material_recycling: { label: "Material Recycling", color: "text-destructive", bg: "bg-destructive/10 border-destructive/20", icon: AlertTriangle, desc: "SOH < 50% - Battery should be routed to certified recycler for Black Mass extraction." },
 };
 
 export default function AiSoh() {
