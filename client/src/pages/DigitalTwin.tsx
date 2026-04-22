@@ -11,16 +11,22 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Area, AreaChart,
 } from "recharts";
-import { Cpu, TrendingDown, Calendar, Zap, AlertTriangle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { Cpu, TrendingDown, Calendar, Zap, AlertTriangle, CheckCircle2, Clock, RefreshCw, GitCompare, ArrowLeftRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function DigitalTwin() {
   const [bpan, setBpan] = useState("");
+  const [bpanB, setBpanB] = useState("");
   const [horizon, setHorizon] = useState(365); // default 12 months
   const [result, setResult] = useState<any>(null);
+  const [compareResult, setCompareResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   const horizonLabelId = useId();
   const bpanLabelId = useId();
+  const bpanBLabelId = useId();
+  const compareSwitchId = useId();
 
   // Query real batteries from registry
   const { data: batteriesData, isLoading: batteriesLoading } = trpc.bpan.list.useQuery(
@@ -28,6 +34,20 @@ export default function DigitalTwin() {
     { staleTime: 60_000 }
   );
   const batteries = batteriesData?.items ?? [];
+
+  const compareMutation = trpc.digitalTwin.compare.useMutation({
+    onSuccess: (data) => {
+      setCompareResult(data);
+      setIsLoading(false);
+      toast.success("Comparison complete", {
+        description: `Side-by-side forecast for ${data.a.bpan} vs ${data.b.bpan}`,
+      });
+    },
+    onError: (err) => {
+      setIsLoading(false);
+      toast.error("Comparison failed", { description: err.message });
+    },
+  });
 
   const generateMutation = trpc.digitalTwin.generate.useMutation({
     onSuccess: (data) => {
@@ -48,8 +68,23 @@ export default function DigitalTwin() {
       toast.error("No battery selected", { description: "Please select a battery from the list" });
       return;
     }
-    setIsLoading(true);
-    generateMutation.mutate({ bpan: bpan.trim(), forecastHorizonDays: horizon });
+    if (compareMode) {
+      if (!bpanB.trim()) {
+        toast.error("Second battery not selected", { description: "Select a second battery to compare" });
+        return;
+      }
+      if (bpan === bpanB) {
+        toast.error("Select two different batteries", { description: "Both BPANs must be different for comparison" });
+        return;
+      }
+      setIsLoading(true);
+      setCompareResult(null);
+      compareMutation.mutate({ bpanA: bpan.trim(), bpanB: bpanB.trim(), forecastHorizonDays: horizon });
+    } else {
+      setIsLoading(true);
+      setResult(null);
+      generateMutation.mutate({ bpan: bpan.trim(), forecastHorizonDays: horizon });
+    }
   };
 
   const nominalPoints = result?.scenarios?.nominal ?? [];
@@ -175,9 +210,60 @@ export default function DigitalTwin() {
             </div>
           </div>
 
+          {/* Comparison Mode Toggle */}
+          <div className="flex items-center gap-3 py-1">
+            <Switch
+              id={compareSwitchId}
+              checked={compareMode}
+              onCheckedChange={(v) => {
+                setCompareMode(v);
+                setCompareResult(null);
+                setResult(null);
+              }}
+              aria-label="Enable comparison mode"
+            />
+            <label htmlFor={compareSwitchId} className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+              <GitCompare className="w-4 h-4 text-violet-400" aria-hidden="true" />
+              Compare two batteries side-by-side
+            </label>
+          </div>
+
+          {/* Second BPAN selector (comparison mode only) */}
+          {compareMode && (
+            <div className="space-y-2">
+              <Label id={bpanBLabelId} htmlFor="bpan-b-select">
+                Second Battery (BPAN B)
+              </Label>
+              {batteriesLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground h-10">
+                  <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  <span>Loading batteries…</span>
+                </div>
+              ) : (
+                <Select value={bpanB} onValueChange={setBpanB} aria-labelledby={bpanBLabelId}>
+                  <SelectTrigger id="bpan-b-select" className="font-mono">
+                    <SelectValue placeholder="Select second battery…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batteries.filter((b: any) => b.bpan !== bpan).map((b: any) => (
+                      <SelectItem key={b.bpan} value={b.bpan} className="font-mono">
+                        <span className="font-mono">{b.bpan}</span>
+                        {b.chemistry && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {b.chemistry} · {b.nominalCapacityKwh ? `${b.nominalCapacityKwh} kWh` : ""}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
           <Button
             onClick={handleGenerate}
-            disabled={isLoading || !bpan}
+            disabled={isLoading || !bpan || (compareMode && !bpanB)}
             className="bg-violet-600 hover:bg-violet-700 text-white"
             aria-busy={isLoading}
           >
@@ -210,9 +296,131 @@ export default function DigitalTwin() {
           : ""}
       </div>
 
-      {/* Results */}
-      {result && (
-        <>
+      {/* Comparison Results */}
+      {compareMode && compareResult && (
+        <section aria-label="Side-by-side comparison results">
+          {/* aria-live announcement */}
+          <div aria-live="polite" aria-atomic="true" className="sr-only" role="status">
+            Comparison complete. Battery A: {compareResult.a.bpan}, SOH {compareResult.a.currentSoh?.toFixed(1)}%.
+            Battery B: {compareResult.b.bpan}, SOH {compareResult.b.currentSoh?.toFixed(1)}%.
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <ArrowLeftRight className="w-5 h-5 text-violet-400" aria-hidden="true" />
+            <h2 className="text-lg font-semibold text-foreground">Comparison Results</h2>
+            <Badge variant="outline" className="border-violet-500/30 text-violet-400 bg-violet-500/10 ml-auto">
+              {compareResult.forecastHorizonDays} day horizon
+            </Badge>
+          </div>
+
+          {/* Side-by-side summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {(["a", "b"] as const).map((key) => {
+              const side = compareResult[key];
+              const pts = side.forecast?.scenarios?.nominal ?? [];
+              const endSoh = pts[pts.length - 1]?.predictedSoh;
+              return (
+                <Card key={key} className={`border-border/50 ${key === "a" ? "bg-violet-500/5" : "bg-blue-500/5"}`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-mono flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${key === "a" ? "bg-violet-400" : "bg-blue-400"}`} aria-hidden="true" />
+                      Battery {key.toUpperCase()}: {side.bpan}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="grid grid-cols-2 gap-3">
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Current SOH</dt>
+                        <dd className="text-lg font-bold text-foreground">{side.currentSoh?.toFixed(1)}%</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">SOH at End of Horizon</dt>
+                        <dd className="text-lg font-bold text-foreground">{endSoh?.toFixed(1) ?? "—"}%</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Chemistry</dt>
+                        <dd className="text-sm font-medium text-foreground">{side.chemistry}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Capacity</dt>
+                        <dd className="text-sm font-medium text-foreground">{side.capacityKwh} kWh</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">RUL (nominal)</dt>
+                        <dd className="text-sm font-medium text-foreground">
+                          {side.forecast?.rulDaysNominal ? `${side.forecast.rulDaysNominal} days` : "N/A"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Health Status</dt>
+                        <dd className={`text-sm font-medium capitalize ${getStatusColor(side.forecast?.healthStatus)}`}>
+                          {side.forecast?.healthStatus ?? "—"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Overlaid comparison chart */}
+          <Card className="border-border/50 bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-violet-400" aria-hidden="true" />
+                SOH Trajectory Comparison
+              </CardTitle>
+              <CardDescription>
+                Nominal forecast for both batteries overlaid — violet = Battery A, blue = Battery B
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Accessible summary for screen readers */}
+              <p className="sr-only">
+                Comparison chart. Battery A ({compareResult.a.bpan}) nominal SOH ends at{" "}
+                {(compareResult.a.forecast?.scenarios?.nominal ?? []).at(-1)?.predictedSoh?.toFixed(1) ?? "—"}%.
+                Battery B ({compareResult.b.bpan}) nominal SOH ends at{" "}
+                {(compareResult.b.forecast?.scenarios?.nominal ?? []).at(-1)?.predictedSoh?.toFixed(1) ?? "—"}%.
+              </p>
+              {(() => {
+                const ptsA = compareResult.a.forecast?.scenarios?.nominal ?? [];
+                const ptsB = compareResult.b.forecast?.scenarios?.nominal ?? [];
+                const maxLen = Math.max(ptsA.length, ptsB.length);
+                const chartData = Array.from({ length: maxLen }, (_, i) => ({
+                  day: ptsA[i]?.day ?? ptsB[i]?.day ?? i * 30,
+                  batteryA: ptsA[i] ? Number(ptsA[i].predictedSoh.toFixed(1)) : null,
+                  batteryB: ptsB[i] ? Number(ptsB[i].predictedSoh.toFixed(1)) : null,
+                }));
+                return (
+                  <ResponsiveContainer width="100%" height={320} aria-hidden="true">
+                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="day" stroke="#6b7280" tick={{ fontSize: 11 }} tickFormatter={(v) => `D${v}`} />
+                      <YAxis domain={[0, 100]} stroke="#6b7280" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip
+                        contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
+                        formatter={(v: any, name: string) => [
+                          `${Number(v).toFixed(1)}%`,
+                          name === "batteryA" ? `Battery A (${compareResult.a.bpan})` : `Battery B (${compareResult.b.bpan})`,
+                        ]}
+                        labelFormatter={(l) => `Day ${l}`}
+                      />
+                      <ReferenceLine y={80} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: "80%", fill: "#f59e0b", fontSize: 10 }} />
+                      <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "60% EOL", fill: "#ef4444", fontSize: 10 }} />
+                      <Line type="monotone" dataKey="batteryA" stroke="#8b5cf6" strokeWidth={2} dot={false} name="batteryA" />
+                      <Line type="monotone" dataKey="batteryB" stroke="#3b82f6" strokeWidth={2} dot={false} name="batteryB" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Single-mode Results */}
+      {!compareMode && result && (<>
           {/* Summary Cards */}
           <section aria-label="Simulation summary metrics">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -398,8 +606,7 @@ export default function DigitalTwin() {
               </CardContent>
             </Card>
           )}
-        </>
-      )}
+       </>)}
     </div>
   );
 }

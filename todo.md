@@ -984,3 +984,27 @@
 - [x] Fix Autonomous Triage page: real triage.approve mutation wired (records in service_history, updates battery status), BPAN selector from trpc.triage.listCandidates (SOH<70%), aria-live result region, reject clears state
 - [x] Add triage.approve and triage.listCandidates procedures to server/routers.ts
 - [x] TypeScript: 0 errors, 420 tests passing
+
+## Phase 71 (Complete): Triage Approval Queue
+- [x] triageJobs table already existed in schema — no migration needed
+- [x] Add triage.listQueue procedure (batteries SOH<70%, enriched with AI route recommendation)
+- [x] Add triage.bulkApprove procedure (batch approve multiple BPANs, writes service_history)
+- [x] Build TriageQueue.tsx page at /autonomous-triage/queue (select-all, per-row route override, expand reasoning)
+- [x] Add Triage Queue nav item under NEXT-GEN V4 section in PlatformLayout sidebar
+- [x] Wire /autonomous-triage/queue route in App.tsx
+- [x] TypeScript: 0 errors, 420 tests passing
+
+## Phase 72 (Complete): Developer Portal Webhook Registration
+- [x] webhooks table already existed in schema — no migration needed
+- [x] webhook.create, webhook.list, webhook.delete procedures already existed in routers.ts
+- [x] Extend DeveloperPortal.tsx: Webhooks card with Register Webhook dialog (name, URL, events selector)
+- [x] Inline delete confirmation (no window.confirm), HMAC signature hint, last-delivery stats
+- [x] TypeScript: 0 errors, 420 tests passing
+
+## Phase 73 (Complete): Digital Twin Comparison Mode
+- [x] Add digitalTwin.compare tRPC procedure (runs two forecasts in parallel via Promise.all)
+- [x] Extend DigitalTwin.tsx with comparison toggle (Switch), second BPAN selector (filters out BPAN A)
+- [x] Side-by-side summary cards (current SOH, EOH SOH, RUL, chemistry, capacity, health status)
+- [x] Overlaid LineChart (violet = Battery A, blue = Battery B) with reference lines at 80% and 60%
+- [x] aria-live region for comparison results, sr-only accessible chart summary
+- [x] TypeScript: 0 errors, 420 tests passing

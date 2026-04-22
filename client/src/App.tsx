@@ -59,6 +59,7 @@ import BlockchainAudit from "./pages/BlockchainAudit";
 import DataSharing from "./pages/DataSharing";
 import DeveloperPortal from "./pages/DeveloperPortal";
 import AutonomousTriage from "./pages/AutonomousTriage";
+import TriageQueue from "./pages/TriageQueue";
 import PredictiveProcurement from "./pages/PredictiveProcurement";
 import SolidStateBattery from "./pages/SolidStateBattery";
 
@@ -122,6 +123,7 @@ function Router() {
       <Route path="/developer-portal" component={() => <PlatformLayout><DeveloperPortal /></PlatformLayout>} />
       {/* v4.0 Next-Gen Features */}
       <Route path="/autonomous-triage" component={() => <PlatformLayout><AutonomousTriage /></PlatformLayout>} />
+      <Route path="/autonomous-triage/queue" component={() => <PlatformLayout><TriageQueue /></PlatformLayout>} />
       <Route path="/predictive-procurement" component={() => <PlatformLayout><PredictiveProcurement /></PlatformLayout>} />
       <Route path="/solid-state" component={() => <PlatformLayout><SolidStateBattery /></PlatformLayout>} />
       {/* Public legal pages */}

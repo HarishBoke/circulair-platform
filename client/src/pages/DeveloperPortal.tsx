@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield } from "lucide-react";
+import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield, Webhook, CheckCircle2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Scope names follow the read:<resource> / write:<resource> convention (WCAG-neutral, but also API-contract fix)
 const ALL_PERMISSIONS = [
@@ -48,11 +49,65 @@ export default function DeveloperPortal() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [revokeConfirmId, setRevokeConfirmId] = useState<number | null>(null);
 
+  // Webhook state
+  const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
+  const [webhookName, setWebhookName] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEvents, setWebhookEvents] = useState<string[]>(["soh.updated"]);
+  const [deleteWebhookConfirmId, setDeleteWebhookConfirmId] = useState<number | null>(null);
+
   const keyNameId = useId();
   const rateLimitId = useId();
   const expiresId = useId();
+  const webhookNameId = useId();
+  const webhookUrlId = useId();
 
   const { data: keys, refetch } = trpc.developerApi.listKeys.useQuery();
+  const { data: webhooks, refetch: refetchWebhooks } = trpc.webhook.list.useQuery();
+
+  const createWebhookMutation = trpc.webhook.create.useMutation({
+    onSuccess: () => {
+      setWebhookDialogOpen(false);
+      setWebhookName("");
+      setWebhookUrl("");
+      setWebhookEvents(["soh.updated"]);
+      refetchWebhooks();
+      toast.success("Webhook registered", { description: "Events will be delivered to your endpoint." });
+    },
+    onError: (err) => toast.error("Failed to register webhook", { description: err.message }),
+  });
+
+  const deleteWebhookMutation = trpc.webhook.delete.useMutation({
+    onSuccess: () => {
+      setDeleteWebhookConfirmId(null);
+      refetchWebhooks();
+      toast.success("Webhook deleted");
+    },
+    onError: (err) => toast.error("Failed to delete webhook", { description: err.message }),
+  });
+
+  const WEBHOOK_EVENTS = [
+    { id: "soh.updated",       label: "SOH Updated",         description: "Fired when a battery's SOH is recalculated" },
+    { id: "triage.completed",  label: "Triage Completed",    description: "Fired when a triage decision is approved" },
+    { id: "telemetry.alert",   label: "Telemetry Alert",     description: "Fired when an alert threshold is breached" },
+    { id: "battery.registered",label: "Battery Registered",  description: "Fired when a new BPAN is registered" },
+    { id: "marketplace.offer", label: "Marketplace Offer",   description: "Fired when a new offer is placed on a listing" },
+    { id: "compliance.report", label: "Compliance Report",   description: "Fired when a compliance report is generated" },
+  ];
+
+  const toggleWebhookEvent = (eventId: string) => {
+    setWebhookEvents((prev) =>
+      prev.includes(eventId) ? prev.filter((e) => e !== eventId) : [...prev, eventId]
+    );
+  };
+
+  const handleCreateWebhook = () => {
+    if (!webhookName.trim()) { toast.error("Webhook name required"); return; }
+    if (!webhookUrl.trim()) { toast.error("Endpoint URL required"); return; }
+    if (webhookEvents.length === 0) { toast.error("Select at least one event"); return; }
+    try { new URL(webhookUrl); } catch { toast.error("Invalid URL", { description: "Must be a valid https:// URL" }); return; }
+    createWebhookMutation.mutate({ name: webhookName.trim(), url: webhookUrl.trim(), events: webhookEvents });
+  };
 
   const createMutation = trpc.developerApi.createKey.useMutation({
     onSuccess: (data) => {
@@ -388,6 +443,170 @@ export default function DeveloperPortal() {
                       className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       aria-label={`Revoke API key "${key.name}"`}
                       onClick={() => setRevokeConfirmId(key.id)}
+                    >
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Webhook Management */}
+      <Card className="border-border/50 bg-card/50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Webhook className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                Webhooks
+              </CardTitle>
+              <CardDescription>
+                Receive push notifications when platform events occur — no polling required
+              </CardDescription>
+            </div>
+            <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10">
+                  <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />
+                  Register Webhook
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Register Webhook Endpoint</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor={webhookNameId}>Webhook Name</Label>
+                    <Input
+                      id={webhookNameId}
+                      placeholder="e.g. Partner SOH Listener"
+                      value={webhookName}
+                      onChange={(e) => setWebhookName(e.target.value)}
+                      aria-required="true"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={webhookUrlId}>Endpoint URL</Label>
+                    <Input
+                      id={webhookUrlId}
+                      type="url"
+                      placeholder="https://your-service.example.com/webhooks/circulair"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      aria-required="true"
+                      aria-describedby="webhook-url-hint"
+                    />
+                    <p id="webhook-url-hint" className="text-xs text-muted-foreground">
+                      Must be a publicly reachable HTTPS endpoint. We'll POST JSON payloads with an
+                      HMAC-SHA256 signature in the <code className="bg-muted px-1 rounded">X-Circulair-Signature</code> header.
+                    </p>
+                  </div>
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-medium leading-none">Events to Subscribe</legend>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-2">
+                      {WEBHOOK_EVENTS.map((ev) => (
+                        <div key={ev.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
+                          <Checkbox
+                            id={`wh-ev-${ev.id}`}
+                            checked={webhookEvents.includes(ev.id)}
+                            onCheckedChange={() => toggleWebhookEvent(ev.id)}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <label htmlFor={`wh-ev-${ev.id}`} className="text-sm font-medium cursor-pointer">
+                              {ev.label}
+                              <span className="ml-2 font-mono text-xs text-muted-foreground">({ev.id})</span>
+                            </label>
+                            <p className="text-xs text-muted-foreground">{ev.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <Button
+                    onClick={handleCreateWebhook}
+                    disabled={createWebhookMutation.isPending}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    aria-busy={createWebhookMutation.isPending}
+                  >
+                    {createWebhookMutation.isPending ? "Registering…" : "Register Webhook"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!webhooks || webhooks.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Webhook className="w-8 h-8 mx-auto mb-3 opacity-30" aria-hidden="true" />
+              <p className="text-sm">No webhooks registered yet.</p>
+              <p className="text-xs mt-1">Register an endpoint to receive push notifications.</p>
+            </div>
+          ) : (
+            <ul className="space-y-3" aria-label="Registered webhooks">
+              {(webhooks as any[]).map((wh) => (
+                <li
+                  key={wh.id}
+                  className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-muted/20"
+                >
+                  <div className="mt-0.5">
+                    {wh.status === "active" ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-label="Active" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-400" aria-label={wh.status} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{wh.name}</p>
+                    <p className="text-xs font-mono text-muted-foreground truncate mt-0.5">{wh.url}</p>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {(wh.events as string[]).map((ev: string) => (
+                        <Badge key={ev} variant="outline" className="text-xs border-border/50 font-mono">
+                          {ev}
+                        </Badge>
+                      ))}
+                    </div>
+                    {wh.lastDeliveryAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Last delivery: {new Date(wh.lastDeliveryAt).toLocaleString()}
+                        {wh.totalFailures > 0 && (
+                          <span className="ml-2 text-amber-400">{wh.totalFailures} failure{wh.totalFailures !== 1 ? "s" : ""}</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  {deleteWebhookConfirmId === wh.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={deleteWebhookMutation.isPending}
+                        onClick={() => deleteWebhookMutation.mutate({ webhookId: wh.id })}
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setDeleteWebhookConfirmId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
+                      aria-label={`Delete webhook "${wh.name}"`}
+                      onClick={() => setDeleteWebhookConfirmId(wh.id)}
                     >
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </Button>

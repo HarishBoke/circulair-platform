@@ -13,7 +13,7 @@ import {
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
   User, Settings, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
   ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play, AlertTriangle,
-  GitBranch, Leaf, Network, Link2, Share2, Code2, Zap, TrendingUp, Bot
+  GitBranch, Leaf, Network, Link2, Share2, Code2, Zap, TrendingUp, Bot, ListChecks
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -120,6 +120,7 @@ function useNavSections() {
       sectionKey: "NEXTGEN_V4",
       items: [
         { icon: Bot, label: "Autonomous Triage", href: "/autonomous-triage" },
+        { icon: ListChecks, label: "Triage Queue", href: "/autonomous-triage/queue" },
         { icon: TrendingUp, label: "Predictive Procurement", href: "/predictive-procurement" },
         { icon: Zap, label: "Solid-State Batteries", href: "/solid-state" },
       ],

@@ -2987,6 +2987,42 @@ Rules:
         });
         return forecast;
       }),
+
+    // Side-by-side comparison of two BPANs
+    compare: protectedProcedure
+      .input(z.object({
+        bpanA: z.string().min(21).max(21),
+        bpanB: z.string().min(21).max(21),
+        forecastHorizonDays: z.number().min(30).max(1825).default(365),
+      }))
+      .mutation(async ({ input }) => {
+        const CAP_MAP: Record<string, number> = { "A1": 1.5, "A2": 2.0, "A3": 2.5, "A4": 3.0, "A5": 3.5, "A6": 30.0, "B1": 5.0, "B2": 7.5, "B3": 10.0, "B4": 15.0, "B5": 20.0, "B6": 25.0, "C1": 40.0, "C2": 50.0, "C3": 60.0, "C4": 75.0, "C5": 100.0 };
+        const CHEM_MAP: Record<string, string> = { A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA" };
+        const MC = "ABCDEFGHIJKL";
+        const buildForecast = async (bpan: string) => {
+          const battery = await getBatteryByBpan(bpan);
+          if (!battery) throw new TRPCError({ code: "NOT_FOUND", message: `Battery ${bpan} not found` });
+          const latestTelemetry = await getLatestTelemetry(bpan);
+          const latestSoh = await getLatestSohPrediction(bpan);
+          const currentSoh = latestSoh?.predictedSoh ? Number(latestSoh.predictedSoh) : (battery.currentSoh ? Number(battery.currentSoh) : 85);
+          const yearCode = bpan.slice(13, 14);
+          const monthCode = bpan.slice(14, 15);
+          const forecast = generateTwinForecast({
+            bpan,
+            chemistry: CHEM_MAP[bpan.slice(7, 8)] ?? "NMC",
+            currentSoh,
+            cycleCount: latestTelemetry?.cycleCount ?? 0,
+            capacityKwh: CAP_MAP[bpan.slice(5, 7)] ?? 10,
+            mfgYear: 2020 + parseInt(yearCode, 10),
+            mfgMonth: MC.indexOf(monthCode) + 1 || 1,
+            forecastHorizonDays: input.forecastHorizonDays,
+            bmsSoh: latestTelemetry?.sohEstimate ? Number(latestTelemetry.sohEstimate) : undefined,
+          });
+          return { bpan, forecast, chemistry: CHEM_MAP[bpan.slice(7, 8)] ?? "NMC", currentSoh, capacityKwh: CAP_MAP[bpan.slice(5, 7)] ?? 10 };
+        };
+        const [a, b] = await Promise.all([buildForecast(input.bpanA), buildForecast(input.bpanB)]);
+        return { a, b, forecastHorizonDays: input.forecastHorizonDays };
+      }),
   }),
 
   // ─── CARBON ACCOUNTING ────────────────────────────────────────────────────────────────────────
@@ -3171,6 +3207,92 @@ Rules:
           status: b.status,
         }));
     }),
+
+    // Approval queue: batteries awaiting triage decision (SOH < 70%, not yet approved)
+    listQueue: protectedProcedure.query(async () => {
+      const result = await listBatteries({ limit: 500 });
+      const items = Array.isArray(result) ? result : (result as any).items ?? [];
+      const candidates = items
+        .filter((b: any) => b.currentSoh !== null && Number(b.currentSoh) < 70)
+        .sort((a: any, b: any) => Number(a.currentSoh) - Number(b.currentSoh))
+        .slice(0, 100);
+      // Enrich each candidate with a triage decision (non-blocking)
+      return candidates.map((b: any) => {
+        const soh = Number(b.currentSoh);
+        const CHEM_MAP: Record<string, string> = { A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA" };
+        const CAP_MAP: Record<string, number> = { "A1": 1.5, "A2": 2.0, "A3": 2.5, "A4": 3.0, "A5": 3.5, "A6": 30.0, "B1": 5.0, "B2": 7.5, "B3": 10.0, "B4": 15.0, "B5": 20.0, "B6": 25.0, "C1": 40.0, "C2": 50.0, "C3": 60.0, "C4": 75.0, "C5": 100.0 };
+        const decision = evaluateTriagePath({
+          bpan: b.bpan,
+          soh,
+          cycleCount: 0,
+          chemistry: CHEM_MAP[b.bpan.slice(7, 8)] ?? "NMC",
+          capacityKwh: CAP_MAP[b.bpan.slice(5, 7)] ?? 10,
+          hasActiveFaults: false,
+          hasPhysicalDamage: false,
+        });
+        // Map internal TriagePath to UI route names
+        const routeMap: Record<string, string> = {
+          direct_reuse: "reuse",
+          module_repurposing: "repurpose",
+          material_recycling: "recycle",
+        };
+        return {
+          bpan: b.bpan,
+          chemistry: b.chemistry ?? CHEM_MAP[b.bpan.slice(7, 8)] ?? "NMC",
+          currentSoh: soh,
+          status: b.status,
+          capacityKwh: b.capacityKwh ? Number(b.capacityKwh) : (CAP_MAP[b.bpan.slice(5, 7)] ?? 10),
+          recommendedRoute: routeMap[decision.recommendedPath] ?? "recycle",
+          confidence: decision.confidence,
+          reasoning: Array.isArray(decision.reasoning) ? decision.reasoning.join(" ") : String(decision.reasoning),
+        };
+      });
+    }),
+
+    // Batch approve multiple batteries at once
+    bulkApprove: protectedProcedure
+      .input(z.object({
+        decisions: z.array(z.object({
+          bpan: z.string().min(21).max(21),
+          approvedRoute: z.enum(["reuse", "repurpose", "repair", "recycle", "dispose"]),
+          triageId: z.string(),
+          notes: z.string().max(500).optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { serviceHistory } = await import("../drizzle/schema");
+        const statusMap: Record<string, string> = {
+          reuse: "active",
+          repurpose: "second_life",
+          repair: "maintenance",
+          recycle: "decommissioned",
+          dispose: "decommissioned",
+        };
+        const results: { bpan: string; approvedRoute: string; success: boolean }[] = [];
+        for (const d of input.decisions) {
+          try {
+            const battery = await getBatteryByBpan(d.bpan);
+            if (!battery) { results.push({ bpan: d.bpan, approvedRoute: d.approvedRoute, success: false }); continue; }
+            await db.insert(serviceHistory).values({
+              bpan: d.bpan,
+              batteryId: battery.id,
+              serviceProviderId: ctx.user.id,
+              serviceType: "triage" as any,
+              servicedAt: new Date(),
+              notes: `Triage ID: ${d.triageId} | Bulk approved route: ${d.approvedRoute}${d.notes ? " | " + d.notes : ""}`,
+              technicianName: ctx.user.name ?? "Operator",
+            });
+            await updateBatteryStatus(d.bpan, statusMap[d.approvedRoute] as any, battery.currentSoh ? Number(battery.currentSoh) : undefined);
+            results.push({ bpan: d.bpan, approvedRoute: d.approvedRoute, success: true });
+          } catch {
+            results.push({ bpan: d.bpan, approvedRoute: d.approvedRoute, success: false });
+          }
+        }
+        const succeeded = results.filter((r) => r.success).length;
+        return { succeeded, failed: results.length - succeeded, results };
+      }),
   }),
 
   // ─── PREDICTIVE PROCUREMENT ─────────────────────────────────────────────────────────────────────
