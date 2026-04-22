@@ -1008,3 +1008,41 @@
 - [x] Overlaid LineChart (violet = Battery A, blue = Battery B) with reference lines at 80% and 60%
 - [x] aria-live region for comparison results, sr-only accessible chart summary
 - [x] TypeScript: 0 errors, 420 tests passing
+
+## Phase 74 (Complete): MCP/API Readiness + Guided Onboarding
+
+### Getting Started Wizard (/getting-started)
+- [x] Existing wizard enhanced with 4 new API/MCP steps: issue_api_key, explore_api_reference, register_webhook, configure_mcp
+- [x] Steps added to TUTORIAL_STEPS in db-wiki.ts (orders 11-14)
+- [x] Progress tracker, deep links, WCAG aria-live already in place
+
+### API Reference Page (/api-reference)
+- [x] Full endpoint catalogue: SOH Predict, SOH History, BPAN Validate, BPAN List, Telemetry Latest, Telemetry SSE Stream, Carbon Calculate, Digital Twin Generate, Triage Evaluate
+- [x] Each endpoint: method badge (GET/POST), path, description, scope badge, request/response schema table
+- [x] cURL + JavaScript + Python code tabs with copy button
+- [x] "Try It" panel: paste API key, fill params, live request, response display with status indicator
+- [x] Search + category filter, OpenAPI download button
+- [x] WCAG 2.1 AA: aria-expanded, aria-controls, aria-live, aria-label on code blocks, keyboard-navigable
+
+### MCP Server Page (/mcp-server)
+- [x] "What is MCP" section with example natural-language queries
+- [x] ASCII architecture diagram (AI Client → MCP Server → Platform Services)
+- [x] Tool manifest table: 7 tools with icon, name, description, required scope, output shape
+- [x] Connection config tabs for Claude Desktop, Cursor, Windsurf, VS Code — auto-filled with pasted API key
+- [x] Direct HTTP invocation and manifest endpoint examples
+- [x] Example prompts grid with tool mapping
+- [x] Copy-ready JSON config blocks for each MCP client
+
+### Server-side MCP & API Infrastructure
+- [x] GET /api/mcp/manifest — returns full tool manifest with resources and prompts
+- [x] POST /api/mcp/invoke — REST convenience wrapper (body: { tool, arguments })
+- [x] GET /api/health — already existed at /api/v1/health
+- [x] GET /api/v1/openapi.json — already existed with full OpenAPI 3.1 spec
+- [x] GET /api/v1/docs — Swagger UI already existed
+- [x] Full JSON-RPC 2.0 MCP server already existed at /api/mcp (tools/list, tools/call, resources, prompts)
+
+### Navigation
+- [x] Added DEVELOPER section to PlatformLayout sidebar: Getting Started, API Reference, MCP Server, Developer Portal
+- [x] Removed Getting Started from KNOWLEDGE section (now in DEVELOPER)
+- [x] Routes /api-reference and /mcp-server added to App.tsx
+- [x] TypeScript: 0 errors, 420/420 tests passing

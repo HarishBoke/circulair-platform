@@ -62,6 +62,8 @@ import AutonomousTriage from "./pages/AutonomousTriage";
 import TriageQueue from "./pages/TriageQueue";
 import PredictiveProcurement from "./pages/PredictiveProcurement";
 import SolidStateBattery from "./pages/SolidStateBattery";
+import ApiReference from "./pages/ApiReference";
+import McpServer from "./pages/McpServer";
 
 function Router() {
   return (
@@ -126,6 +128,9 @@ function Router() {
       <Route path="/autonomous-triage/queue" component={() => <PlatformLayout><TriageQueue /></PlatformLayout>} />
       <Route path="/predictive-procurement" component={() => <PlatformLayout><PredictiveProcurement /></PlatformLayout>} />
       <Route path="/solid-state" component={() => <PlatformLayout><SolidStateBattery /></PlatformLayout>} />
+      {/* Developer & API pages */}
+      <Route path="/api-reference" component={() => <PlatformLayout><ApiReference /></PlatformLayout>} />
+      <Route path="/mcp-server" component={() => <PlatformLayout><McpServer /></PlatformLayout>} />
       {/* Public legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />

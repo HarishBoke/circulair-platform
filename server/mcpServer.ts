@@ -578,5 +578,44 @@ export function createMcpRouter(): Router {
   mcp.get("/resources", (_req, res) => res.json(handleResourcesList()));
   mcp.get("/prompts", (_req, res) => res.json(handlePromptsList()));
 
+  /**
+   * GET /api/mcp/manifest — Returns the full tool manifest in a developer-friendly format.
+   * Compatible with the MCP client configuration page and SDK auto-discovery.
+   */
+  mcp.get("/manifest", (_req, res) => {
+    res.json({
+      name: "Circul-AI-r Battery Intelligence",
+      version: "1.0.0",
+      description: "AI-powered battery lifecycle intelligence platform — SOH prediction, digital twin, triage, carbon accounting, and fleet analytics.",
+      mcpEndpoint: "/api/mcp",
+      tools: mcpTools.map(t => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema,
+      })),
+      resources: handleResourcesList().resources,
+      prompts: handlePromptsList().prompts,
+    });
+  });
+
+  /**
+   * POST /api/mcp/invoke — REST convenience wrapper around tools/call.
+   * Body: { tool: string, arguments: Record<string, any> }
+   * Returns: { result: any, tool: string, executedAt: string }
+   */
+  mcp.post("/invoke", async (req: Request, res: Response) => {
+    const { tool, arguments: args } = req.body ?? {};
+    if (!tool) {
+      return res.status(400).json({ error: "Missing required field: tool" });
+    }
+    const result = await handleToolsCall(tool, args ?? {});
+    if (result.isError) {
+      return res.status(400).json({ error: result.content?.[0]?.text ?? "Tool execution failed", tool });
+    }
+    let parsed: any = result.content?.[0]?.text;
+    try { parsed = JSON.parse(parsed); } catch { /* not JSON, return raw */ }
+    return res.json({ result: parsed, tool, executedAt: new Date().toISOString() });
+  });
+
   return mcp;
 }

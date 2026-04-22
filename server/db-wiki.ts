@@ -208,6 +208,34 @@ export const TUTORIAL_STEPS = [
     href: "/assistant",
     order: 10,
   },
+  {
+    key: "issue_api_key",
+    title: "Issue Your First API Key",
+    description: "Go to the Developer Portal, create an API key with read:telemetry scope, and copy it for use in your integration. This key authenticates all REST and MCP requests.",
+    href: "/developer-portal",
+    order: 11,
+  },
+  {
+    key: "explore_api_reference",
+    title: "Explore the API Reference",
+    description: "Visit the API Reference to browse all available endpoints, view request/response schemas, and try live calls directly from your browser using your API key.",
+    href: "/api-reference",
+    order: 12,
+  },
+  {
+    key: "register_webhook",
+    title: "Register a Webhook",
+    description: "In the Developer Portal, register an HTTPS endpoint to receive push notifications for events like soh.updated and triage.completed — eliminating the need for polling.",
+    href: "/developer-portal",
+    order: 13,
+  },
+  {
+    key: "configure_mcp",
+    title: "Connect via MCP",
+    description: "Visit the MCP Server page to get your connection config for Claude Desktop, Cursor, or Windsurf. Copy the JSON snippet and paste it into your AI client to enable natural-language battery intelligence queries.",
+    href: "/mcp-server",
+    order: 14,
+  },
 ] as const;
 
 export type TutorialStepKey = typeof TUTORIAL_STEPS[number]["key"];

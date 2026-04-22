@@ -93,7 +93,6 @@ function useNavSections() {
       label: "KNOWLEDGE",
       sectionKey: "KNOWLEDGE",
       items: [
-        { icon: Rocket, label: "Getting Started", href: "/getting-started" },
         { icon: BookOpen, label: "CirculWiki", href: "/wiki" },
       ],
     },
@@ -112,6 +111,15 @@ function useNavSections() {
       items: [
         { icon: Link2, label: "Blockchain Audit", href: "/blockchain-audit" },
         { icon: Share2, label: "Data Sharing", href: "/data-sharing" },
+      ],
+    },
+    {
+      label: "DEVELOPER",
+      sectionKey: "DEVELOPER",
+      items: [
+        { icon: Rocket, label: "Getting Started", href: "/getting-started" },
+        { icon: BookOpen, label: "API Reference", href: "/api-reference" },
+        { icon: Network, label: "MCP Server", href: "/mcp-server" },
         { icon: Code2, label: "Developer Portal", href: "/developer-portal" },
       ],
     },
