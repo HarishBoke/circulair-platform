@@ -488,7 +488,7 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
               <TabsContent key={id} value={id} className="mt-2">
                 <div className="relative">
                   <pre
-                    className="text-xs font-mono bg-zinc-900/80 p-4 rounded-lg overflow-x-auto text-zinc-200 leading-relaxed"
+                    className="text-xs font-mono bg-background/80 p-4 rounded-lg overflow-x-auto text-foreground leading-relaxed"
                     tabIndex={0}
                     aria-label={`${id} code example for ${ep.summary}`}
                   >
@@ -547,7 +547,7 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
           {/* Try It response */}
           {tryResult && (
             <div aria-live="polite" aria-atomic="true">
-              <pre className="text-xs font-mono bg-zinc-900/80 p-4 rounded-lg overflow-x-auto text-zinc-200 max-h-64">
+              <pre className="text-xs font-mono bg-background/80 p-4 rounded-lg overflow-x-auto text-foreground max-h-64">
                 {tryResult.body}
               </pre>
             </div>

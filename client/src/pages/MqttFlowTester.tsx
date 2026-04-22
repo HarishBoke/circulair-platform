@@ -90,7 +90,7 @@ const SCENARIOS: Record<string, { label: string; icon: React.ReactNode; color: s
   idle: {
     label: "Idle / Standby",
     icon: <Circle className="w-4 h-4" />,
-    color: "text-slate-400",
+    color: "text-muted-foreground",
     defaults: { vPack: 358.9, current: 1.2, tMax: 29.4, tMin: 22.8, tAvg: 26.1, soc: 78.5, sohEstimate: 94.8, cycleCount: 156, internalResistance: 12.3 },
   },
   bess: {
@@ -280,7 +280,7 @@ export default function MqttFlowTester() {
   const logColors: Record<string, string> = {
     up: "border-l-emerald-500 bg-emerald-500/5",
     down: "border-l-blue-500 bg-blue-500/5",
-    info: "border-l-slate-500 bg-slate-500/5",
+    info: "border-l-border bg-secondary/20",
     error: "border-l-red-500 bg-red-500/5",
     db: "border-l-purple-500 bg-purple-500/5",
   };
@@ -288,7 +288,7 @@ export default function MqttFlowTester() {
   const logIcons: Record<string, React.ReactNode> = {
     up: <ArrowRight className="w-3 h-3 text-emerald-400 rotate-[-45deg]" />,
     down: <ArrowRight className="w-3 h-3 text-blue-400 rotate-[135deg]" />,
-    info: <Radio className="w-3 h-3 text-slate-400" />,
+    info: <Radio className="w-3 h-3 text-muted-foreground" />,
     error: <AlertTriangle className="w-3 h-3 text-red-400" />,
     db: <Database className="w-3 h-3 text-purple-400" />,
   };
@@ -551,7 +551,7 @@ export default function MqttFlowTester() {
                               ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                               : row.source === "flow_tester"
                               ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
-                              : "bg-slate-500/20 text-slate-400 border-slate-500/30"
+                              : "bg-secondary/60 text-muted-foreground border-border"
                           }`}
                         >
                           {row.source}
@@ -592,7 +592,7 @@ export default function MqttFlowTester() {
                     { dir: "down", label: "↓ Broker ACK", color: "text-blue-400" },
                     { dir: "db", label: "💾 DB Write", color: "text-purple-400" },
                     { dir: "error", label: "⚠ Alert", color: "text-red-400" },
-                    { dir: "info", label: "ℹ Stream", color: "text-slate-400" },
+                    { dir: "info", label: "ℹ Stream", color: "text-muted-foreground" },
                   ].map((l) => (
                     <span key={l.dir} className={`flex items-center gap-1 ${l.color}`}>
                       {logIcons[l.dir]} {l.label}

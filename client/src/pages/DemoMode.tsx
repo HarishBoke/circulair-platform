@@ -50,11 +50,11 @@ const CHEM_COLOUR: Record<string, string> = {
   NCA: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   LCO: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   LMO: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  LEAD_ACID: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  LEAD_ACID: "bg-secondary/60 text-muted-foreground border-border",
 };
 
 function chemBadge(chem: string) {
-  return CHEM_COLOUR[chem] ?? "bg-slate-500/20 text-slate-400 border-slate-500/30";
+  return CHEM_COLOUR[chem] ?? "bg-secondary/60 text-muted-foreground border-border";
 }
 
 // ─── SOH colour ───────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ export default function DemoMode() {
                 </Badge>
               )}
             </div>
-            <p className="text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Physics-based battery simulator — realistic electrochemical models per chemistry
             </p>
           </div>
@@ -212,21 +212,21 @@ export default function DemoMode() {
             {
               label: "Thermal Anomalies", value: thermalCount,
               icon: <Thermometer className="w-5 h-5 text-red-400" />,
-              colour: thermalCount > 0 ? "text-red-400" : "text-slate-400",
+              colour: thermalCount > 0 ? "text-red-400" : "text-muted-foreground",
             },
             {
               label: "Anomaly Events", value: anomalyCount,
               icon: <AlertTriangle className="w-5 h-5 text-amber-400" />,
-              colour: anomalyCount > 0 ? "text-amber-400" : "text-slate-400",
+              colour: anomalyCount > 0 ? "text-amber-400" : "text-muted-foreground",
             },
           ].map((kpi) => (
-            <Card key={kpi.label} className="bg-slate-900/60 border-slate-700/50">
+            <Card key={kpi.label} className="bg-background/60 border-slate-700/50">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                   {kpi.icon}
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">{kpi.label}</p>
+                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
                   <p className={`text-xl font-bold ${kpi.colour}`}>{kpi.value}</p>
                 </div>
               </CardContent>
@@ -238,19 +238,19 @@ export default function DemoMode() {
           {/* ── Live battery grid ─────────────────────────────────────────── */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+              <h2 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider">
                 Live Battery Readings
               </h2>
               {isRunning && (
-                <span className="text-xs text-slate-500 flex items-center gap-1">
+                <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
                   <RefreshCw className="w-3 h-3 animate-spin" /> Streaming at 2s
                 </span>
               )}
             </div>
 
             {batteryList.length === 0 ? (
-              <Card className="bg-slate-900/60 border-slate-700/50">
-                <CardContent className="p-8 text-center text-slate-400">
+              <Card className="bg-background/60 border-slate-700/50">
+                <CardContent className="p-8 text-center text-muted-foreground">
                   No batteries registered. <Link href="/bpan/register" className="text-emerald-400 underline">Register a battery</Link> first.
                 </CardContent>
               </Card>
@@ -263,7 +263,7 @@ export default function DemoMode() {
                   return (
                     <Card
                       key={battery.bpan}
-                      className={`bg-slate-900/60 border transition-all duration-300 ${
+                      className={`bg-background/60 border transition-all duration-300 ${
                         live?.thermalAnomaly
                           ? "border-red-500/50 shadow-red-500/10 shadow-lg"
                           : isActive
@@ -274,8 +274,8 @@ export default function DemoMode() {
                       <CardHeader className="pb-2 pt-3 px-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="text-xs font-mono text-slate-400">{battery.bpan}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">{battery.manufacturerId} · {battery.capacityKwh} kWh</p>
+                            <p className="text-xs font-mono text-muted-foreground">{battery.bpan}</p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{battery.manufacturerId} · {battery.capacityKwh} kWh</p>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Badge className={`text-xs border ${chemBadge(battery.chemistry)}`}>
@@ -298,35 +298,35 @@ export default function DemoMode() {
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                             <div className="flex items-center gap-1.5">
                               <Zap className="w-3 h-3 text-blue-400 shrink-0" />
-                              <span className="text-slate-400">Voltage</span>
+                              <span className="text-muted-foreground">Voltage</span>
                               <span className="ml-auto font-mono text-blue-300">{live.vPack.toFixed(1)} V</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <Activity className="w-3 h-3 text-purple-400 shrink-0" />
-                              <span className="text-slate-400">Current</span>
+                              <span className="text-muted-foreground">Current</span>
                               <span className="ml-auto font-mono text-purple-300">{live.iPack > 0 ? "+" : ""}{live.iPack.toFixed(1)} A</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <Thermometer className={`w-3 h-3 shrink-0 ${live.thermalAnomaly ? "text-red-400" : "text-orange-400"}`} />
-                              <span className="text-slate-400">T_max</span>
+                              <span className="text-muted-foreground">T_max</span>
                               <span className={`ml-auto font-mono ${live.thermalAnomaly ? "text-red-400 font-bold" : "text-orange-300"}`}>
                                 {live.tMax.toFixed(1)} °C
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <Battery className="w-3 h-3 text-emerald-400 shrink-0" />
-                              <span className="text-slate-400">SOH</span>
+                              <span className="text-muted-foreground">SOH</span>
                               <span className={`ml-auto font-mono ${sohColour(live.sohEstimate)}`}>
                                 {live.sohEstimate.toFixed(1)}%
                               </span>
                             </div>
                             {live.soc !== undefined && (
                               <div className="col-span-2 mt-1">
-                                <div className="flex items-center justify-between text-xs text-slate-500 mb-0.5">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground/70 mb-0.5">
                                   <span>SoC</span>
                                   <span>{live.soc.toFixed(1)}%</span>
                                 </div>
-                                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div className="w-full h-1.5 bg-secondary/70 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full rounded-full transition-all duration-500 ${
                                       live.soc > 60 ? "bg-emerald-500" : live.soc > 30 ? "bg-yellow-500" : "bg-red-500"
@@ -338,7 +338,7 @@ export default function DemoMode() {
                             )}
                           </div>
                         ) : (
-                          <div className="text-xs text-slate-500 italic py-2">
+                          <div className="text-xs text-muted-foreground/70 italic py-2">
                             {isRunning ? "Waiting for first reading…" : "Start demo to see live data"}
                           </div>
                         )}
@@ -360,14 +360,14 @@ export default function DemoMode() {
 
           {/* ── Anomaly feed ─────────────────────────────────────────────── */}
           <div>
-            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+            <h2 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider mb-3">
               Live Anomaly Feed
             </h2>
-            <Card className="bg-slate-900/60 border-slate-700/50 h-[calc(100vh-320px)] overflow-hidden flex flex-col">
+            <Card className="bg-background/60 border-slate-700/50 h-[calc(100vh-320px)] overflow-hidden flex flex-col">
               <CardHeader className="pb-2 pt-3 px-4 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <CardTitle className="text-sm text-slate-300">Anomaly Events</CardTitle>
+                  <CardTitle className="text-sm text-foreground/90">Anomaly Events</CardTitle>
                   {anomalies.length > 0 && (
                     <Badge className="ml-auto bg-red-500/20 text-red-400 border border-red-500/30 text-xs">
                       {anomalies.length}
@@ -377,20 +377,20 @@ export default function DemoMode() {
               </CardHeader>
               <CardContent className="p-0 flex-1 overflow-y-auto">
                 {anomalies.length === 0 ? (
-                  <div className="p-6 text-center text-slate-500 text-sm">
+                  <div className="p-6 text-center text-muted-foreground/70 text-sm">
                     {isRunning ? "No anomalies detected yet" : "Start demo to monitor anomalies"}
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-700/50">
                     {anomalies.map((a, i) => (
-                      <div key={i} className="px-4 py-3 hover:bg-slate-800/40 transition-colors">
+                      <div key={i} className="px-4 py-3 hover:bg-secondary/40 transition-colors">
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="w-3.5 h-3.5 text-red-400 mt-0.5 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-mono text-slate-300 truncate">{a.bpan}</p>
+                            <p className="text-xs font-mono text-foreground/90 truncate">{a.bpan}</p>
                             <p className="text-xs text-red-400 mt-0.5">{a.tMax.toFixed(1)}°C</p>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{a.message}</p>
-                            <p className="text-xs text-slate-600 mt-1">
+                            <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">{a.message}</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">
                               {new Date(a.recordedAt).toLocaleTimeString()}
                             </p>
                           </div>
@@ -404,7 +404,7 @@ export default function DemoMode() {
 
             {/* ── Quick links ─────────────────────────────────────────────── */}
             <div className="mt-4 space-y-2">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Quick Links</p>
+              <p className="text-xs text-muted-foreground/70 uppercase tracking-wider mb-2">Quick Links</p>
               {[
                 { href: "/bpan", label: "Battery Registry" },
                 { href: "/telemetry", label: "Telemetry Dashboard" },
@@ -413,9 +413,9 @@ export default function DemoMode() {
                 { href: "/epr-compliance", label: "EPR Compliance" },
               ].map((link) => (
                 <Link key={link.href} href={link.href}>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800/70 transition-colors cursor-pointer">
-                    <span className="text-xs text-slate-300">{link.label}</span>
-                    <ChevronRight className="w-3 h-3 text-slate-500" />
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/40 hover:bg-secondary/70 transition-colors cursor-pointer">
+                    <span className="text-xs text-foreground/90">{link.label}</span>
+                    <ChevronRight className="w-3 h-3 text-muted-foreground/70" />
                   </div>
                 </Link>
               ))}
@@ -424,18 +424,18 @@ export default function DemoMode() {
         </div>
 
         {/* ── Simulator info ───────────────────────────────────────────────── */}
-        <Separator className="my-6 bg-slate-700/50" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-500">
+        <Separator className="my-6 bg-secondary/70/50" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-muted-foreground/70">
           <div>
-            <p className="font-semibold text-slate-400 mb-1">Physics Model</p>
+            <p className="font-semibold text-muted-foreground mb-1">Physics Model</p>
             <p>Per-chemistry OCV curves, SoC Coulomb counting, thermal inertia, IR growth with age</p>
           </div>
           <div>
-            <p className="font-semibold text-slate-400 mb-1">Anomaly Injection</p>
+            <p className="font-semibold text-muted-foreground mb-1">Anomaly Injection</p>
             <p>Thermal spikes (52–65°C), voltage sag, high-current events — injected every 40–90 ticks</p>
           </div>
           <div>
-            <p className="font-semibold text-slate-400 mb-1">Chemistries</p>
+            <p className="font-semibold text-muted-foreground mb-1">Chemistries</p>
             <p>NMC, LFP, NCA, LCO, LMO, LEAD_ACID — each with distinct voltage windows and cycle life</p>
           </div>
         </div>

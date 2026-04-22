@@ -1129,3 +1129,12 @@
 - [x] Null-placeholder dashes ("\u2014" for empty data values) left unchanged
 - [x] Code comments left unchanged
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 82 (Complete): Full Typography Audit - Replace Hard-coded Colours with Design Tokens
+- [x] Audited 25 files with hard-coded zinc/gray/slate colour classes
+- [x] Fixed all shared components: OnboardingWizard, CookieConsent, ArchitectureDiagram, RecycledContentForm, MqttBrokerPanel (0 remaining)
+- [x] Fixed all pages: AdminUserManagement (65), CirculWiki (59), AdminFeedbackReview (58), DemoMode (39), PlatformSettings (37), EuBatteryPassport (36), ComplianceDashboard (33), LaunchingSoon (26), GettingStarted (19), and 16 more pages
+- [x] Mapping applied: bg-zinc-900→bg-background, bg-zinc-800→bg-secondary, text-zinc-400→text-muted-foreground, text-zinc-300→text-foreground/90, border-zinc-700→border-border, etc.
+- [x] Residual opacity-modified neutral status classes fixed: bg-zinc-500/10→bg-secondary/50, bg-slate-500/20→bg-secondary/60, etc.
+- [x] Preserved intentional semantic colours: text-red-*, text-emerald-*, text-amber-*, text-sky-*, text-violet-* (status/role indicators)
+- [x] TypeScript: 0 errors, 420/420 tests passing

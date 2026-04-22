@@ -104,12 +104,12 @@ function CopyButton({ text }: { text: string }) {
 // ─── Code Block ───────────────────────────────────────────────────────────────
 function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
   return (
-    <div className="relative rounded-lg bg-zinc-950 border border-zinc-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">
-        <span className="text-xs text-zinc-400 font-mono">{language}</span>
+    <div className="relative rounded-lg bg-background border border-border overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
+        <span className="text-xs text-muted-foreground font-mono">{language}</span>
         <CopyButton text={code} />
       </div>
-      <pre className="p-4 text-sm font-mono text-zinc-200 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+      <pre className="p-4 text-sm font-mono text-foreground overflow-x-auto whitespace-pre-wrap leading-relaxed">
         {code}
       </pre>
     </div>

@@ -145,11 +145,11 @@ function renderMarkdown(content: string): React.ReactNode {
       elements.push(
         <div key={key++} className="my-4 rounded-lg overflow-hidden border border-white/10">
           {lang && (
-            <div className="bg-white/5 px-4 py-1.5 text-xs text-zinc-400 font-mono border-b border-white/10">
+            <div className="bg-white/5 px-4 py-1.5 text-xs text-muted-foreground font-mono border-b border-white/10">
               {lang}
             </div>
           )}
-          <pre className="bg-zinc-900/80 p-4 overflow-x-auto text-sm">
+          <pre className="bg-background/80 p-4 overflow-x-auto text-sm">
             <code className="text-emerald-300 font-mono">{codeLines.join("\n")}</code>
           </pre>
         </div>
@@ -173,7 +173,7 @@ function renderMarkdown(content: string): React.ReactNode {
               <thead>
                 <tr className="bg-white/5">
                   {headers.map((h, hi) => (
-                    <th key={hi} className="px-4 py-2.5 text-left text-zinc-300 font-medium whitespace-nowrap">
+                    <th key={hi} className="px-4 py-2.5 text-left text-foreground/90 font-medium whitespace-nowrap">
                       {renderInline(h)}
                     </th>
                   ))}
@@ -183,7 +183,7 @@ function renderMarkdown(content: string): React.ReactNode {
                 {rows.map((row, ri) => (
                   <tr key={ri} className="border-t border-white/5 hover:bg-white/[0.02]">
                     {row.map((cell, ci) => (
-                      <td key={ci} className="px-4 py-2 text-zinc-400">
+                      <td key={ci} className="px-4 py-2 text-muted-foreground">
                         {renderInline(cell)}
                       </td>
                     ))}
@@ -200,7 +200,7 @@ function renderMarkdown(content: string): React.ReactNode {
     // Blockquotes
     if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={key++} className="my-4 border-l-4 border-emerald-500/50 bg-emerald-500/5 px-4 py-3 text-zinc-300 italic rounded-r-lg">
+        <blockquote key={key++} className="my-4 border-l-4 border-emerald-500/50 bg-emerald-500/5 px-4 py-3 text-foreground/90 italic rounded-r-lg">
           {renderInline(line.slice(2))}
         </blockquote>
       );
@@ -218,7 +218,7 @@ function renderMarkdown(content: string): React.ReactNode {
       elements.push(
         <ul key={key++} className="my-3 space-y-1.5 pl-5">
           {listItems.map((item, li) => (
-            <li key={li} className="text-zinc-400 list-disc marker:text-emerald-500/50">
+            <li key={li} className="text-muted-foreground list-disc marker:text-emerald-500/50">
               {renderInline(item)}
             </li>
           ))}
@@ -237,7 +237,7 @@ function renderMarkdown(content: string): React.ReactNode {
       elements.push(
         <ol key={key++} className="my-3 space-y-1.5 pl-5">
           {listItems.map((item, li) => (
-            <li key={li} className="text-zinc-400 list-decimal marker:text-emerald-500/50">
+            <li key={li} className="text-muted-foreground list-decimal marker:text-emerald-500/50">
               {renderInline(item)}
             </li>
           ))}
@@ -249,7 +249,7 @@ function renderMarkdown(content: string): React.ReactNode {
     // Paragraphs
     if (line.trim()) {
       elements.push(
-        <p key={key++} className="my-3 text-zinc-400 leading-relaxed">
+        <p key={key++} className="my-3 text-muted-foreground leading-relaxed">
           {renderInline(line)}
         </p>
       );
@@ -272,7 +272,7 @@ function renderInline(text: string): React.ReactNode {
       if (boldMatch.index > 0) {
         parts.push(<span key={k++}>{renderCode(remaining.slice(0, boldMatch.index))}</span>);
       }
-      parts.push(<strong key={k++} className="text-zinc-200 font-semibold">{boldMatch[1]}</strong>);
+      parts.push(<strong key={k++} className="text-foreground font-semibold">{boldMatch[1]}</strong>);
       remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
       continue;
     }
@@ -414,7 +414,7 @@ function WikiChat({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+      <div className="relative w-full max-w-lg bg-background border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -423,11 +423,11 @@ function WikiChat({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h3 className="text-white font-semibold text-sm">CirculWiki AI</h3>
-              <p className="text-zinc-500 text-xs">Ask anything about the platform</p>
+              <p className="text-muted-foreground/70 text-xs">Ask anything about the platform</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-            <X className="w-4 h-4 text-zinc-400" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -439,7 +439,7 @@ function WikiChat({ onClose }: { onClose: () => void }) {
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-emerald-600 text-white rounded-br-md"
-                    : "bg-white/5 text-zinc-300 rounded-bl-md border border-white/5"
+                    : "bg-white/5 text-foreground/90 rounded-bl-md border border-white/5"
                 }`}
               >
                 {renderInline(msg.content)}
@@ -465,7 +465,7 @@ function WikiChat({ onClose }: { onClose: () => void }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder="Ask about batteries, compliance, APIs..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground/70 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
             />
             <button
               onClick={handleSend}
@@ -531,7 +531,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
     <div className="mt-10 pt-6 border-t border-white/5">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
       >
         <Heart className="w-4 h-4" />
         Was this article helpful? Share your feedback
@@ -549,7 +549,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
             <>
               {/* Rating */}
               <div>
-                <p className="text-xs text-zinc-500 mb-2">Rate this article</p>
+                <p className="text-xs text-muted-foreground/70 mb-2">Rate this article</p>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <button
@@ -563,7 +563,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
                         className={`w-5 h-5 transition-colors ${
                           s <= (hoveredStar || rating)
                             ? "text-amber-400 fill-amber-400"
-                            : "text-zinc-600"
+                            : "text-muted-foreground/60"
                         }`}
                       />
                     </button>
@@ -573,7 +573,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
 
               {/* Feedback type */}
               <div>
-                <p className="text-xs text-zinc-500 mb-2">What kind of feedback?</p>
+                <p className="text-xs text-muted-foreground/70 mb-2">What kind of feedback?</p>
                 <div className="flex flex-wrap gap-2">
                   {FEEDBACK_TYPES.map((ft) => {
                     const FtIcon = ft.icon;
@@ -584,7 +584,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${
                           feedbackType === ft.key
                             ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
-                            : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-300"
+                            : "border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground/90"
                         }`}
                       >
                         <FtIcon className={`w-3.5 h-3.5 ${feedbackType === ft.key ? "text-emerald-400" : ft.color}`} />
@@ -609,7 +609,7 @@ function ArticleFeedback({ articleId, articleTitle }: { articleId: string; artic
                         : "Additional details (optional)..."
                     }
                     rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 resize-none"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-muted-foreground/70 focus:outline-none focus:border-emerald-500/50 resize-none"
                   />
                 </div>
               )}
@@ -725,23 +725,23 @@ export default function CirculWiki() {
     const ArticleIcon = getIcon(selectedArticle.icon);
 
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-screen bg-background">
         {/* Top bar */}
-        <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-xl border-b border-white/5">
+        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-white/5">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
-            <button onClick={goHome} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm">
+            <button onClick={goHome} className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors text-sm">
               <ArrowLeft className="w-4 h-4" />
               CirculWiki
             </button>
-            <ChevronRight className="w-3 h-3 text-zinc-600" />
+            <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
             <button
               onClick={() => openCategory(selectedArticle.category)}
-              className="text-zinc-400 hover:text-white transition-colors text-sm"
+              className="text-muted-foreground hover:text-white transition-colors text-sm"
             >
               {catInfo?.title}
             </button>
-            <ChevronRight className="w-3 h-3 text-zinc-600" />
-            <span className="text-zinc-200 text-sm font-medium truncate">{selectedArticle.title}</span>
+            <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
+            <span className="text-foreground text-sm font-medium truncate">{selectedArticle.title}</span>
           </div>
         </div>
 
@@ -749,14 +749,14 @@ export default function CirculWiki() {
           {/* Sidebar TOC */}
           <aside className="hidden lg:block w-56 shrink-0">
             <div className="sticky top-20">
-              <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">On this page</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">On this page</h4>
               <nav className="space-y-1">
                 {toc.map((item) => (
                   <a
                     key={item.id}
                     href={`#${item.id}`}
                     className={`block text-sm py-1 transition-colors hover:text-emerald-400 ${
-                      item.level === 3 ? "pl-4 text-zinc-500" : "text-zinc-400 font-medium"
+                      item.level === 3 ? "pl-4 text-muted-foreground/70" : "text-muted-foreground font-medium"
                     }`}
                   >
                     {item.title}
@@ -766,13 +766,13 @@ export default function CirculWiki() {
 
               {relatedArticles.length > 0 && (
                 <div className="mt-8 pt-6 border-t border-white/5">
-                  <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Related</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">Related</h4>
                   <div className="space-y-2">
                     {relatedArticles.map((ra) => (
                       <button
                         key={ra.id}
                         onClick={() => openArticle(ra)}
-                        className="block w-full text-left text-sm text-zinc-400 hover:text-emerald-400 transition-colors py-1 truncate"
+                        className="block w-full text-left text-sm text-muted-foreground hover:text-emerald-400 transition-colors py-1 truncate"
                       >
                         {ra.title}
                       </button>
@@ -794,7 +794,7 @@ export default function CirculWiki() {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">{selectedArticle.title}</h1>
-                <div className="flex items-center gap-4 mt-2 text-sm text-zinc-500">
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground/70">
                   <span className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     {selectedArticle.readTimeMinutes} min read
@@ -805,7 +805,7 @@ export default function CirculWiki() {
             </div>
 
             <div className="bg-white/[0.02] border border-white/5 rounded-xl px-6 py-4 mb-8">
-              <p className="text-zinc-300 leading-relaxed">{selectedArticle.summary}</p>
+              <p className="text-foreground/90 leading-relaxed">{selectedArticle.summary}</p>
             </div>
 
             <div className="prose-wiki">{renderMarkdown(selectedArticle.content)}</div>
@@ -815,7 +815,7 @@ export default function CirculWiki() {
               <div className="mt-8 mb-8">
                 <div className="flex items-center gap-2 mb-3">
                   <Boxes className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-sm font-semibold text-zinc-300">
+                  <h3 className="text-sm font-semibold text-foreground/90">
                     {ARTICLE_DIAGRAM_MAP[selectedArticle.id].title} — Interactive Diagram
                   </h3>
                 </div>
@@ -829,9 +829,9 @@ export default function CirculWiki() {
             {/* Tags */}
             <div className="mt-10 pt-6 border-t border-white/5">
               <div className="flex items-center gap-2 flex-wrap">
-                <Tag className="w-3.5 h-3.5 text-zinc-500" />
+                <Tag className="w-3.5 h-3.5 text-muted-foreground/70" />
                 {selectedArticle.tags.map((tag) => (
-                  <span key={tag} className="px-2.5 py-1 bg-white/5 text-zinc-400 text-xs rounded-full">
+                  <span key={tag} className="px-2.5 py-1 bg-white/5 text-muted-foreground text-xs rounded-full">
                     {tag}
                   </span>
                 ))}
@@ -841,7 +841,7 @@ export default function CirculWiki() {
             {/* Related articles (mobile) */}
             {relatedArticles.length > 0 && (
               <div className="mt-8 lg:hidden">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-3">Related Articles</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">Related Articles</h3>
                 <div className="grid gap-3">
                   {relatedArticles.map((ra) => {
                     const RaIcon = getIcon(ra.icon);
@@ -853,8 +853,8 @@ export default function CirculWiki() {
                       >
                         <RaIcon className="w-4 h-4 text-emerald-400 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm text-zinc-200 font-medium truncate">{ra.title}</p>
-                          <p className="text-xs text-zinc-500 truncate">{ra.summary}</p>
+                          <p className="text-sm text-foreground font-medium truncate">{ra.title}</p>
+                          <p className="text-xs text-muted-foreground/70 truncate">{ra.summary}</p>
                         </div>
                       </button>
                     );
@@ -882,22 +882,22 @@ export default function CirculWiki() {
   if (selectedCategory) {
     const catInfo = getCategoryInfo(selectedCategory);
     return (
-      <div className="min-h-screen bg-zinc-950">
-        <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-xl border-b border-white/5">
+      <div className="min-h-screen bg-background">
+        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-white/5">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
-            <button onClick={goHome} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm">
+            <button onClick={goHome} className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors text-sm">
               <ArrowLeft className="w-4 h-4" />
               CirculWiki
             </button>
-            <ChevronRight className="w-3 h-3 text-zinc-600" />
-            <span className="text-zinc-200 text-sm font-medium">{catInfo?.title}</span>
+            <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
+            <span className="text-foreground text-sm font-medium">{catInfo?.title}</span>
           </div>
         </div>
 
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="mb-10">
             <h1 className="text-3xl font-bold text-white mb-2">{catInfo?.title}</h1>
-            <p className="text-zinc-400">{catInfo?.description}</p>
+            <p className="text-muted-foreground">{catInfo?.description}</p>
           </div>
 
           <div className="space-y-3">
@@ -919,8 +919,8 @@ export default function CirculWiki() {
                     <h3 className="text-white font-medium group-hover:text-emerald-400 transition-colors">
                       {article.title}
                     </h3>
-                    <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{article.summary}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                    <p className="text-sm text-muted-foreground/70 mt-1 line-clamp-2">{article.summary}</p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground/60">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {article.readTimeMinutes} min
@@ -928,7 +928,7 @@ export default function CirculWiki() {
                       <span>{article.tags.slice(0, 3).join(", ")}</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 transition-colors shrink-0 mt-1" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-emerald-400 transition-colors shrink-0 mt-1" />
                 </button>
               );
             })}
@@ -952,7 +952,7 @@ export default function CirculWiki() {
   const displayArticles = searchQuery ? searchResults : WIKI_ARTICLES.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background">
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-zinc-950 to-teal-900/10" />
@@ -969,32 +969,32 @@ export default function CirculWiki() {
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
             Circul<span className="text-emerald-400">Wiki</span>
           </h1>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-10">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
             Everything you need to know about the Circul-AI-r platform, battery lifecycle management, compliance, and integration — powered by AI.
           </p>
 
           {/* Search */}
           <div className="max-w-xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/70" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search articles, concepts, APIs..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 text-lg"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground/70 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 text-lg"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-lg"
               >
-                <X className="w-4 h-4 text-zinc-400" />
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             )}
           </div>
 
           {searchQuery && (
-            <p className="text-sm text-zinc-500 mt-3">
+            <p className="text-sm text-muted-foreground/70 mt-3">
               {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for "{searchQuery}"
             </p>
           )}
@@ -1022,10 +1022,10 @@ export default function CirculWiki() {
                     <CatIcon className="w-5 h-5" style={{ color: cat.color }} />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-zinc-200 font-medium group-hover:text-emerald-400 transition-colors">
+                    <p className="text-sm text-foreground font-medium group-hover:text-emerald-400 transition-colors">
                       {cat.title}
                     </p>
-                    <p className="text-xs text-zinc-600 mt-0.5">{count} articles</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">{count} articles</p>
                   </div>
                 </button>
               );
@@ -1064,8 +1064,8 @@ export default function CirculWiki() {
                   <h3 className="text-white font-medium group-hover:text-emerald-400 transition-colors">
                     {article.title}
                   </h3>
-                  <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{article.summary}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                  <p className="text-sm text-muted-foreground/70 mt-1 line-clamp-2">{article.summary}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground/60">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {article.readTimeMinutes} min
@@ -1079,7 +1079,7 @@ export default function CirculWiki() {
 
         {!searchQuery && (
           <div className="mt-8 text-center">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground/70">
               {WIKI_ARTICLES.length} articles across {WIKI_CATEGORIES.length} categories
             </p>
           </div>

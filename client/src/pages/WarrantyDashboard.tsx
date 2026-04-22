@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   voided: "text-orange-400 bg-orange-500/10",
   claimed: "text-blue-400 bg-blue-500/10",
   suspended: "text-yellow-400 bg-yellow-500/10",
-  pending_activation: "text-gray-400 bg-gray-500/10",
+  pending_activation: "text-muted-foreground bg-secondary/40",
 };
 
 export default function WarrantyDashboard() {
@@ -89,7 +89,7 @@ export default function WarrantyDashboard() {
           { label: "Expired", value: statsQuery.data?.byStatus?.find((s: any) => s.status === "expired")?.count ?? 0, icon: ShieldX, color: "text-red-400" },
           { label: "Claimed", value: statsQuery.data?.byStatus?.find((s: any) => s.status === "claimed")?.count ?? 0, icon: CheckCircle2, color: "text-blue-400" },
           { label: "Voided", value: statsQuery.data?.byStatus?.find((s: any) => s.status === "voided")?.count ?? 0, icon: XCircle, color: "text-orange-400" },
-          { label: "Pending", value: statsQuery.data?.byStatus?.find((s: any) => s.status === "pending_activation")?.count ?? 0, icon: Clock, color: "text-gray-400" },
+          { label: "Pending", value: statsQuery.data?.byStatus?.find((s: any) => s.status === "pending_activation")?.count ?? 0, icon: Clock, color: "text-muted-foreground" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">

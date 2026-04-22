@@ -88,9 +88,9 @@ export default function OnboardingWizard() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md mx-4 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
         {/* Progress bar */}
-        <div className="h-1 bg-zinc-800">
+        <div className="h-1 bg-secondary">
           <div
             className="h-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
@@ -100,7 +100,7 @@ export default function OnboardingWizard() {
         {/* Close button */}
         <button
           onClick={dismiss}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           aria-label="Skip onboarding"
         >
           <X className="w-4 h-4" />
@@ -109,22 +109,22 @@ export default function OnboardingWizard() {
         {/* Content */}
         <div className="px-8 pt-10 pb-6 text-center">
           {/* Icon */}
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-800 border border-zinc-700 mb-6 ${current.color}`}>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary border border-border mb-6 ${current.color}`}>
             {current.icon}
           </div>
 
           {/* Step indicator */}
-          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-3">
             Step {step + 1} of {STEPS.length}
           </p>
 
           {/* Title */}
-          <h2 className="font-display text-xl font-bold text-zinc-100 mb-3">
+          <h2 className="font-display text-xl font-bold text-foreground mb-3">
             {current.title}
           </h2>
 
           {/* Description */}
-          <p className="text-sm text-zinc-400 leading-relaxed max-w-sm mx-auto">
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
             {current.description}
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function OnboardingWizard() {
               key={i}
               onClick={() => setStep(i)}
               className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                i === step ? "bg-primary w-4" : i < step ? "bg-primary/40" : "bg-zinc-700"
+                i === step ? "bg-primary w-4" : i < step ? "bg-primary/40" : "bg-secondary/70"
               }`}
               aria-label={`Go to step ${i + 1}`}
             />
@@ -148,7 +148,7 @@ export default function OnboardingWizard() {
           {step > 0 ? (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
@@ -156,7 +156,7 @@ export default function OnboardingWizard() {
           ) : (
             <button
               onClick={dismiss}
-              className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
             >
               Skip tour
             </button>
@@ -171,7 +171,7 @@ export default function OnboardingWizard() {
               onClick={() => setStep((s) => s + 1)}
               size="sm"
               variant="outline"
-              className="text-xs px-4 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              className="text-xs px-4 border-border text-foreground hover:bg-secondary"
             >
               Next
               <ArrowRight className="w-3.5 h-3.5 ml-1.5" />

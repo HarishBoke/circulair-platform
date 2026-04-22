@@ -161,7 +161,7 @@ export default function ArchitectureDiagram({ type }: DiagramProps) {
       <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-white">{title}</h3>
-          <p className="text-xs text-zinc-500">{subtitle}</p>
+          <p className="text-xs text-muted-foreground/70">{subtitle}</p>
         </div>
         <span className="text-[10px] font-mono text-zinc-600 bg-white/5 px-2 py-1 rounded">
           Interactive
@@ -282,7 +282,7 @@ export default function ArchitectureDiagram({ type }: DiagramProps) {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-white">{selectedNodeData.label}</h4>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{selectedNodeData.description}</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{selectedNodeData.description}</p>
             </div>
           </div>
         </div>
@@ -332,7 +332,7 @@ export function KnowledgeGraph({ currentArticleId, articles, onNavigate }: Knowl
     <div className="my-6 rounded-xl border border-white/10 bg-zinc-900/50 overflow-hidden">
       <div className="px-5 py-3 border-b border-white/5">
         <h3 className="text-sm font-semibold text-white">Knowledge Graph</h3>
-        <p className="text-xs text-zinc-500">Related articles and concepts</p>
+        <p className="text-xs text-muted-foreground/70">Related articles and concepts</p>
       </div>
       <div className="p-4">
         <svg viewBox="0 0 400 240" className="w-full" style={{ maxHeight: 240 }}>

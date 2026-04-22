@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { color: string; icon: any; label: string; b
   voided: { color: "text-orange-400", icon: AlertTriangle, label: "Voided", bg: "bg-orange-500/10 border-orange-500/30" },
   claimed: { color: "text-blue-400", icon: Shield, label: "Claimed", bg: "bg-blue-500/10 border-blue-500/30" },
   suspended: { color: "text-yellow-400", icon: AlertTriangle, label: "Suspended", bg: "bg-yellow-500/10 border-yellow-500/30" },
-  pending_activation: { color: "text-gray-400", icon: Clock, label: "Pending Activation", bg: "bg-gray-500/10 border-gray-500/30" },
+  pending_activation: { color: "text-muted-foreground", icon: Clock, label: "Pending Activation", bg: "bg-secondary/40 border-border" },
 };
 
 type SearchMode = "bpan" | "serial" | "phone" | "email" | "whatsapp";

@@ -236,7 +236,7 @@ function CodeBlock({ code, label }: { code: string; label: string }) {
   return (
     <div className="relative">
       <pre
-        className="text-xs font-mono bg-zinc-900/80 p-4 rounded-lg overflow-x-auto text-zinc-200 leading-relaxed"
+        className="text-xs font-mono bg-background/80 p-4 rounded-lg overflow-x-auto text-foreground leading-relaxed"
         tabIndex={0}
         aria-label={label}
       >

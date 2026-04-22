@@ -52,7 +52,7 @@ export default function DataSharing() {
     pending: "border-amber-500/30 bg-amber-500/10 text-amber-400",
     approved: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
     rejected: "border-red-500/30 bg-red-500/10 text-red-400",
-    revoked: "border-gray-500/30 bg-gray-500/10 text-gray-400",
+    revoked: "border-border bg-secondary/40 text-muted-foreground",
     expired: "border-orange-500/30 bg-orange-500/10 text-orange-400",
   };
 

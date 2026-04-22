@@ -36,7 +36,7 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
 function StatusBadge({ status }: { status: "live" | "demo" | "coming_soon" }) {
   if (status === "live") return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">Live</Badge>;
   if (status === "demo") return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">Demo Mode</Badge>;
-  return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30 text-xs">Coming Soon</Badge>;
+  return <Badge className="bg-secondary/60 text-muted-foreground border-border text-xs">Coming Soon</Badge>;
 }
 
 function ConnectorCard({ icon: Icon, title, description, status, children }: {

@@ -59,7 +59,7 @@ const CHEMISTRY_COLORS: Record<Chemistry, string> = {
   NCA:      "bg-orange-500/15 text-orange-400 border-orange-500/30",
   LCO:      "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   LMO:      "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  LEAD_ACID:"bg-gray-500/15 text-gray-400 border-gray-500/30",
+  LEAD_ACID:"bg-secondary/50 text-muted-foreground border-border",
 };
 
 // ─── Rule Form ────────────────────────────────────────────────────────────────

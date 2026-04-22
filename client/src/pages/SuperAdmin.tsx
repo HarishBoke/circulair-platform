@@ -29,7 +29,7 @@ const MODULE_COLORS: Record<string, string> = {
   logistics: "bg-orange-500/10 text-orange-400 border-orange-500/20",
   analytics: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   admin: "bg-red-500/10 text-red-400 border-red-500/20",
-  system: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  system: "bg-secondary/50 text-muted-foreground border-border",
   agent: "bg-primary/10 text-primary border-primary/20",
   ai: "bg-violet-500/10 text-violet-400 border-violet-500/20",
 };
@@ -38,13 +38,13 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string }
   success: { icon: CheckCircle2, color: "text-emerald-400" },
   failure: { icon: XCircle, color: "text-red-400" },
   pending: { icon: Clock, color: "text-amber-400" },
-  cancelled: { icon: XCircle, color: "text-zinc-400" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground" },
 };
 
 const ACTOR_BADGE: Record<string, string> = {
   human: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   agent: "bg-primary/10 text-primary border-primary/20",
-  system: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  system: "bg-secondary/50 text-muted-foreground border-border",
 };
 
 function formatUptime(seconds: number): string {

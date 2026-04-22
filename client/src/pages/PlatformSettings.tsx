@@ -71,14 +71,14 @@ function Section({ icon: Icon, title, description, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-5">
+    <div className="rounded-xl border border-border bg-background/50 p-6 space-y-5">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-lg bg-zinc-800 p-2">
-          <Icon className="h-4 w-4 text-zinc-400" />
+        <div className="mt-0.5 rounded-lg bg-secondary p-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">{description}</p>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground/70 mt-0.5">{description}</p>
         </div>
       </div>
       <div className="space-y-4">{children}</div>
@@ -114,7 +114,7 @@ function JurisdictionPicker({
             className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
               active
                 ? "border-emerald-600/50 bg-emerald-950/30"
-                : "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700"
+                : "border-border bg-background/30 hover:border-border"
             }`}
           >
             <Checkbox
@@ -124,8 +124,8 @@ function JurisdictionPicker({
             />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium text-zinc-100">{j.name}</span>
-                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1 rounded">
+                <span className="text-sm font-medium text-foreground">{j.name}</span>
+                <span className="text-[10px] font-mono text-muted-foreground/70 bg-secondary px-1 rounded">
                   {j.code}
                 </span>
                 {j.enabled && (
@@ -139,7 +139,7 @@ function JurisdictionPicker({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 mt-0.5 truncate">{j.regulationName}</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">{j.regulationName}</p>
             </div>
           </label>
         );
@@ -217,7 +217,7 @@ export default function PlatformSettings() {
     return (
       <div className="p-6 space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-40 rounded-xl bg-zinc-800/50 animate-pulse" />
+          <div key={i} className="h-40 rounded-xl bg-secondary/50 animate-pulse" />
         ))}
       </div>
     );
@@ -227,8 +227,8 @@ export default function PlatformSettings() {
     <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-zinc-100">Platform Settings</h1>
-        <p className="text-sm text-zinc-500 mt-1">
+        <h1 className="text-xl font-semibold text-foreground">Platform Settings</h1>
+        <p className="text-sm text-muted-foreground/70 mt-1">
           Configure your locale, currency, and regulatory jurisdictions.
         </p>
       </div>
@@ -241,22 +241,22 @@ export default function PlatformSettings() {
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Organisation Name</Label>
+            <Label className="text-xs text-muted-foreground">Organisation Name</Label>
             <Input
               value={organisationName}
               onChange={(e) => setOrganisationName(e.target.value)}
               placeholder="Acme Battery Co."
-              className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9"
+              className="bg-background border-border text-foreground text-sm h-9"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Country (ISO 3166-1 alpha-2)</Label>
+            <Label className="text-xs text-muted-foreground">Country (ISO 3166-1 alpha-2)</Label>
             <Input
               value={organisationCountry}
               onChange={(e) => setOrganisationCountry(e.target.value.toUpperCase().slice(0, 2))}
               placeholder="IN"
               maxLength={2}
-              className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9 font-mono uppercase"
+              className="bg-background border-border text-foreground text-sm h-9 font-mono uppercase"
             />
           </div>
         </div>
@@ -270,14 +270,14 @@ export default function PlatformSettings() {
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Display Language</Label>
+            <Label className="text-xs text-muted-foreground">Display Language</Label>
             <Select value={locale} onValueChange={setLocale}>
-              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9">
+              <SelectTrigger className="bg-background border-border text-foreground text-sm h-9">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-700">
+              <SelectContent className="bg-background border-border">
                 {LOCALES.map((l) => (
-                  <SelectItem key={l.code} value={l.code} className="text-zinc-100 text-sm">
+                  <SelectItem key={l.code} value={l.code} className="text-foreground text-sm">
                     {l.label}
                   </SelectItem>
                 ))}
@@ -285,15 +285,15 @@ export default function PlatformSettings() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Display Currency</Label>
+            <Label className="text-xs text-muted-foreground">Display Currency</Label>
             <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
-              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9">
+              <SelectTrigger className="bg-background border-border text-foreground text-sm h-9">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-700 max-h-60">
+              <SelectContent className="bg-background border-border max-h-60">
                 {Object.values(CURRENCIES).map((c) => (
-                  <SelectItem key={c.code} value={c.code} className="text-zinc-100 text-sm">
-                    <span className="font-mono text-zinc-400 mr-2">{c.symbol}</span>
+                  <SelectItem key={c.code} value={c.code} className="text-foreground text-sm">
+                    <span className="font-mono text-muted-foreground mr-2">{c.symbol}</span>
                     {c.name} ({c.code})
                   </SelectItem>
                 ))}
@@ -302,10 +302,10 @@ export default function PlatformSettings() {
           </div>
         </div>
         {/* Live preview */}
-        <div className="flex items-center gap-2 rounded-lg bg-zinc-800/60 px-3 py-2">
-          <Info className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-          <span className="text-xs text-zinc-400">
-            Preview: <span className="text-zinc-200 font-medium">{currencyPreview}</span>
+        <div className="flex items-center gap-2 rounded-lg bg-secondary/60 px-3 py-2">
+          <Info className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+          <span className="text-xs text-muted-foreground">
+            Preview: <span className="text-foreground font-medium">{currencyPreview}</span>
           </span>
         </div>
       </Section>
@@ -317,14 +317,14 @@ export default function PlatformSettings() {
         description="Used for displaying timestamps in telemetry, reports, and audit logs."
       >
         <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">Timezone</Label>
+          <Label className="text-xs text-muted-foreground">Timezone</Label>
           <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9">
+            <SelectTrigger className="bg-background border-border text-foreground text-sm h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700 max-h-60">
+            <SelectContent className="bg-background border-border max-h-60">
               {TIMEZONES.map((tz) => (
-                <SelectItem key={tz.value} value={tz.value} className="text-zinc-100 text-sm">
+                <SelectItem key={tz.value} value={tz.value} className="text-foreground text-sm">
                   {tz.label}
                 </SelectItem>
               ))}
@@ -352,14 +352,14 @@ export default function PlatformSettings() {
         description="Controls where battery data is stored. Required for GDPR (EU) and PIPL (China) compliance."
       >
         <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">Data Region</Label>
+          <Label className="text-xs text-muted-foreground">Data Region</Label>
           <Select value={dataResidencyRegion} onValueChange={setDataResidencyRegion}>
-            <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm h-9">
+            <SelectTrigger className="bg-background border-border text-foreground text-sm h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700">
+            <SelectContent className="bg-background border-border">
               {DATA_REGIONS.map((r) => (
-                <SelectItem key={r.value} value={r.value} className="text-zinc-100 text-sm">
+                <SelectItem key={r.value} value={r.value} className="text-foreground text-sm">
                   {r.label}
                 </SelectItem>
               ))}

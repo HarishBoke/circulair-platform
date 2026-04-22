@@ -39,7 +39,7 @@ const CLASS_COLORS: Record<string, string> = {
 
 function CarbonClassBadge({ cls }: { cls: string }) {
   return (
-    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg text-xl font-bold ${CLASS_COLORS[cls] ?? "bg-zinc-700 text-zinc-300"}`}>
+    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg text-xl font-bold ${CLASS_COLORS[cls] ?? "bg-secondary/70 text-foreground/90"}`}>
       {cls}
     </span>
   );
@@ -52,7 +52,7 @@ function StatusBadge({ status }: { status: string }) {
     compliant:       { icon: CheckCircle2, label: "Compliant",       cls: "text-emerald-400 bg-emerald-950/50 border-emerald-800/50" },
     non_compliant:   { icon: XCircle,      label: "Non-Compliant",   cls: "text-red-400 bg-red-950/50 border-red-800/50" },
     pending:         { icon: Clock,        label: "Pending",         cls: "text-amber-400 bg-amber-950/50 border-amber-800/50" },
-    not_applicable:  { icon: AlertTriangle,label: "Not Applicable",  cls: "text-zinc-500 bg-zinc-900/50 border-zinc-800/50" },
+    not_applicable:  { icon: AlertTriangle,label: "Not Applicable",  cls: "text-muted-foreground/70 bg-background/50 border-border/50" },
     data_incomplete: { icon: AlertTriangle,label: "Data Incomplete", cls: "text-amber-400 bg-amber-950/50 border-amber-800/50" },
   };
   const cfg = map[status] ?? map.pending;
@@ -69,9 +69,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function DataRow({ label, value, mono = false }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-zinc-800/60 last:border-0">
-      <span className="text-xs text-zinc-500 shrink-0">{label}</span>
-      <span className={`text-xs text-zinc-200 text-right ${mono ? "font-mono" : ""}`}>{value}</span>
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-border/60 last:border-0">
+      <span className="text-xs text-muted-foreground/70 shrink-0">{label}</span>
+      <span className={`text-xs text-foreground text-right ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -80,10 +80,10 @@ function DataRow({ label, value, mono = false }: { label: string; value: React.R
 
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-900/80">
-        <Icon className="h-4 w-4 text-zinc-400" />
-        <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
+    <div className="rounded-xl border border-border bg-background/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-background/80">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </div>
       <div className="px-4 py-1">{children}</div>
     </div>
@@ -96,7 +96,7 @@ function PassportSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-40 rounded-xl bg-zinc-800/50 animate-pulse" />
+        <div key={i} className="h-40 rounded-xl bg-secondary/50 animate-pulse" />
       ))}
     </div>
   );
@@ -109,12 +109,12 @@ function PassportNotFound({ localId }: { localId: string }) {
     <div className="text-center py-16 space-y-4">
       <XCircle className="h-12 w-12 text-red-500 mx-auto" />
       <div>
-        <h2 className="text-lg font-semibold text-zinc-100">Passport Not Found</h2>
-        <p className="text-sm text-zinc-500 mt-1">
-          No EU Battery Passport found for ID: <span className="font-mono text-zinc-300">{localId}</span>
+        <h2 className="text-lg font-semibold text-foreground">Passport Not Found</h2>
+        <p className="text-sm text-muted-foreground/70 mt-1">
+          No EU Battery Passport found for ID: <span className="font-mono text-foreground/90">{localId}</span>
         </p>
       </div>
-      <p className="text-xs text-zinc-600 max-w-sm mx-auto">
+      <p className="text-xs text-muted-foreground/60 max-w-sm mx-auto">
         This may mean the battery has not yet been registered on the Circul-AI-r platform,
         or the QR code is damaged. Contact the manufacturer for assistance.
       </p>
@@ -138,14 +138,14 @@ export default function EuBatteryPassport() {
   const profileData = profile?.profileData as Record<string, any> | undefined;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Battery className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm font-semibold text-zinc-100">EU Battery Passport</span>
-            <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full ml-1">
+            <span className="text-sm font-semibold text-foreground">EU Battery Passport</span>
+            <span className="text-xs text-muted-foreground/70 bg-secondary px-2 py-0.5 rounded-full ml-1">
               Regulation 2023/1542
             </span>
           </div>
@@ -153,7 +153,7 @@ export default function EuBatteryPassport() {
             href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1542"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
+            className="flex items-center gap-1 text-xs text-muted-foreground/70 hover:text-foreground/90"
           >
             <Globe className="h-3.5 w-3.5" />
             EU Regulation
@@ -170,39 +170,39 @@ export default function EuBatteryPassport() {
         {!isLoading && profile && (
           <>
             {/* Identity header */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
+            <div className="rounded-xl border border-border bg-background/50 p-5 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-500">EU Battery Passport ID</span>
+                    <QrCode className="h-4 w-4 text-muted-foreground/70" />
+                    <span className="text-xs text-muted-foreground/70">EU Battery Passport ID</span>
                   </div>
-                  <p className="font-mono text-sm text-zinc-100 break-all">{profile.localId ?? localId}</p>
+                  <p className="font-mono text-sm text-foreground break-all">{profile.localId ?? localId}</p>
                 </div>
                 <StatusBadge status={profile.status} />
               </div>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-zinc-500">BPAN</span>
-                  <p className="font-mono text-zinc-200 mt-0.5">{profile.bpan}</p>
+                  <span className="text-muted-foreground/70">BPAN</span>
+                  <p className="font-mono text-foreground mt-0.5">{profile.bpan}</p>
                 </div>
                 <div>
-                  <span className="text-zinc-500">Jurisdiction</span>
-                  <p className="text-zinc-200 mt-0.5">European Union</p>
+                  <span className="text-muted-foreground/70">Jurisdiction</span>
+                  <p className="text-foreground mt-0.5">European Union</p>
                 </div>
                 <div>
-                  <span className="text-zinc-500">Last Updated</span>
-                  <p className="text-zinc-200 mt-0.5">
+                  <span className="text-muted-foreground/70">Last Updated</span>
+                  <p className="text-foreground mt-0.5">
                     {new Date(profile.updatedAt).toLocaleDateString("en-GB", {
                       day: "2-digit", month: "short", year: "numeric",
                     })}
                   </p>
                 </div>
                 <div>
-                  <span className="text-zinc-500">Gov Sync</span>
+                  <span className="text-muted-foreground/70">Gov Sync</span>
                   <p className={`mt-0.5 capitalize ${
                     profile.govSyncStatus === "synced" ? "text-emerald-400" :
-                    profile.govSyncStatus === "failed" ? "text-red-400" : "text-zinc-400"
+                    profile.govSyncStatus === "failed" ? "text-red-400" : "text-muted-foreground"
                   }`}>
                     {profile.govSyncStatus?.replace("_", " ")}
                   </p>
@@ -216,10 +216,10 @@ export default function EuBatteryPassport() {
                 <div className="py-3 flex items-center gap-4">
                   <CarbonClassBadge cls={profileData.carbonFootprint.performanceClass ?? "?"} />
                   <div>
-                    <p className="text-sm font-semibold text-zinc-100">
+                    <p className="text-sm font-semibold text-foreground">
                       {profileData.carbonFootprint.totalKgCo2e} kg CO₂e
                     </p>
-                    <p className="text-xs text-zinc-500">Total lifecycle carbon footprint</p>
+                    <p className="text-xs text-muted-foreground/70">Total lifecycle carbon footprint</p>
                   </div>
                 </div>
                 {profileData.carbonFootprint.stages && (
@@ -264,7 +264,7 @@ export default function EuBatteryPassport() {
                   <DataRow key={k} label={k} value={typeof v === "object" ? JSON.stringify(v) : String(v)} />
                 ))}
                 {Object.keys(profileData ?? {}).length === 0 && (
-                  <p className="text-xs text-zinc-500 py-4 text-center">
+                  <p className="text-xs text-muted-foreground/70 py-4 text-center">
                     No detailed passport data has been declared yet.
                   </p>
                 )}
@@ -273,12 +273,12 @@ export default function EuBatteryPassport() {
 
             {/* Footer */}
             <div className="text-center space-y-1 pt-4">
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-muted-foreground/60">
                 This passport is issued under EU Battery Regulation 2023/1542.
               </p>
-              <p className="text-xs text-zinc-700">
+              <p className="text-xs text-muted-foreground/50">
                 Powered by{" "}
-                <a href="/" className="text-zinc-500 hover:text-zinc-300">
+                <a href="/" className="text-muted-foreground/70 hover:text-foreground/90">
                   Circul-AI-r Platform
                 </a>
               </p>

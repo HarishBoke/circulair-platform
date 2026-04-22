@@ -99,7 +99,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
       aria-label="Cookie consent"
       className="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6"
     >
-      <div className="max-w-3xl mx-auto bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+      <div className="max-w-3xl mx-auto bg-card border border-border/60 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         {/* Header */}
         <div className="flex items-start gap-3 p-5 pb-3">
           <div className="shrink-0 w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center mt-0.5">
@@ -109,7 +109,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
             <h2 className="text-sm font-semibold text-white leading-snug">
               We use cookies
             </h2>
-            <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
               We use essential cookies to keep the platform running and, with your
               permission, analytics cookies to understand how it's used so we can
               improve it. We never sell your data.{" "}
@@ -124,7 +124,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
           <button
             onClick={() => save("essential")}
             aria-label="Dismiss and use essential cookies only"
-            className="shrink-0 p-1 text-zinc-500 hover:text-zinc-300 transition-colors rounded"
+            className="shrink-0 p-1 text-muted-foreground/70 hover:text-foreground transition-colors rounded"
           >
             <X className="w-4 h-4" />
           </button>
@@ -134,7 +134,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
         <div className="px-5">
           <button
             onClick={() => setShowDetails((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-foreground transition-colors py-1"
           >
             {showDetails ? (
               <ChevronUp className="w-3.5 h-3.5" />
@@ -146,11 +146,11 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
 
           {showDetails && (
             <div className="mt-2 mb-3 space-y-2 text-xs">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/40">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/40">
                 <Shield className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-white">Essential cookies</p>
-                  <p className="text-zinc-400 mt-0.5">
+                  <p className="text-muted-foreground mt-0.5">
                     Authentication session, CSRF protection, and platform
                     preferences. Always active — cannot be disabled.
                   </p>
@@ -160,17 +160,17 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
                 </span>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/40">
-                <Cookie className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/40">
+                <Cookie className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-white">Analytics cookies</p>
-                  <p className="text-zinc-400 mt-0.5">
+                  <p className="text-muted-foreground mt-0.5">
                     Anonymised page-view and interaction data via Umami Analytics
                     (self-hosted, no cross-site tracking, no personal data
                     collected).
                   </p>
                 </div>
-                <span className="shrink-0 text-[10px] font-medium text-zinc-400 bg-zinc-700/40 px-2 py-0.5 rounded-full self-start">
+                <span className="shrink-0 text-[10px] font-medium text-muted-foreground bg-secondary/70/40 px-2 py-0.5 rounded-full self-start">
                   Optional
                 </span>
               </div>
@@ -182,7 +182,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
         <div className="flex flex-col sm:flex-row items-center gap-2 px-5 pb-5 pt-2">
           <button
             onClick={() => save("essential")}
-            className="w-full sm:w-auto px-4 py-2 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-medium text-foreground bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-colors"
           >
             Essential only
           </button>
@@ -192,7 +192,7 @@ export default function CookieConsent({ onConsentChange }: CookieConsentProps) {
           >
             Accept all cookies
           </button>
-          <p className="text-[10px] text-zinc-600 sm:ml-auto text-center sm:text-right">
+          <p className="text-[10px] text-muted-foreground/60 sm:ml-auto text-center sm:text-right">
             You can change your preference at any time via the footer.
           </p>
         </div>

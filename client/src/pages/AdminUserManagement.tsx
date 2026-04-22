@@ -56,8 +56,8 @@ function getRoleCfg(role: string) {
     ROLES.find((r) => r.value === role) ?? {
       value: role,
       label: role,
-      color: "text-zinc-400",
-      bg: "bg-zinc-400/10",
+      color: "text-muted-foreground",
+      bg: "bg-secondary/40",
     }
   );
 }
@@ -88,7 +88,7 @@ function RoleBadge({ role }: { role: string }) {
 function Initials({ name, email }: { name?: string | null; email?: string | null }) {
   const ch = (name ?? email ?? "?").charAt(0).toUpperCase();
   return (
-    <span className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-300 flex-shrink-0 select-none">
+    <span className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-semibold text-foreground/90 flex-shrink-0 select-none">
       {ch}
     </span>
   );
@@ -148,7 +148,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[360px] bg-zinc-950 border border-zinc-800 rounded-2xl p-0 gap-0 shadow-2xl">
+      <DialogContent className="sm:max-w-[360px] bg-background border border-border rounded-2xl p-0 gap-0 shadow-2xl">
         <DialogHeader className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
             <Initials name={user.name} email={user.email} />
@@ -157,7 +157,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
                 {user.name ?? user.email ?? `User #${user.id}`}
               </DialogTitle>
               {user.email && (
-                <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+                <p className="text-xs text-muted-foreground/70 truncate mt-0.5">{user.email}</p>
               )}
             </div>
           </div>
@@ -166,17 +166,17 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
         <div className="px-6 pb-6 space-y-4">
           {/* Platform role */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400 font-medium">Platform Role</Label>
+            <Label className="text-xs text-muted-foreground font-medium">Platform Role</Label>
             <Select value={platformRole} onValueChange={(v) => setPlatformRole(v as RoleValue)}>
-              <SelectTrigger className="h-9 bg-zinc-900 border-zinc-800 text-sm text-white rounded-lg">
+              <SelectTrigger className="h-9 bg-background border-border text-sm text-white rounded-lg">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
+              <SelectContent className="bg-background border-border rounded-xl">
                 {ROLES.map((r) => (
                   <SelectItem
                     key={r.value}
                     value={r.value}
-                    className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg"
+                    className="text-sm text-foreground focus:bg-secondary rounded-lg"
                   >
                     {r.label}
                   </SelectItem>
@@ -187,16 +187,16 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
 
           {/* System access */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400 font-medium">System Access</Label>
+            <Label className="text-xs text-muted-foreground font-medium">System Access</Label>
             <Select value={systemRole} onValueChange={(v) => setSystemRole(v as "user" | "admin")}>
-              <SelectTrigger className="h-9 bg-zinc-900 border-zinc-800 text-sm text-white rounded-lg">
+              <SelectTrigger className="h-9 bg-background border-border text-sm text-white rounded-lg">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                <SelectItem value="user" className="text-sm text-zinc-200 focus:bg-zinc-800 rounded-lg">
+              <SelectContent className="bg-background border-border rounded-xl">
+                <SelectItem value="user" className="text-sm text-foreground focus:bg-secondary rounded-lg">
                   Standard User
                 </SelectItem>
-                <SelectItem value="admin" className="text-sm text-red-400 focus:bg-zinc-800 rounded-lg">
+                <SelectItem value="admin" className="text-sm text-red-400 focus:bg-secondary rounded-lg">
                   <span className="flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5" /> Administrator
                   </span>
@@ -207,27 +207,27 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
 
           {/* Organization */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400 font-medium">Organization</Label>
+            <Label className="text-xs text-muted-foreground font-medium">Organization</Label>
             <Input
               value={org}
               onChange={(e) => setOrg(e.target.value)}
               placeholder="e.g. Tata Motors, CPCB…"
-              className="h-9 bg-zinc-900 border-zinc-800 text-sm text-white placeholder:text-zinc-600 rounded-lg"
+              className="h-9 bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 rounded-lg"
             />
           </div>
 
           {/* Reason */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400 font-medium">
+            <Label className="text-xs text-muted-foreground font-medium">
               Reason{" "}
-              <span className="text-zinc-600 font-normal">(optional)</span>
+              <span className="text-muted-foreground/60 font-normal">(optional)</span>
             </Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why is this change being made?"
               rows={2}
-              className="bg-zinc-900 border-zinc-800 text-sm text-white placeholder:text-zinc-600 resize-none rounded-lg"
+              className="bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 resize-none rounded-lg"
             />
           </div>
 
@@ -235,7 +235,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
           <div className="flex gap-2 pt-1">
             <Button
               variant="ghost"
-              className="flex-1 h-9 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg"
+              className="flex-1 h-9 text-sm text-muted-foreground hover:text-white hover:bg-secondary rounded-lg"
               onClick={onClose}
               disabled={mutation.isPending}
             >
@@ -270,7 +270,7 @@ function AuditLog() {
     return (
       <div className="p-6 space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-10 rounded-xl bg-zinc-800/40 animate-pulse" />
+          <div key={i} className="h-10 rounded-xl bg-secondary/40 animate-pulse" />
         ))}
       </div>
     );
@@ -278,7 +278,7 @@ function AuditLog() {
 
   if (!data?.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-zinc-600">
+      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground/60">
         <p className="text-sm">No role changes recorded yet.</p>
       </div>
     );
@@ -289,24 +289,24 @@ function AuditLog() {
       {data.map((entry) => (
         <div
           key={entry.id}
-          className="flex items-start gap-4 py-3 border-b border-zinc-800/50 last:border-0"
+          className="flex items-start gap-4 py-3 border-b border-border/50 last:border-0"
         >
           {/* Left: target user + role change */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-zinc-200 font-medium truncate">
+            <p className="text-sm text-foreground font-medium truncate">
               {entry.targetUserName ?? `User #${entry.targetUserId}`}
             </p>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {entry.previousPlatformRole ? (
                 <RoleBadge role={entry.previousPlatformRole} />
               ) : (
-                <span className="text-xs text-zinc-600">—</span>
+                <span className="text-xs text-muted-foreground/60">—</span>
               )}
-              <ArrowRight className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+              <ArrowRight className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
               <RoleBadge role={entry.newPlatformRole} />
             </div>
             {entry.reason && (
-              <p className="text-xs text-zinc-500 mt-1 italic truncate">
+              <p className="text-xs text-muted-foreground/70 mt-1 italic truncate">
                 "{entry.reason}"
               </p>
             )}
@@ -314,10 +314,10 @@ function AuditLog() {
 
           {/* Right: changed-by + timestamp */}
           <div className="text-right flex-shrink-0">
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground/70">
               {entry.changedByName ?? `User #${entry.changedByUserId}`}
             </p>
-            <p className="text-xs text-zinc-600 mt-0.5">{timeAgo(entry.createdAt)}</p>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">{timeAgo(entry.createdAt)}</p>
           </div>
         </div>
       ))}
@@ -367,21 +367,21 @@ function UserRow({
   };
 
   return (
-    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_180px_100px_36px] sm:gap-4 px-3 py-3 rounded-xl hover:bg-zinc-800/40 transition-colors">
+    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_180px_100px_36px] sm:gap-4 px-3 py-3 rounded-xl hover:bg-secondary/40 transition-colors">
       {/* User info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <Initials name={u.name} email={u.email} />
         <div className="min-w-0">
-          <p className="text-sm font-medium text-zinc-100 truncate leading-tight">
+          <p className="text-sm font-medium text-foreground truncate leading-tight">
             {u.name ?? u.email ?? `User #${u.id}`}
           </p>
-          <p className="text-xs text-zinc-500 truncate mt-0.5">
+          <p className="text-xs text-muted-foreground/70 truncate mt-0.5">
             {u.email ?? "No email"}
             {u.organization ? (
-              <span className="text-zinc-600"> · {u.organization}</span>
+              <span className="text-muted-foreground/60"> · {u.organization}</span>
             ) : null}
             {u.lastSignedIn ? (
-              <span className="text-zinc-600 hidden sm:inline">
+              <span className="text-muted-foreground/60 hidden sm:inline">
                 {" "}
                 · {timeAgo(u.lastSignedIn)}
               </span>
@@ -406,9 +406,9 @@ function UserRow({
           onValueChange={handleRoleChange}
           disabled={mutation.isPending}
         >
-          <SelectTrigger className="h-8 bg-zinc-900 border-zinc-800 text-xs text-zinc-200 rounded-lg disabled:opacity-50 w-full">
+          <SelectTrigger className="h-8 bg-background border-border text-xs text-foreground rounded-lg disabled:opacity-50 w-full">
             {mutation.isPending ? (
-              <span className="flex items-center gap-1.5 text-zinc-400">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
                 <RefreshCw className="w-3 h-3 animate-spin" />
                 Saving…
               </span>
@@ -416,12 +416,12 @@ function UserRow({
               <SelectValue />
             )}
           </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
+          <SelectContent className="bg-background border-border rounded-xl">
             {ROLES.map((r) => (
               <SelectItem
                 key={r.value}
                 value={r.value}
-                className="text-xs text-zinc-200 focus:bg-zinc-800 rounded-lg"
+                className="text-xs text-foreground focus:bg-secondary rounded-lg"
               >
                 {r.label}
               </SelectItem>
@@ -437,7 +437,7 @@ function UserRow({
             <Shield className="w-3 h-3" /> Admin
           </span>
         ) : (
-          <span className="text-xs text-zinc-500">Standard</span>
+          <span className="text-xs text-muted-foreground/70">Standard</span>
         )}
       </div>
 
@@ -445,7 +445,7 @@ function UserRow({
       <div className="flex-shrink-0 sm:w-9 flex justify-end">
         <button
           onClick={onOpenDetails}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground/90 hover:bg-secondary transition-colors"
           title="Edit details (org, system role, reason)"
           aria-label="Edit user details"
         >
@@ -499,8 +499,8 @@ export default function AdminUserManagement() {
   if (user && user.role !== "admin") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Lock className="w-8 h-8 text-zinc-600" />
-        <p className="text-sm text-zinc-400">Administrator access required.</p>
+        <Lock className="w-8 h-8 text-muted-foreground/60" />
+        <p className="text-sm text-muted-foreground">Administrator access required.</p>
       </div>
     );
   }
@@ -526,7 +526,7 @@ export default function AdminUserManagement() {
           <h1 className="text-lg font-semibold text-white tracking-tight">
             User Management
           </h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <p className="text-sm text-muted-foreground/70 mt-0.5">
             {stats ? (
               <>
                 {stats.total} user{stats.total !== 1 ? "s" : ""}&nbsp;·&nbsp;
@@ -554,7 +554,7 @@ export default function AdminUserManagement() {
               ];
               downloadCsv(items, cols, `users-${new Date().toISOString().slice(0, 10)}`);
             }}
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground/90 hover:bg-secondary transition-colors"
             title="Export users to CSV"
             aria-label="Export CSV"
           >
@@ -562,7 +562,7 @@ export default function AdminUserManagement() {
           </button>
           <button
             onClick={() => refetch()}
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground/90 hover:bg-secondary transition-colors"
             title="Refresh user list"
             aria-label="Refresh"
           >
@@ -579,8 +579,8 @@ export default function AdminUserManagement() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
               tab === t
-                ? "bg-zinc-800 text-white"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-secondary text-white"
+                : "text-muted-foreground/70 hover:text-foreground/90"
             }`}
           >
             {t === "users" ? "Users" : "Audit Log"}
@@ -588,7 +588,7 @@ export default function AdminUserManagement() {
         ))}
       </div>
 
-      <div className="h-px bg-zinc-800 mx-5 sm:mx-8 mt-3 flex-shrink-0" />
+      <div className="h-px bg-secondary mx-5 sm:mx-8 mt-3 flex-shrink-0" />
 
       {/* ── Content ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0">
@@ -599,12 +599,12 @@ export default function AdminUserManagement() {
             {/* Filter row */}
             <div className="flex flex-col sm:flex-row gap-2 px-5 sm:px-8 py-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70 pointer-events-none" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, email or org…"
-                  className="pl-9 h-9 bg-zinc-900 border-zinc-800 text-sm text-white placeholder:text-zinc-600 rounded-lg focus-visible:ring-primary/50"
+                  className="pl-9 h-9 bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-primary/50"
                 />
               </div>
 
@@ -615,18 +615,18 @@ export default function AdminUserManagement() {
                   setPage(0);
                 }}
               >
-                <SelectTrigger className="h-9 w-full sm:w-44 bg-zinc-900 border-zinc-800 text-sm text-zinc-300 rounded-lg">
+                <SelectTrigger className="h-9 w-full sm:w-44 bg-background border-border text-sm text-foreground/90 rounded-lg">
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                <SelectContent className="bg-background border-border rounded-xl">
+                  <SelectItem value="all" className="text-sm text-foreground/90 focus:bg-secondary">
                     All roles
                   </SelectItem>
                   {ROLES.map((r) => (
                     <SelectItem
                       key={r.value}
                       value={r.value}
-                      className="text-sm text-zinc-300 focus:bg-zinc-800"
+                      className="text-sm text-foreground/90 focus:bg-secondary"
                     >
                       {r.label}
                     </SelectItem>
@@ -641,17 +641,17 @@ export default function AdminUserManagement() {
                   setPage(0);
                 }}
               >
-                <SelectTrigger className="h-9 w-full sm:w-36 bg-zinc-900 border-zinc-800 text-sm text-zinc-300 rounded-lg">
+                <SelectTrigger className="h-9 w-full sm:w-36 bg-background border-border text-sm text-foreground/90 rounded-lg">
                   <SelectValue placeholder="All access" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 rounded-xl">
-                  <SelectItem value="all" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                <SelectContent className="bg-background border-border rounded-xl">
+                  <SelectItem value="all" className="text-sm text-foreground/90 focus:bg-secondary">
                     All access
                   </SelectItem>
-                  <SelectItem value="user" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                  <SelectItem value="user" className="text-sm text-foreground/90 focus:bg-secondary">
                     Standard
                   </SelectItem>
-                  <SelectItem value="admin" className="text-sm text-zinc-300 focus:bg-zinc-800">
+                  <SelectItem value="admin" className="text-sm text-foreground/90 focus:bg-secondary">
                     Admin only
                   </SelectItem>
                 </SelectContent>
@@ -662,14 +662,14 @@ export default function AdminUserManagement() {
             {isLoading && (
               <div className="px-5 sm:px-8 space-y-2">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-14 rounded-xl bg-zinc-800/40 animate-pulse" />
+                  <div key={i} className="h-14 rounded-xl bg-secondary/40 animate-pulse" />
                 ))}
               </div>
             )}
 
             {/* Empty state */}
             {!isLoading && !data?.items.length && (
-              <div className="flex flex-col items-center justify-center py-24 gap-2 text-zinc-600">
+              <div className="flex flex-col items-center justify-center py-24 gap-2 text-muted-foreground/60">
                 <p className="text-sm">No users found.</p>
                 {hasFilters && (
                   <button
@@ -691,7 +691,7 @@ export default function AdminUserManagement() {
             {!isLoading && !!data?.items.length && (
               <div className="px-5 sm:px-8">
                 {/* Column headers — desktop only */}
-                <div className="hidden sm:grid grid-cols-[1fr_180px_100px_36px] gap-4 px-3 pb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <div className="hidden sm:grid grid-cols-[1fr_180px_100px_36px] gap-4 px-3 pb-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wide">
                   <span>User</span>
                   <span>Platform Role</span>
                   <span>Access</span>
@@ -711,7 +711,7 @@ export default function AdminUserManagement() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between py-4 mt-2">
-                    <p className="text-xs text-zinc-600">
+                    <p className="text-xs text-muted-foreground/60">
                       {page * PAGE_SIZE + 1}–
                       {Math.min((page + 1) * PAGE_SIZE, data.total)} of{" "}
                       {data.total}
@@ -722,12 +722,12 @@ export default function AdminUserManagement() {
                         variant="ghost"
                         disabled={page === 0}
                         onClick={() => setPage((p) => p - 1)}
-                        className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 rounded-lg"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-secondary disabled:opacity-30 rounded-lg"
                         aria-label="Previous page"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <span className="text-xs text-zinc-500 px-2">
+                      <span className="text-xs text-muted-foreground/70 px-2">
                         {page + 1} / {totalPages}
                       </span>
                       <Button
@@ -735,7 +735,7 @@ export default function AdminUserManagement() {
                         variant="ghost"
                         disabled={page >= totalPages - 1}
                         onClick={() => setPage((p) => p + 1)}
-                        className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 rounded-lg"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-secondary disabled:opacity-30 rounded-lg"
                         aria-label="Next page"
                       >
                         <ChevronRight className="w-4 h-4" />

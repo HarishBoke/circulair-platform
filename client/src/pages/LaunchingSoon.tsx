@@ -189,7 +189,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
             <div style={{ animation: "slide-up 0.8s ease-out" }}>
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-0.5 h-5 bg-emerald-400 rounded-full" />
-                <span className="text-[11px] font-medium text-zinc-400 tracking-[0.18em] uppercase" style={{ fontFamily: "var(--font-mono)" }}>
+                <span className="text-[11px] font-medium text-muted-foreground tracking-[0.18em] uppercase" style={{ fontFamily: "var(--font-mono)" }}>
                   Multinational Battery Lifecycle Platform
                 </span>
               </div>
@@ -202,13 +202,13 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                 Coming
               </h1>
 
-              <p className="text-base md:text-lg text-zinc-400 leading-relaxed mb-10 max-w-md">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-md">
                 The operating system for battery circular economy. End-to-end traceability, AI-driven health prediction, and regulatory compliance - all in one platform.
               </p>
 
               {/* Countdown */}
               <div className="mb-10">
-                <p className="text-xs uppercase tracking-[0.15em] text-zinc-500 mb-4 font-medium" style={{ fontFamily: "var(--font-mono)" }}>
+                <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground/70 mb-4 font-medium" style={{ fontFamily: "var(--font-mono)" }}>
                   Launching In
                 </p>
                 <div className="flex gap-3">
@@ -219,12 +219,12 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                     { value: timeLeft.seconds, label: "Sec" },
                   ].map((item) => (
                     <div key={item.label} className="text-center">
-                      <div className="w-16 h-16 md:w-18 md:h-18 rounded-xl bg-zinc-900/80 border border-zinc-800/60 flex items-center justify-center mb-1.5">
+                      <div className="w-16 h-16 md:w-18 md:h-18 rounded-xl bg-background/80 border border-border/60 flex items-center justify-center mb-1.5">
                         <span className="text-2xl md:text-3xl font-bold text-white tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
                           {String(item.value).padStart(2, "0")}
                         </span>
                       </div>
-                      <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">{item.label}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -233,11 +233,11 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
               {/* Feature pills */}
               <div className="grid grid-cols-2 gap-2.5">
                 {features.map((f) => (
-                  <div key={f.label} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-zinc-900/40 border border-zinc-800/40">
+                  <div key={f.label} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-background/40 border border-border/40">
                     <f.icon className="w-4 h-4 text-emerald-400/70 flex-shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold text-zinc-200 truncate">{f.label}</div>
-                      <div className="text-[10px] text-zinc-500 truncate">{f.desc}</div>
+                      <div className="text-xs font-semibold text-foreground truncate">{f.label}</div>
+                      <div className="text-[10px] text-muted-foreground/70 truncate">{f.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -250,7 +250,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                 {/* Glow behind card */}
                 <div className="absolute -inset-4 rounded-3xl bg-emerald-500/[0.03] blur-2xl" />
 
-                <div className="relative bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-8 md:p-10">
+                <div className="relative bg-background/60 backdrop-blur-xl border border-border/60 rounded-2xl p-8 md:p-10">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                       <Lock className="w-5 h-5 text-emerald-400" />
@@ -259,16 +259,16 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                       <h2 className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
                         Early Access
                       </h2>
-                      <p className="text-xs text-zinc-500">Authorized personnel only</p>
+                      <p className="text-xs text-muted-foreground/70">Authorized personnel only</p>
                     </div>
                   </div>
 
-                  <div className="h-px bg-zinc-800/60 my-6" />
+                  <div className="h-px bg-secondary/60 my-6" />
 
                   <form onSubmit={handleSubmit} className={shake ? "animate-[shake_0.6s_ease-in-out]" : ""}>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
+                        <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
                           Username
                         </label>
                         <input
@@ -276,14 +276,14 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                           value={username}
                           onChange={(e) => { setUsername(e.target.value); setError(""); }}
                           placeholder="Enter your username"
-                          className="w-full px-4 py-3 bg-zinc-950/60 border border-zinc-800/60 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                          className="w-full px-4 py-3 bg-background/60 border border-border/60 rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                           autoComplete="off"
                           autoFocus
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
+                        <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
                           Password
                         </label>
                         <div className="relative">
@@ -292,13 +292,13 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setError(""); }}
                             placeholder="Enter your password"
-                            className="w-full px-4 py-3 pr-11 bg-zinc-950/60 border border-zinc-800/60 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                            className="w-full px-4 py-3 pr-11 bg-background/60 border border-border/60 rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                             autoComplete="off"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 hover:text-foreground/90 transition-colors"
                           >
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -332,9 +332,9 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                     </button>
                   </form>
 
-                  <div className="h-px bg-zinc-800/60 my-6" />
+                  <div className="h-px bg-secondary/60 my-6" />
 
-                  <div className="flex items-center justify-between text-[10px] text-zinc-600">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/60">
                     <span>Secured with enterprise-grade encryption</span>
                     <div className="flex items-center gap-1">
                       <Shield className="w-3 h-3" />
@@ -346,7 +346,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
 
               {/* Contact info */}
               <div className="mt-6 text-center">
-                <p className="text-xs text-zinc-600">
+                <p className="text-xs text-muted-foreground/60">
                   Need access? Contact{" "}
                   <a href="mailto:business@setoo.co" className="text-emerald-500/60 hover:text-emerald-400 transition-colors">
                     business@setoo.co
@@ -359,19 +359,19 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
 
         {/* Footer */}
         <footer className="px-6 md:px-12 py-6 flex flex-col md:flex-row items-center justify-between gap-3 border-t border-zinc-900/60" style={{ animation: "fade-in 1.2s ease-out" }}>
-          <div className="flex items-center gap-4 text-[11px] text-zinc-600">
+          <div className="flex items-center gap-4 text-[11px] text-muted-foreground/60">
             <span>&copy; 2026 Circul-AI-r</span>
-            <span className="w-px h-3 bg-zinc-800" />
+            <span className="w-px h-3 bg-secondary" />
             <span>Battery Intelligence Platform</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-zinc-600">
+          <div className="flex items-center gap-4 text-[11px] text-muted-foreground/60">
             <span>By{" "}<a href="https://www.setoo.co" target="_blank" rel="noopener noreferrer" className="text-emerald-400/70 hover:text-emerald-400 transition-colors font-medium">www.setoo.co</a></span>
-            <span className="w-px h-3 bg-zinc-800" />
-            <a href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</a>
-            <span className="w-px h-3 bg-zinc-800" />
+            <span className="w-px h-3 bg-secondary" />
+            <a href="/privacy" className="hover:text-muted-foreground transition-colors">Privacy Policy</a>
+            <span className="w-px h-3 bg-secondary" />
             <button
               onClick={() => window.dispatchEvent(new Event("openCookieConsent"))}
-              className="hover:text-zinc-400 transition-colors cursor-pointer"
+              className="hover:text-muted-foreground transition-colors cursor-pointer"
             >
               Manage Cookies
             </button>
