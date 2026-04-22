@@ -3119,6 +3119,58 @@ Rules:
         });
         return { bpan: input.bpan, soh, decision };
       }),
+
+    // Human-in-the-loop approval gate: records the operator's routing decision
+    approve: protectedProcedure
+      .input(z.object({
+        bpan: z.string().min(21).max(21),
+        approvedRoute: z.enum(["reuse", "repurpose", "repair", "recycle", "dispose"]),
+        triageId: z.string(),
+        notes: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const battery = await getBatteryByBpan(input.bpan);
+        if (!battery) throw new TRPCError({ code: "NOT_FOUND", message: "Battery not found" });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        // Record the approval in service_history as an EOL triage event
+        const { serviceHistory } = await import("../drizzle/schema");
+        await db.insert(serviceHistory).values({
+          bpan: input.bpan,
+          batteryId: battery.id,
+          serviceProviderId: ctx.user.id,
+          serviceType: "triage" as any,
+          servicedAt: new Date(),
+          notes: `Triage ID: ${input.triageId} | Approved route: ${input.approvedRoute}${input.notes ? " | " + input.notes : ""}`,
+          technicianName: ctx.user.name ?? "Operator",
+        });
+        // Update battery status to reflect the routing decision
+        const statusMap: Record<string, string> = {
+          reuse: "active",
+          repurpose: "second_life",
+          repair: "maintenance",
+          recycle: "decommissioned",
+          dispose: "decommissioned",
+        };
+        await updateBatteryStatus(input.bpan, statusMap[input.approvedRoute] as any, battery.currentSoh ? Number(battery.currentSoh) : undefined);
+        return { success: true, bpan: input.bpan, approvedRoute: input.approvedRoute, approvedAt: new Date().toISOString() };
+      }),
+
+    // List batteries that need triage (SOH < 70%)
+    listCandidates: protectedProcedure.query(async () => {
+      const result = await listBatteries({ limit: 200 });
+      const items = Array.isArray(result) ? result : (result as any).items ?? [];
+      return items
+        .filter((b: any) => b.currentSoh !== null && Number(b.currentSoh) < 70)
+        .sort((a: any, b: any) => Number(a.currentSoh) - Number(b.currentSoh))
+        .slice(0, 50)
+        .map((b: any) => ({
+          bpan: b.bpan,
+          chemistry: b.chemistry,
+          currentSoh: b.currentSoh ? Number(b.currentSoh) : null,
+          status: b.status,
+        }));
+    }),
   }),
 
   // ─── PREDICTIVE PROCUREMENT ─────────────────────────────────────────────────────────────────────

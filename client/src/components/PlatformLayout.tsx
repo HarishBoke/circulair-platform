@@ -330,7 +330,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               {items.map((item) => {
                 const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}>
                     <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all cursor-pointer group relative ${
                       isActive
                         ? "bg-primary/10 text-primary border border-primary/20"
@@ -402,43 +402,54 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      <div className="bg-grid" />
-      <div className="bg-glow1" />
-      <div className="bg-glow2" />
+      {/* WCAG: Skip-to-content link for keyboard users */}
+      <a href="#main-content" className="skip-to-content">Skip to main content</a>
+
+      <div className="bg-grid" aria-hidden="true" />
+      <div className="bg-glow1" aria-hidden="true" />
+      <div className="bg-glow2" aria-hidden="true" />
 
       {/* Desktop Sidebar */}
-      <aside className={`relative z-20 hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${collapsed ? "w-16" : "w-56"}`}>
+      <aside
+        className={`relative z-20 hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${collapsed ? "w-16" : "w-56"}`}
+        aria-label="Main navigation"
+      >
         <SidebarContent />
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-sidebar border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-all z-10"
         >
-          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+          {collapsed ? <ChevronRight className="w-3 h-3" aria-hidden="true" /> : <ChevronLeft className="w-3 h-3" aria-hidden="true" />}
         </button>
       </aside>
 
       {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border z-50">
+        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border z-50" aria-label="Main navigation">
             <SidebarContent />
           </aside>
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content Area — WCAG landmark */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Topbar */}
-        <header className="flex items-center justify-between h-14 px-4 lg:px-6 border-b border-border bg-background/80 backdrop-blur-sm flex-shrink-0">
+        <header className="flex items-center justify-between h-14 px-4 lg:px-6 border-b border-border bg-background/80 backdrop-blur-sm flex-shrink-0" role="banner">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation menu"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-nav"
               className="lg:hidden p-2 rounded-lg hover:bg-secondary text-muted-foreground"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-1.5">
+            <div className="hidden sm:flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-1.5" aria-hidden="true">
               <Search className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Search batteries, BPANs...</span>
               <kbd className="hidden md:inline text-[9px] text-muted-foreground bg-background border border-border rounded px-1.5 py-0.5 font-mono ml-4">Ctrl+K</kbd>
@@ -446,25 +457,31 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </div>
           <div className="flex items-center gap-2">
             <Link href="/alerts">
-              <button className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
-                <Bell className="w-4 h-4" />
+              <button
+                className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                aria-label={`Alerts${(unreadCount ?? 0) > 0 ? ` (${unreadCount} unread)` : ""}`}
+              >
+                <Bell className="w-4 h-4" aria-hidden="true" />
                 {(unreadCount ?? 0) > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center text-[8px] text-white font-bold">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center text-[8px] text-white font-bold" aria-hidden="true">
                     {unreadCount}
                   </span>
                 )}
               </button>
             </Link>
             <Link href="/settings/platform">
-              <button className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
-                <Settings className="w-4 h-4" />
+              <button
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                aria-label="Platform settings"
+              >
+                <Settings className="w-4 h-4" aria-hidden="true" />
               </button>
             </Link>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
           {children}
         </main>
       </div>

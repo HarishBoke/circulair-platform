@@ -57,7 +57,7 @@
   --secondary: oklch(0.14 0.025 200);
   --secondary-foreground: oklch(0.65 0.06 165);
   --muted: oklch(0.14 0.025 200);
-  --muted-foreground: oklch(0.5 0.06 165);
+  --muted-foreground: oklch(0.62 0.06 165); /* boosted from 0.5 → 0.62 to meet 4.5:1 on dark bg */
   --accent: oklch(0.72 0.17 165);
   --accent-foreground: oklch(0.08 0.02 200);
   --destructive: oklch(0.65 0.22 15);
@@ -88,7 +88,7 @@
 /* Dark theme is the default for Circul-AI-r */
 
 @layer base {
-  * { @apply border-border outline-ring/50; }
+  * { @apply border-border; }
   html { color-scheme: dark; }
   body {
     @apply bg-background text-foreground;
@@ -102,6 +102,17 @@
   input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+
+  /* ── WCAG 2.1 AA Focus Rings ── */
+  /* Visible 3px offset focus ring on all interactive elements */
+  :focus-visible {
+    outline: 2px solid oklch(0.72 0.17 165);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  /* Remove default outline only when :focus-visible is supported */
+  :focus:not(:focus-visible) { outline: none; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: oklch(0.11 0.025 200); }
   ::-webkit-scrollbar-thumb { background: oklch(0.72 0.17 165 / 20%); border-radius: 3px; }
@@ -145,6 +156,41 @@
 
 .font-display { font-family: var(--font-display) !important; }
 .font-mono { font-family: var(--font-mono) !important; }
+
+/* ── WCAG Utilities ── */
+/* Skip-to-content link — visually hidden until focused */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: oklch(0.72 0.17 165);
+  color: oklch(0.08 0.02 200);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0 0 0.5rem 0;
+  text-decoration: none;
+  transition: top 0.1s;
+}
+.skip-to-content:focus {
+  top: 0;
+}
+/* Screen-reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+/* Ensure sufficient line-height for readability (WCAG 1.4.12) */
+p, li, dd, dt { line-height: 1.6; }
+label { line-height: 1.5; }
 
 @layer components {
   /**

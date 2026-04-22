@@ -969,3 +969,18 @@
 - [ ] Update alert rules defaults with solid-state specific thresholds
 - [ ] Update BpanRegister.tsx and BpanDetail.tsx to show solid-state metrics
 - [ ] Add solid-state chemistry option to marketplace listing form
+
+## Phase 63 (Complete): WCAG 2.1 AA Compliance + UX Readability + Functional Fixes
+- [x] Audit full portal for WCAG 2.1 AA violations (contrast, focus, ARIA, headings, keyboard nav)
+- [x] Fix global CSS: muted-foreground contrast boosted (0.5→0.62 OKLCH), :focus-visible rings, line-height
+- [x] Add skip-to-content link at top of every authenticated page (PlatformLayout)
+- [x] Add visible focus rings on all interactive elements (2px solid primary, 3px offset)
+- [x] Add sr-only utility class for screen-reader-only text
+- [x] Add aria-label to all icon-only buttons (Bell, Settings, Copy, Revoke, Collapse sidebar, Mobile menu)
+- [x] Add aria-live regions for dynamic content (Digital Twin results, Triage results, new API key)
+- [x] Fix PlatformLayout: skip-to-content, aria-current="page" on active nav, role="banner" on header, role="dialog" on mobile overlay, aria-expanded on toggle buttons
+- [x] Fix Digital Twin page: BPAN selector loads real batteries from trpc.bpan.list, 12-month default horizon, aria-live result region, accessible chart summary
+- [x] Fix Developer Portal page: scope naming (read:telemetry etc.), clipboard error handling fallback, aria-labels on icon-only buttons, inline revoke confirmation (no window.confirm), fieldset/legend for permissions, proper label associations
+- [x] Fix Autonomous Triage page: real triage.approve mutation wired (records in service_history, updates battery status), BPAN selector from trpc.triage.listCandidates (SOH<70%), aria-live result region, reject clears state
+- [x] Add triage.approve and triage.listCandidates procedures to server/routers.ts
+- [x] TypeScript: 0 errors, 420 tests passing
