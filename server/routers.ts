@@ -3088,14 +3088,21 @@ Rules:
         permissions: z.array(z.enum(["soh_predict","bpan_validate","compliance_report","telemetry_read","marketplace_read","carbon_report","digital_twin"])),
         rateLimit: z.number().min(10).max(10000).default(100),
         expiresInDays: z.number().optional(),
+        origin: z.string().url().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const { plaintext, hash, prefix } = generateApiKey();
-        const permissionsStr = serializePermissions(input.permissions as any);
         const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null;
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const { apiKeys } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        // Check if this is the user's first API key (for onboarding email)
+        const existingKeys = await db.select({ id: apiKeys.id }).from(apiKeys)
+          .where(eq(apiKeys.userId, ctx.user.id)).limit(1);
+        const isFirstKey = existingKeys.length === 0;
+
         await db.insert(apiKeys).values({
           userId: ctx.user.id,
           name: input.name,
@@ -3105,6 +3112,26 @@ Rules:
           rateLimit: input.rateLimit,
           expiresAt,
         });
+
+        // Send onboarding email + owner notification on first key (fire-and-forget)
+        if (isFirstKey && ctx.user.email) {
+          const origin = input.origin ?? "https://circulair.energy";
+          const { sendDeveloperOnboardingEmail } = await import("./email");
+          const { notifyOwner } = await import("./_core/notification");
+          sendDeveloperOnboardingEmail({
+            to: ctx.user.email,
+            name: ctx.user.name ?? ctx.user.email,
+            apiKey: plaintext,
+            keyName: input.name,
+            permissions: input.permissions,
+            origin,
+          }).catch(e => console.error("[Onboarding Email] Failed:", e));
+          notifyOwner({
+            title: "New Developer Joined",
+            content: `${ctx.user.name ?? ctx.user.email} issued their first API key ("${input.name}") with scopes: ${input.permissions.join(", ")}.`,
+          }).catch(e => console.error("[notifyOwner] Failed:", e));
+        }
+
         return { plaintext, prefix, name: input.name, permissions: input.permissions, message: "Save this key — it will not be shown again." };
       }),
     listKeys: protectedProcedure.query(async ({ ctx }) => {
@@ -3126,6 +3153,34 @@ Rules:
         return { success: true };
       }),
     getPermissions: publicProcedure.query(() => ALL_PERMISSIONS.map(p => ({ id: p, label: PERMISSION_LABELS[p] }))),
+
+    /** Returns CDN URLs for the pre-built TypeScript and Python SDKs */
+    getSdkDownloadUrls: publicProcedure.query(() => ({
+      typescript: {
+        name: "@circulair/sdk",
+        language: "TypeScript / JavaScript",
+        version: "1.0.0",
+        description: "Auto-generated from OpenAPI 3.1 spec. Includes typed services for Batteries, Telemetry, SOH Predictions, Warranty, Marketplace, Compliance, and Analytics.",
+        downloadUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663256112242/Su7XGBwDj2SqiggDTNrQPe/circulair-sdk-typescript-1.0.0_92431b02.zip",
+        filename: "circulair-sdk-typescript-1.0.0.zip",
+        sizeKb: 18,
+        generatedAt: "2026-04-22T05:20:00Z",
+        installCommand: "pnpm add @circulair/sdk",
+        quickstart: `import { CirculairClient } from "@circulair/sdk";\nconst client = new CirculairClient({ BASE: "https://circulair.energy/api/v1", TOKEN: "cai_..." });\nconst batteries = await client.batteries.getBatteries();`,
+      },
+      python: {
+        name: "circulair",
+        language: "Python",
+        version: "1.0.0",
+        description: "Synchronous HTTP client with typed resource classes for all platform endpoints. Requires Python 3.8+ and requests.",
+        downloadUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663256112242/Su7XGBwDj2SqiggDTNrQPe/circulair-sdk-python-1.0.0_0efa902e.zip",
+        filename: "circulair-sdk-python-1.0.0.zip",
+        sizeKb: 5,
+        generatedAt: "2026-04-22T05:20:00Z",
+        installCommand: "pip install circulair",
+        quickstart: `from circulair import CirculairClient\nclient = CirculairClient(api_key="cai_...")\nbatteries = client.batteries.list(status="operational")`,
+      },
+    })),
   }),
 
   // ─── AUTONOMOUS TRIAGE ──────────────────────────────────────────────────────────────────────────────

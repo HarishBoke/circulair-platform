@@ -176,3 +176,158 @@ export async function sendPasswordResetEmail(
     return { success: false, error: message };
   }
 }
+
+// ─── Developer onboarding email ──────────────────────────────────────────────
+
+export interface DeveloperOnboardingEmailParams {
+  to: string;
+  name: string;
+  apiKey: string;
+  keyName: string;
+  permissions: string[];
+  origin: string;
+}
+
+function buildDeveloperOnboardingHtml(p: DeveloperOnboardingEmailParams): string {
+  const { name, apiKey, keyName, permissions, origin } = p;
+  const scopeList = permissions.map(s => `<li style="margin:4px 0;color:#86efac;">${s}</li>`).join("");
+  const curlSnippet = `curl -X POST ${origin}/api/mcp \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'`;
+  const jsSnippet = `const res = await fetch("${origin}/api/v1/batteries", {
+  headers: { Authorization: "Bearer ${apiKey}" }
+});
+const data = await res.json();`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to the Circul-AI-r Developer Platform</title>
+  <style>
+    body { margin:0; padding:0; background:#0a0f0a; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+    .wrapper { max-width:620px; margin:40px auto; background:#0f1a0f; border:1px solid #1a3a1a; border-radius:16px; overflow:hidden; }
+    .accent-bar { height:4px; background:linear-gradient(90deg,#22c55e 0%,#16a34a 50%,#22c55e 100%); }
+    .header { padding:32px 40px 24px; border-bottom:1px solid #1a3a1a; }
+    .logo-text { font-size:20px; font-weight:700; color:#f0fdf4; letter-spacing:-0.5px; }
+    .logo-text span { color:#22c55e; }
+    .logo-sub { font-size:9px; color:#4ade80; letter-spacing:3px; text-transform:uppercase; font-family:'Courier New',monospace; margin-top:2px; }
+    .body { padding:36px 40px; }
+    h1 { font-size:22px; font-weight:700; color:#f0fdf4; margin:0 0 12px; }
+    h2 { font-size:15px; font-weight:600; color:#4ade80; margin:28px 0 10px; text-transform:uppercase; letter-spacing:1px; }
+    p { font-size:15px; line-height:1.6; color:#86efac; margin:0 0 16px; }
+    .key-box { background:#0a1a0a; border:1px solid #22c55e; border-radius:10px; padding:16px 20px; margin:20px 0; }
+    .key-label { font-size:11px; color:#4ade80; letter-spacing:2px; text-transform:uppercase; font-family:'Courier New',monospace; margin-bottom:8px; }
+    .key-value { font-size:14px; color:#f0fdf4; font-family:'Courier New',monospace; word-break:break-all; background:#061006; padding:10px 14px; border-radius:6px; border:1px solid #1a3a1a; }
+    .warning { background:#1a1000; border:1px solid #3a2a00; border-radius:8px; padding:12px 16px; margin:16px 0; font-size:13px; color:#fbbf24; }
+    .code-block { background:#061006; border:1px solid #1a3a1a; border-radius:8px; padding:14px 16px; margin:12px 0; font-size:12px; color:#4ade80; font-family:'Courier New',monospace; white-space:pre-wrap; word-break:break-all; }
+    .scope-list { list-style:none; padding:0; margin:8px 0; }
+    .btn { display:inline-block; padding:12px 28px; background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%); color:#0a0f0a !important; text-decoration:none; border-radius:10px; font-weight:700; font-size:14px; margin:4px 8px 4px 0; }
+    .btn-outline { background:transparent; border:1px solid #22c55e; color:#22c55e !important; }
+    .footer { padding:20px 40px 28px; border-top:1px solid #1a3a1a; }
+    .footer p { font-size:12px; color:#166534; margin:0 0 6px; }
+    .footer a { color:#22c55e; text-decoration:none; }
+    .badge-row { display:flex; gap:16px; margin-top:16px; }
+    .badge { font-size:9px; color:#166534; letter-spacing:2px; text-transform:uppercase; font-family:'Courier New',monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="accent-bar"></div>
+    <div class="header">
+      <div class="logo-text">Circul<span>-AI-</span>r</div>
+      <div class="logo-sub">Battery Intelligence Platform · Developer Edition</div>
+    </div>
+    <div class="body">
+      <h1>Welcome to the API, ${name || "Developer"}!</h1>
+      <p>Your API key <strong>"${keyName}"</strong> has been issued. This is the only time the full key will be shown — store it securely in your secrets manager.</p>
+
+      <h2>Your API Key</h2>
+      <div class="key-box">
+        <div class="key-label">Bearer Token</div>
+        <div class="key-value">${apiKey}</div>
+      </div>
+      <div class="warning">⚠ Never commit this key to source control. Rotate it immediately from the Developer Portal if it is ever exposed.</div>
+
+      <h2>Granted Scopes</h2>
+      <ul class="scope-list">${scopeList}</ul>
+
+      <h2>Quickstart — REST API</h2>
+      <div class="code-block">${jsSnippet}</div>
+
+      <h2>Quickstart — MCP (Claude / Cursor)</h2>
+      <div class="code-block">${curlSnippet}</div>
+
+      <h2>Next Steps</h2>
+      <p>
+        <a href="${origin}/api-reference" class="btn">API Reference</a>
+        <a href="${origin}/mcp-server" class="btn btn-outline">MCP Server Docs</a>
+        <a href="${origin}/developer-portal" class="btn btn-outline">Developer Portal</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>This email was sent by Circul-AI-r Battery Intelligence Platform.</p>
+      <p>Questions? <a href="mailto:support@circulair.energy">support@circulair.energy</a></p>
+      <div class="badge-row">
+        <span class="badge">Encrypted</span>
+        <span class="badge">ISO 27001</span>
+        <span class="badge">SOC 2</span>
+        <span class="badge">GDPR</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function buildDeveloperOnboardingText(p: DeveloperOnboardingEmailParams): string {
+  return `Welcome to the Circul-AI-r Developer Platform, ${p.name || "Developer"}!
+
+Your API key "${p.keyName}" has been issued. Store it securely — this is the only time it will be shown.
+
+API KEY: ${p.apiKey}
+
+GRANTED SCOPES: ${p.permissions.join(", ")}
+
+QUICKSTART:
+curl -X POST ${p.origin}/api/mcp \\
+  -H "Authorization: Bearer ${p.apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'
+
+NEXT STEPS:
+- API Reference: ${p.origin}/api-reference
+- MCP Server Docs: ${p.origin}/mcp-server
+- Developer Portal: ${p.origin}/developer-portal
+
+— Circul-AI-r Battery Intelligence Platform`;
+}
+
+export async function sendDeveloperOnboardingEmail(
+  params: DeveloperOnboardingEmailParams
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const resend = getResendClient();
+    const { data, error } = await resend.emails.send({
+      from: `Circul-AI-r Developers <${ENV.resendFromEmail}>`,
+      to: [params.to],
+      subject: `Your API key "${params.keyName}" is ready — Circul-AI-r Developer Platform`,
+      html: buildDeveloperOnboardingHtml(params),
+      text: buildDeveloperOnboardingText(params),
+    });
+
+    if (error) {
+      console.error("[Resend] Failed to send developer onboarding email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`[Resend] Developer onboarding email sent to ${params.to} (id: ${data?.id})`);
+    return { success: true, messageId: data?.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[Resend] Exception sending developer onboarding email:", message);
+    return { success: false, error: message };
+  }
+}

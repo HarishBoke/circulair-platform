@@ -1046,3 +1046,33 @@
 - [x] Removed Getting Started from KNOWLEDGE section (now in DEVELOPER)
 - [x] Routes /api-reference and /mcp-server added to App.tsx
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 75 (Complete): MCP Authentication Gate
+- [x] mcpAuth middleware added to createMcpRouter() in server/mcpServer.ts (mcp.use(mcpAuth))
+- [x] GET discovery endpoints (tools/list, manifest, resources, prompts) remain unauthenticated
+- [x] POST /api/mcp and POST /api/mcp/invoke require Bearer cai_… token
+- [x] validateApiKey() from compliance.ts used for key validation + writeSecurityEvent on failure
+- [x] TOOL_SCOPE_MAP maps 20 tools to required scopes; tools/call enforces scope per invocation
+- [x] JSON-RPC error -32003 returned with required scope, caller's scopes, and docs link on scope failure
+- [x] logApiUsage called on each successful tool/call for rate-limit tracking
+- [x] TypeScript: 0 errors
+
+## Phase 76 (Complete): Developer Onboarding Email
+- [x] First-key detection: check existingKeys.length === 0 before insert in developerApi.createKey
+- [x] sendDeveloperOnboardingEmail() added to server/email.ts — full branded HTML template
+- [x] Email includes: API key (shown once), granted scopes, REST quickstart (JS), MCP quickstart (curl)
+- [x] Links to /api-reference, /mcp-server, /developer-portal in email CTA buttons
+- [x] notifyOwner() called with "New Developer Joined" + key name + scopes (fire-and-forget)
+- [x] origin: window.location.origin passed from DeveloperPortal.tsx createKey mutation
+- [x] TypeScript: 0 errors
+
+## Phase 77 (Complete): SDK Generation Pipeline
+- [x] TypeScript SDK generated from /api/v1/openapi.json using openapi-typescript-codegen
+- [x] SDK includes: CirculairClient, 8 typed service classes (Batteries, Telemetry, AiPredictions, Warranty, Marketplace, Compliance, Analytics, System), 5 model types
+- [x] Python SDK hand-crafted with CirculairClient + 8 resource classes + exceptions module
+- [x] Both SDKs bundled as ZIP files and uploaded to CDN (S3/CloudFront)
+- [x] TypeScript SDK: https://d2xsxph8kpxj0f.cloudfront.net/.../circulair-sdk-typescript-1.0.0_92431b02.zip
+- [x] Python SDK: https://d2xsxph8kpxj0f.cloudfront.net/.../circulair-sdk-python-1.0.0_0efa902e.zip
+- [x] developerApi.getSdkDownloadUrls tRPC procedure added to routers.ts
+- [x] SdkDownloadSection component added to DeveloperPortal.tsx (language tabs, download button, install + quickstart code blocks, links to API Reference + MCP Server + OpenAPI spec)
+- [x] TypeScript: 0 errors, 419/420 tests passing (1 pre-existing intermittent timeout in eprPdfExport)

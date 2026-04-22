@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield, Webhook, CheckCircle2, AlertCircle } from "lucide-react";
+import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield, Webhook, CheckCircle2, AlertCircle, Download, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -37,6 +37,86 @@ async function copyText(text: string): Promise<void> {
     document.execCommand("copy");
     document.body.removeChild(el);
   }
+}
+
+function SdkDownloadSection() {
+  const { data: sdks } = trpc.developerApi.getSdkDownloadUrls.useQuery();
+  const [activeTab, setActiveTab] = useState<"typescript" | "python">("typescript");
+
+  const sdk = sdks?.[activeTab];
+
+  return (
+    <Card className="border-border/50 bg-card/50">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Package className="w-4 h-4 text-orange-400" aria-hidden="true" />
+          SDK Downloads
+        </CardTitle>
+        <CardDescription>
+          Auto-generated from the OpenAPI 3.1 spec — typed clients for TypeScript and Python
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Language tabs */}
+        <div className="flex gap-2" role="tablist" aria-label="SDK language">
+          {(["typescript", "python"] as const).map((lang) => (
+            <button
+              key={lang}
+              role="tab"
+              aria-selected={activeTab === lang}
+              onClick={() => setActiveTab(lang)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                activeTab === lang
+                  ? "bg-orange-500/20 text-orange-300 border border-orange-500/40"
+                  : "text-muted-foreground hover:text-foreground border border-transparent"
+              }`}
+            >
+              {lang === "typescript" ? "TypeScript / JS" : "Python"}
+            </button>
+          ))}
+        </div>
+
+        {sdk && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-sm font-semibold text-foreground">{sdk.name} <Badge variant="outline" className="ml-2 text-xs">{sdk.version}</Badge></p>
+                <p className="text-sm text-muted-foreground mt-1">{sdk.description}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Size: {sdk.sizeKb} KB · Generated: {new Date(sdk.generatedAt).toLocaleDateString()}
+                </p>
+              </div>
+              <a
+                href={sdk.downloadUrl}
+                download={sdk.filename}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors flex-shrink-0"
+                aria-label={`Download ${sdk.name} SDK ZIP`}
+              >
+                <Download className="w-4 h-4" aria-hidden="true" />
+                Download ZIP
+              </a>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Install</p>
+              <pre className="text-xs font-mono bg-muted/30 p-3 rounded-lg text-foreground overflow-x-auto">{sdk.installCommand}</pre>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quickstart</p>
+              <pre className="text-xs font-mono bg-muted/30 p-3 rounded-lg text-foreground overflow-x-auto whitespace-pre-wrap">{sdk.quickstart}</pre>
+            </div>
+
+            <div className="flex gap-3 text-xs text-muted-foreground pt-1">
+              <a href="/api-reference" className="hover:text-orange-400 underline underline-offset-2">API Reference</a>
+              <a href="/mcp-server" className="hover:text-orange-400 underline underline-offset-2">MCP Server Docs</a>
+              <a href="/api/v1/openapi.json" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 underline underline-offset-2">OpenAPI Spec</a>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function DeveloperPortal() {
@@ -134,7 +214,7 @@ export default function DeveloperPortal() {
   const handleCreate = () => {
     if (!newKeyName.trim()) { toast.error("Name required"); return; }
     if (selectedPerms.length === 0) { toast.error("Select at least one permission"); return; }
-    createMutation.mutate({ name: newKeyName.trim(), permissions: selectedPerms as any[], rateLimit, expiresInDays });
+    createMutation.mutate({ name: newKeyName.trim(), permissions: selectedPerms as any[], rateLimit, expiresInDays, origin: window.location.origin });
   };
 
   const togglePerm = (perm: string) => {
@@ -617,6 +697,9 @@ export default function DeveloperPortal() {
           )}
         </CardContent>
       </Card>
+
+      {/* SDK Downloads */}
+      <SdkDownloadSection />
 
       {/* Quick Start */}
       <Card className="border-border/50 bg-card/50">

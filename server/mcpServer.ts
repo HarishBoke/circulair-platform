@@ -19,7 +19,88 @@ import {
   lookupWarranty, listWarrantyRecords, getWarrantyStats, computeWarrantyStatus, getWarrantyByBpan,
 } from "./db-warranty";
 import { logAgentAction, getAgentActionStats, getRecentActivity } from "./db-agent";
-import { writeAuditLog, generateTraceId, getAuditStats, getSecurityStats } from "./compliance";
+import { writeAuditLog, generateTraceId, getAuditStats, getSecurityStats, validateApiKey, writeSecurityEvent, logApiUsage } from "./compliance";
+import { NextFunction } from "express";
+
+// ─── TOOL → REQUIRED SCOPE MAP ──────────────────────────────────────────────
+// Maps each MCP tool name to the API key scope required to invoke it.
+// Tools not in this map are public (discovery only).
+const TOOL_SCOPE_MAP: Record<string, string> = {
+  // Battery registry
+  get_battery: "bpan_validate",
+  list_batteries: "bpan_validate",
+  get_battery_stats: "bpan_validate",
+  // Telemetry
+  get_telemetry: "telemetry_read",
+  get_telemetry_history: "telemetry_read",
+  // SOH prediction
+  get_soh_prediction: "soh_predict",
+  // Warranty
+  check_warranty: "bpan_validate",
+  lookup_warranty: "bpan_validate",
+  get_warranty_stats: "compliance_report",
+  // Marketplace
+  list_marketplace: "marketplace_read",
+  get_marketplace_stats: "marketplace_read",
+  // Compliance
+  get_epr_stats: "compliance_report",
+  list_epr_tokens: "compliance_report",
+  // Analytics
+  get_platform_kpis: "compliance_report",
+  get_audit_stats: "compliance_report",
+  get_security_stats: "compliance_report",
+  // Agent ops
+  log_agent_action: "telemetry_read",
+  get_agent_activity: "compliance_report",
+};
+
+// ─── MCP AUTH MIDDLEWARE ─────────────────────────────────────────────────────
+/**
+ * Validates Bearer API key on every /api/mcp request.
+ * - GET /api/mcp, /api/mcp/tools, /api/mcp/resources, /api/mcp/prompts, /api/mcp/manifest
+ *   are unauthenticated (discovery endpoints).
+ * - POST /api/mcp (JSON-RPC) and POST /api/mcp/invoke require a valid cai_… key.
+ * - tools/call additionally checks that the key has the required scope for the tool.
+ */
+async function mcpAuth(req: Request, res: Response, next: NextFunction) {
+  // Allow GET discovery endpoints without auth
+  if (req.method === "GET") return next();
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({
+      jsonrpc: "2.0",
+      id: (req.body as any)?.id ?? null,
+      error: {
+        code: -32001,
+        message: "Unauthorized: Missing or invalid Authorization header. Use: Bearer <api_key>",
+        data: { docs: "/api-reference", mcpDocs: "/mcp-server" },
+      },
+    });
+  }
+
+  const key = authHeader.substring(7);
+  const apiKey = await validateApiKey(key);
+
+  if (!apiKey) {
+    await writeSecurityEvent({
+      eventType: "permission_denied",
+      severity: "medium",
+      description: `Invalid API key attempt on MCP endpoint from ${req.ip}`,
+      ipAddress: req.ip ?? undefined,
+      userAgent: req.headers["user-agent"],
+    });
+    return res.status(401).json({
+      jsonrpc: "2.0",
+      id: (req.body as any)?.id ?? null,
+      error: { code: -32001, message: "Unauthorized: Invalid or expired API key" },
+    });
+  }
+
+  // Attach resolved key to request for downstream scope checks
+  (req as any).mcpApiKey = apiKey;
+  next();
+}
 
 // ─── MCP TOOL DEFINITIONS ───────────────────────────────────────────────────
 // Each tool follows the MCP specification format with name, description,
@@ -482,6 +563,9 @@ async function handlePromptsGet(name: string, args: Record<string, string>) {
 export function createMcpRouter(): Router {
   const mcp = Router();
 
+  // Apply auth middleware to all routes in this router
+  mcp.use(mcpAuth);
+
   // MCP Server Info
   mcp.get("/", (_req, res) => {
     res.json({
@@ -529,18 +613,48 @@ export function createMcpRouter(): Router {
           result = handleToolsList();
           break;
 
-        case "tools/call":
-          result = await handleToolsCall(params?.name, params?.arguments ?? {});
+        case "tools/call": {
+          // Scope check: verify the API key has the required scope for this tool
+          const toolName = params?.name as string;
+          const requiredScope = TOOL_SCOPE_MAP[toolName];
+          const apiKey = (req as any).mcpApiKey;
+          if (requiredScope && apiKey) {
+            const scopes: string[] = Array.isArray(apiKey.scopes) ? apiKey.scopes : [];
+            if (!scopes.includes(requiredScope)) {
+              res.json({
+                jsonrpc: "2.0", id,
+                error: {
+                  code: -32003,
+                  message: `Forbidden: tool '${toolName}' requires scope '${requiredScope}'. Your key has: [${scopes.join(", ")}]`,
+                  data: { requiredScope, yourScopes: scopes, docs: "/api-reference" },
+                },
+              });
+              return;
+            }
+          }
+          result = await handleToolsCall(toolName, params?.arguments ?? {});
           // Log the tool call for audit
           writeAuditLog({
             traceId,
             actorType: "agent",
-            action: `mcp.tools.call.${params?.name}`,
+            action: `mcp.tools.call.${toolName}`,
             module: "mcp",
             inputSummary: params?.arguments,
             status: result.isError ? "error" : "success",
           });
+          // Log API usage for rate limiting tracking
+          if (apiKey) {
+            logApiUsage({
+              apiKeyId: apiKey.id,
+              endpoint: `/api/mcp (tools/call:${toolName})`,
+              method: "POST",
+              statusCode: result.isError ? 400 : 200,
+              durationMs: 0,
+              ipAddress: req.ip ?? undefined,
+            });
+          }
           break;
+        }
 
         case "resources/list":
           result = handleResourcesList();
