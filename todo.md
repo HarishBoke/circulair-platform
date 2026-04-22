@@ -1076,3 +1076,35 @@
 - [x] developerApi.getSdkDownloadUrls tRPC procedure added to routers.ts
 - [x] SdkDownloadSection component added to DeveloperPortal.tsx (language tabs, download button, install + quickstart code blocks, links to API Reference + MCP Server + OpenAPI spec)
 - [x] TypeScript: 0 errors, 419/420 tests passing (1 pre-existing intermittent timeout in eprPdfExport)
+
+## Phase 78 (Active): Admin SDK Regeneration Endpoint
+- [ ] Add sdkMeta table to drizzle/schema.ts (language, version, downloadUrl, filename, sizeKb, specHash, generatedAt, generatedBy)
+- [ ] Push migration with pnpm db:push
+- [ ] Build server/sdkGenerator.ts — fetch live OpenAPI spec, run openapi-typescript-codegen, build Python SDK, zip both, upload to S3, return URLs
+- [ ] Add admin.regenerateSdk tRPC procedure (adminProcedure, triggers full SDK rebuild)
+- [ ] Add admin.getSdkMeta tRPC procedure (returns current SDK metadata from DB)
+- [ ] Update developerApi.getSdkDownloadUrls to read from sdkMeta table (falls back to hardcoded CDN URLs)
+- [ ] Add spec-change detection: hash the OpenAPI spec on every server start, compare with stored hash, auto-trigger regeneration if changed
+- [ ] Build SdkManagement.tsx admin page at /admin/sdk with: current SDK versions, last generated, spec hash, manual regenerate button, build log
+- [ ] Add SDK Management nav item under ADMIN section in PlatformLayout sidebar
+- [ ] Wire /admin/sdk route in App.tsx
+- [ ] Write vitest tests for sdkGenerator and admin.regenerateSdk procedure
+- [ ] TypeScript: 0 errors
+
+## Phase 79 (Complete): Global UI Redesign — Readability & Navigation
+- [x] Redesigned global CSS (index.css): background lifted to oklch(0.11) warm-neutral slate (not pure black), card to oklch(0.155), foreground to oklch(0.96), muted-foreground to oklch(0.68) — all exceed WCAG AA 4.5:1
+- [x] Neutral-grey borders (oklch 0.28) replacing green-tinted borders — reduces visual noise
+- [x] Body font size raised to 15px, line-height 1.65 for improved readability
+- [x] Heading scale added (h1-h4) with letter-spacing -0.01em for display clarity
+- [x] Scrollbar redesigned: neutral track, green-on-hover thumb
+- [x] Card component: shadow-based elevation system replacing border-only separation
+- [x] Button: outline variant uses explicit border-border + bg-transparent; secondary uses text-foreground
+- [x] Badge: secondary variant uses text-foreground for readability
+- [x] Input: explicit bg-input + border-border + placeholder at 60% opacity
+- [x] Select: trigger and dropdown use explicit tokens; shadow-xl on dropdown for depth
+- [x] Sidebar consolidated from 15 sections / 35+ items → 7 clean groups: CORE, OPERATIONS, MARKETPLACE, COMPLIANCE, INSIGHTS, DEVELOPER, ADMIN (admin-only), ADVANCED (collapsible)
+- [x] NavItem component: active indicator bar (left edge), proper aria-current, title tooltip in collapsed mode
+- [x] NavSection component: collapsible sections with ChevronRight toggle, auto-expands when active item inside
+- [x] Sidebar width: 14rem (expanded) / 3.5rem (collapsed) — tighter than before
+- [x] Topbar height: 52px, backdrop-blur-md, ⌘K hint in search bar
+- [x] TypeScript: 0 errors, 420/420 tests passing

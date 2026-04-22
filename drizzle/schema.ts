@@ -1192,3 +1192,22 @@ export const forwardOrders = mysqlTable("forward_orders", {
 });
 export type ForwardOrder = typeof forwardOrders.$inferSelect;
 export type InsertForwardOrder = typeof forwardOrders.$inferInsert;
+
+// ─── SDK META (SDK Regeneration Pipeline) ────────────────────────────────────
+// Stores the current download URLs and metadata for each generated SDK.
+// Updated atomically whenever admin.regenerateSdk completes successfully.
+export const sdkMeta = mysqlTable("sdk_meta", {
+  id: int("id").autoincrement().primaryKey(),
+  language: mysqlEnum("language", ["typescript", "python"]).notNull(),
+  version: varchar("version", { length: 32 }).notNull(),
+  downloadUrl: text("download_url").notNull(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  sizeKb: int("size_kb").notNull(),
+  specHash: varchar("spec_hash", { length: 64 }).notNull(),   // SHA-256 of the OpenAPI JSON
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  generatedBy: varchar("generated_by", { length: 255 }),      // user name or "auto"
+  buildLog: text("build_log"),
+});
+
+export type SdkMeta = typeof sdkMeta.$inferSelect;
+export type InsertSdkMeta = typeof sdkMeta.$inferInsert;

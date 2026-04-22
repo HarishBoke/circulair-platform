@@ -44,58 +44,100 @@
 }
 
 :root {
-  /* Circul-AI-r Dark Industrial Theme */
-  --radius: 0.75rem;
-  --background: oklch(0.08 0.02 200);
-  --foreground: oklch(0.92 0.03 165);
-  --card: oklch(0.11 0.025 200);
-  --card-foreground: oklch(0.92 0.03 165);
-  --popover: oklch(0.11 0.025 200);
-  --popover-foreground: oklch(0.92 0.03 165);
-  --primary: oklch(0.72 0.17 165);
-  --primary-foreground: oklch(0.08 0.02 200);
-  --secondary: oklch(0.14 0.025 200);
-  --secondary-foreground: oklch(0.65 0.06 165);
-  --muted: oklch(0.14 0.025 200);
-  --muted-foreground: oklch(0.62 0.06 165); /* boosted from 0.5 → 0.62 to meet 4.5:1 on dark bg */
-  --accent: oklch(0.72 0.17 165);
-  --accent-foreground: oklch(0.08 0.02 200);
-  --destructive: oklch(0.65 0.22 15);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.72 0.17 165 / 14%);
-  --input: oklch(0.14 0.025 200);
-  --ring: oklch(0.72 0.17 165);
-  --sidebar: oklch(0.09 0.022 200);
-  --sidebar-foreground: oklch(0.92 0.03 165);
-  --sidebar-primary: oklch(0.72 0.17 165);
-  --sidebar-primary-foreground: oklch(0.08 0.02 200);
-  --sidebar-accent: oklch(0.14 0.025 200);
-  --sidebar-accent-foreground: oklch(0.92 0.03 165);
-  --sidebar-border: oklch(0.72 0.17 165 / 10%);
-  --sidebar-ring: oklch(0.72 0.17 165);
-  --chart-1: oklch(0.72 0.17 165);
-  --chart-2: oklch(0.6 0.2 240);
-  --chart-3: oklch(0.65 0.18 290);
-  --chart-4: oklch(0.75 0.18 50);
-  --chart-5: oklch(0.65 0.22 15);
-  /* Custom tokens */
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-body: "Inter", system-ui, sans-serif;
-  --accent-glow: oklch(0.72 0.17 165);
-}
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Circul-AI-r Design System v2 — "Dark Slate" Theme
+   *
+   * Design principles:
+   *  1. Background is a warm-neutral dark slate (not pure black / not teal-washed)
+   *  2. Cards sit clearly above the background — visible separation without borders
+   *  3. Body text at 95% lightness, muted text at 68% — both pass WCAG AA 4.5:1
+   *  4. Green accent (hue 155) is used sparingly for CTAs and active states only
+   *  5. Borders are neutral-grey, not green-tinted, to reduce visual noise
+   * ───────────────────────────────────────────────────────────────────────── */
+  --radius: 0.625rem;
 
-/* Dark theme is the default for Circul-AI-r */
+  /* Backgrounds — warm dark slate (hue 220, low chroma) */
+  --background:         oklch(0.11 0.008 240);   /* #0f1117 equivalent — readable dark */
+  --card:               oklch(0.155 0.010 240);  /* cards clearly above bg */
+  --popover:            oklch(0.155 0.010 240);
+  --secondary:          oklch(0.19 0.010 240);   /* hover surfaces */
+  --muted:              oklch(0.19 0.010 240);
+  --input:              oklch(0.19 0.010 240);
+
+  /* Text — high contrast, neutral white */
+  --foreground:         oklch(0.96 0.004 240);   /* near-white, slightly cool */
+  --card-foreground:    oklch(0.96 0.004 240);
+  --popover-foreground: oklch(0.96 0.004 240);
+  --secondary-foreground: oklch(0.72 0.008 240);
+  --muted-foreground:   oklch(0.68 0.008 240);   /* 7:1+ contrast on card bg */
+  --accent-foreground:  oklch(0.08 0.010 240);
+
+  /* Green accent — Circul-AI-r brand (hue 155, slightly shifted from 165) */
+  --primary:            oklch(0.74 0.18 155);    /* bright, readable green */
+  --primary-foreground: oklch(0.08 0.010 240);   /* dark text on green bg */
+  --accent:             oklch(0.74 0.18 155);
+  --ring:               oklch(0.74 0.18 155);
+
+  /* Semantic */
+  --destructive:        oklch(0.65 0.22 15);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Borders — neutral grey, not green-tinted */
+  --border:             oklch(0.28 0.006 240);   /* subtle but visible */
+
+  /* Sidebar — slightly darker than main bg for visual separation */
+  --sidebar:            oklch(0.095 0.008 240);
+  --sidebar-foreground: oklch(0.96 0.004 240);
+  --sidebar-primary:    oklch(0.74 0.18 155);
+  --sidebar-primary-foreground: oklch(0.08 0.010 240);
+  --sidebar-accent:     oklch(0.19 0.010 240);
+  --sidebar-accent-foreground: oklch(0.96 0.004 240);
+  --sidebar-border:     oklch(0.22 0.006 240);
+  --sidebar-ring:       oklch(0.74 0.18 155);
+
+  /* Charts — distinct, accessible palette */
+  --chart-1: oklch(0.74 0.18 155);   /* green — primary */
+  --chart-2: oklch(0.65 0.20 240);   /* blue */
+  --chart-3: oklch(0.68 0.18 290);   /* violet */
+  --chart-4: oklch(0.78 0.16 55);    /* amber */
+  --chart-5: oklch(0.65 0.22 15);    /* red */
+
+  /* Typography */
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+  --font-body:    "Inter", system-ui, sans-serif;
+  --accent-glow:  oklch(0.74 0.18 155);
+}
 
 @layer base {
   * { @apply border-border; }
   html { color-scheme: dark; }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    font-size: 0.9375rem;        /* 15px — slightly larger than 14px default */
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  /* Larger, more readable heading scale */
+  h1 { font-size: 2rem;   font-weight: 700; }
+  h2 { font-size: 1.5rem; font-weight: 650; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1.0625rem; font-weight: 600; }
+
+  p, li, dd, dt { line-height: 1.65; }
+  label { line-height: 1.5; }
+
+  /* Cursor helpers */
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled), [type="submit"]:not(:disabled),
   [type="reset"]:not(:disabled), a[href], select:not(:disabled),
@@ -104,133 +146,115 @@
   }
 
   /* ── WCAG 2.1 AA Focus Rings ── */
-  /* Visible 3px offset focus ring on all interactive elements */
   :focus-visible {
-    outline: 2px solid oklch(0.72 0.17 165);
+    outline: 2px solid oklch(0.74 0.18 155);
     outline-offset: 3px;
     border-radius: 4px;
   }
-  /* Remove default outline only when :focus-visible is supported */
   :focus:not(:focus-visible) { outline: none; }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: oklch(0.11 0.025 200); }
-  ::-webkit-scrollbar-thumb { background: oklch(0.72 0.17 165 / 20%); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: oklch(0.72 0.17 165 / 40%); }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.30 0.006 240);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.74 0.18 155 / 50%);
+  }
 }
 
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+/* ── Animations ── */
+@keyframes fadeUp   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes blink    { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px oklch(0.72 0.17 165 / 40%); }
-  50% { box-shadow: 0 0 35px oklch(0.72 0.17 165 / 70%); }
+  0%, 100% { box-shadow: 0 0 18px oklch(0.74 0.18 155 / 35%); }
+  50%       { box-shadow: 0 0 32px oklch(0.74 0.18 155 / 60%); }
 }
-@keyframes bg-pulse1 { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
-@keyframes bg-pulse2 { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.15); } }
+@keyframes bg-pulse1 { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.08); } }
+@keyframes bg-pulse2 { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.12); } }
 
-.animate-fade-up { animation: fadeUp 0.5s ease both; }
-.animate-fade-in { animation: fadeIn 0.4s ease both; }
-.animate-blink { animation: blink 1.5s ease-in-out infinite; }
+.animate-fade-up    { animation: fadeUp 0.45s ease both; }
+.animate-fade-in    { animation: fadeIn 0.35s ease both; }
+.animate-blink      { animation: blink 1.5s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
 
+/* ── Background decorations ── */
 .bg-grid {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    linear-gradient(oklch(0.72 0.17 165 / 3%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.72 0.17 165 / 3%) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(oklch(0.74 0.18 155 / 2.5%) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.74 0.18 155 / 2.5%) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 .bg-glow1 {
-  position: fixed; top: -200px; right: -100px; width: 600px; height: 600px;
-  background: radial-gradient(circle, oklch(0.72 0.17 165 / 6%) 0%, transparent 70%);
+  position: fixed; top: -180px; right: -80px; width: 550px; height: 550px;
+  background: radial-gradient(circle, oklch(0.74 0.18 155 / 5%) 0%, transparent 70%);
   pointer-events: none; z-index: 0;
-  animation: bg-pulse1 8s ease-in-out infinite;
+  animation: bg-pulse1 9s ease-in-out infinite;
 }
 .bg-glow2 {
-  position: fixed; bottom: -200px; left: -100px; width: 500px; height: 500px;
-  background: radial-gradient(circle, oklch(0.6 0.2 240 / 5%) 0%, transparent 70%);
+  position: fixed; bottom: -180px; left: -80px; width: 480px; height: 480px;
+  background: radial-gradient(circle, oklch(0.65 0.20 240 / 4%) 0%, transparent 70%);
   pointer-events: none; z-index: 0;
-  animation: bg-pulse2 10s ease-in-out infinite;
+  animation: bg-pulse2 11s ease-in-out infinite;
 }
 
+/* ── Typography utilities ── */
 .font-display { font-family: var(--font-display) !important; }
-.font-mono { font-family: var(--font-mono) !important; }
+.font-mono    { font-family: var(--font-mono) !important; }
 
 /* ── WCAG Utilities ── */
-/* Skip-to-content link — visually hidden until focused */
 .skip-to-content {
-  position: absolute;
-  top: -100%;
-  left: 0;
-  z-index: 9999;
+  position: absolute; top: -100%; left: 0; z-index: 9999;
   padding: 0.75rem 1.5rem;
-  background: oklch(0.72 0.17 165);
-  color: oklch(0.08 0.02 200);
-  font-weight: 600;
-  font-size: 0.875rem;
+  background: oklch(0.74 0.18 155);
+  color: oklch(0.08 0.010 240);
+  font-weight: 600; font-size: 0.875rem;
   border-radius: 0 0 0.5rem 0;
-  text-decoration: none;
-  transition: top 0.1s;
+  text-decoration: none; transition: top 0.1s;
 }
-.skip-to-content:focus {
-  top: 0;
-}
-/* Screen-reader only text */
+.skip-to-content:focus { top: 0; }
+
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
 }
-/* Ensure sufficient line-height for readability (WCAG 1.4.12) */
-p, li, dd, dt { line-height: 1.6; }
-label { line-height: 1.5; }
+
+/* ── Card elevation system ── */
+/* Cards use box-shadow instead of borders for a cleaner look */
+.card-elevated {
+  background: oklch(0.155 0.010 240);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 30%), 0 1px 2px oklch(0 0 0 / 20%);
+}
+.card-elevated-lg {
+  background: oklch(0.155 0.010 240);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 35%), 0 1px 4px oklch(0 0 0 / 20%);
+}
+
+/* ── Status colours (semantic, accessible) ── */
+.status-operational { color: oklch(0.74 0.18 155); }
+.status-warning      { color: oklch(0.82 0.18 75); }
+.status-critical     { color: oklch(0.65 0.22 15); }
+.status-info         { color: oklch(0.70 0.16 240); }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
-
-  .flex {
-    min-height: 0;
-    min-width: 0;
-  }
+  .flex { min-height: 0; min-width: 0; }
 
   @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
-    }
+    .container { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
-
   @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
-    }
+    .container { padding-left: 2rem; padding-right: 2rem; max-width: 1280px; }
   }
 }

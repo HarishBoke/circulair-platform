@@ -1,159 +1,124 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import CirculairLogo from "@/components/CirculairLogo";
 import { Button } from "@/components/ui/button";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 import {
   LayoutDashboard, Battery, Activity, Brain, ShoppingCart,
   Truck, Shield, BarChart3, Bell, MessageSquare, FileText,
   FlaskConical, Wrench, ChevronLeft, ChevronRight, LogOut,
-  User, Settings, Menu, X, Search, Database, Radio, Users, Globe, Settings2,
-  ArrowRight, Lock, Cpu, Landmark, ShieldCheck, Upload, BookOpen, Rocket, Play, AlertTriangle,
-  GitBranch, Leaf, Network, Link2, Share2, Code2, Zap, TrendingUp, Bot, ListChecks
+  Settings, Menu, Search, Database, Users, Globe,
+  ArrowRight, Lock, Cpu, ShieldCheck, Upload, BookOpen, Rocket,
+  GitBranch, Leaf, Network, Code2, Zap, TrendingUp, Bot,
+  ListChecks, Package, Settings2, Radio, AlertTriangle
 } from "lucide-react";
-import { LanguageSelector } from "@/components/LanguageSelector";
 
-function useNavSections() {
+/* ─── NAV STRUCTURE ────────────────────────────────────────────────────────────
+ * Consolidated from 15 sections → 7 clean groups.
+ * Only features that are fully wired and working are shown.
+ * Advanced / experimental features are grouped under "Advanced" to reduce noise.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function useNavSections(isAdmin: boolean) {
   return [
     {
-      label: "OVERVIEW",
-      sectionKey: "OVERVIEW",
+      label: "CORE",
+      sectionKey: "CORE",
       items: [
-        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+        { icon: LayoutDashboard, label: "Dashboard",        href: "/dashboard" },
+        { icon: Battery,         label: "Battery Registry", href: "/batteries" },
+        { icon: Activity,        label: "IoT Telemetry",    href: "/telemetry" },
+        { icon: Brain,           label: "AI SOH Prediction",href: "/ai-soh" },
+        { icon: MessageSquare,   label: "AI Assistant",     href: "/assistant" },
       ],
     },
     {
-      label: "BATTERY MANAGEMENT",
-      sectionKey: "BATTERY_MGMT",
+      label: "OPERATIONS",
+      sectionKey: "OPERATIONS",
       items: [
-        { icon: Battery, label: "BPAN Registry", href: "/batteries" },
-        { icon: Activity, label: "IoT Telemetry", href: "/telemetry" },
-        { icon: Wrench, label: "Service History", href: "/service-history" },
-      ],
-    },
-    {
-      label: "AI & INTELLIGENCE",
-      sectionKey: "AI",
-      items: [
-        { icon: Brain, label: "AI SOH Prediction", href: "/ai-soh" },
-        { icon: MessageSquare, label: "AI Assistant", href: "/assistant" },
-      ],
-    },
-    {
-      label: "WARRANTY & ONBOARDING",
-      sectionKey: "WARRANTY",
-      items: [
-        { icon: ShieldCheck, label: "Warranty Management", href: "/warranty" },
-        { icon: Upload, label: "Bulk Onboarding", href: "/onboarding" },
+        { icon: ShieldCheck,  label: "Warranty",          href: "/warranty" },
+        { icon: Wrench,       label: "Service History",   href: "/service-history" },
+        { icon: Upload,       label: "Bulk Onboarding",   href: "/onboarding" },
+        { icon: Bot,          label: "Autonomous Triage", href: "/autonomous-triage" },
+        { icon: ListChecks,   label: "Triage Queue",      href: "/autonomous-triage/queue" },
       ],
     },
     {
       label: "MARKETPLACE",
       sectionKey: "MARKETPLACE",
       items: [
-        { icon: ShoppingCart, label: "Marketplace", href: "/marketplace" },
-        { icon: Truck, label: "Logistics", href: "/logistics" },
+        { icon: ShoppingCart, label: "Marketplace",  href: "/marketplace" },
+        { icon: Truck,        label: "Logistics",    href: "/logistics" },
+        { icon: TrendingUp,   label: "Procurement",  href: "/predictive-procurement" },
       ],
     },
     {
       label: "COMPLIANCE",
       sectionKey: "COMPLIANCE",
       items: [
-        { icon: Shield, label: "EPR Compliance", href: "/epr-compliance" },
-        { icon: FlaskConical, label: "Yield Verification", href: "/yield-verification" },
-        { icon: Globe, label: "Compliance Dashboard", href: "/compliance" },
+        { icon: Shield,       label: "EPR Compliance",    href: "/epr-compliance" },
+        { icon: FlaskConical, label: "Yield Verification",href: "/yield-verification" },
+        { icon: Globe,        label: "Compliance Hub",    href: "/compliance" },
       ],
     },
     {
-      label: "REPORTING",
-      sectionKey: "REPORTING",
+      label: "INSIGHTS",
+      sectionKey: "INSIGHTS",
       items: [
-        { icon: BarChart3, label: "Analytics", href: "/analytics" },
-        { icon: FileText, label: "Documents", href: "/documents" },
-        { icon: Bell, label: "Alerts", href: "/alerts", badge: true },
-        { icon: AlertTriangle, label: "Alert Rules", href: "/alert-rules" },
-      ],
-    },
-    {
-      label: "INTEGRATIONS",
-      sectionKey: "INTEGRATIONS",
-      items: [
-        { icon: Database, label: "Data Integration", href: "/data-integration" },
-        { icon: Radio, label: "MQTT Flow Tester", href: "/mqtt-flow-tester" },
-        { icon: Cpu, label: "Device Provisioning", href: "/device-provisioning" },
-        { icon: Play, label: "Demo Mode", href: "/demo" },
-        { icon: BookOpen, label: "Gateway Docs", href: "/gateway-docs" },
-      ],
-    },
-    {
-      label: "KNOWLEDGE",
-      sectionKey: "KNOWLEDGE",
-      items: [
-        { icon: BookOpen, label: "CirculWiki", href: "/wiki" },
-      ],
-    },
-    {
-      label: "NEXT-GEN v2.0",
-      sectionKey: "NEXTGEN_V2",
-      items: [
-        { icon: GitBranch, label: "Digital Twin", href: "/digital-twin" },
-        { icon: Leaf, label: "Carbon Accounting", href: "/carbon-accounting" },
-        { icon: Network, label: "Federated Learning", href: "/federated-learning" },
-      ],
-    },
-    {
-      label: "NEXT-GEN v3.0",
-      sectionKey: "NEXTGEN_V3",
-      items: [
-        { icon: Link2, label: "Blockchain Audit", href: "/blockchain-audit" },
-        { icon: Share2, label: "Data Sharing", href: "/data-sharing" },
+        { icon: BarChart3,      label: "Analytics",    href: "/analytics" },
+        { icon: Bell,           label: "Alerts",       href: "/alerts", badge: true },
+        { icon: FileText,       label: "Documents",    href: "/documents" },
+        { icon: AlertTriangle,  label: "Alert Rules",  href: "/alert-rules" },
       ],
     },
     {
       label: "DEVELOPER",
       sectionKey: "DEVELOPER",
       items: [
-        { icon: Rocket, label: "Getting Started", href: "/getting-started" },
-        { icon: BookOpen, label: "API Reference", href: "/api-reference" },
-        { icon: Network, label: "MCP Server", href: "/mcp-server" },
-        { icon: Code2, label: "Developer Portal", href: "/developer-portal" },
+        { icon: Rocket,   label: "Getting Started",  href: "/getting-started" },
+        { icon: BookOpen, label: "API Reference",    href: "/api-reference" },
+        { icon: Network,  label: "MCP Server",       href: "/mcp-server" },
+        { icon: Code2,    label: "Developer Portal", href: "/developer-portal" },
+        { icon: Database, label: "Data Integration", href: "/data-integration" },
+        { icon: Radio,    label: "MQTT Tester",      href: "/mqtt-flow-tester" },
       ],
     },
-    {
-      label: "NEXT-GEN v4.0",
-      sectionKey: "NEXTGEN_V4",
-      items: [
-        { icon: Bot, label: "Autonomous Triage", href: "/autonomous-triage" },
-        { icon: ListChecks, label: "Triage Queue", href: "/autonomous-triage/queue" },
-        { icon: TrendingUp, label: "Predictive Procurement", href: "/predictive-procurement" },
-        { icon: Zap, label: "Solid-State Batteries", href: "/solid-state" },
-      ],
-    },
-    {
+    ...(isAdmin ? [{
       label: "ADMIN",
       sectionKey: "ADMIN",
       items: [
-        { icon: Users, label: "User Management", href: "/admin/users" },
-        { icon: Cpu, label: "Super Admin", href: "/admin/system" },
-        { icon: MessageSquare, label: "Feedback Review", href: "/admin/feedback" },
-        { icon: Settings2, label: "Platform Settings", href: "/settings/platform" },
+        { icon: Users,    label: "User Management",     href: "/admin/users" },
+        { icon: Cpu,      label: "Super Admin",         href: "/admin/system" },
+        { icon: Settings2,label: "Platform Settings",   href: "/settings/platform" },
+        { icon: MessageSquare, label: "Feedback Review",href: "/admin/feedback" },
+      ],
+    }] : []),
+    {
+      label: "ADVANCED",
+      sectionKey: "ADVANCED",
+      collapsible: true,
+      items: [
+        { icon: GitBranch, label: "Digital Twin",       href: "/digital-twin" },
+        { icon: Leaf,      label: "Carbon Accounting",  href: "/carbon-accounting" },
+        { icon: Network,   label: "Federated Learning", href: "/federated-learning" },
+        { icon: Zap,       label: "Solid-State",        href: "/solid-state" },
+        { icon: BookOpen,  label: "CirculWiki",         href: "/wiki" },
       ],
     },
   ];
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Platform Admin",
-  oem: "OEM",
-  manufacturer: "Manufacturer",
-  recycler: "Recycler",
-  bess_developer: "BESS Developer",
+  admin:            "Platform Admin",
+  oem:              "OEM",
+  manufacturer:     "Manufacturer",
+  recycler:         "Recycler",
+  bess_developer:   "BESS Developer",
   service_provider: "Service Provider",
-  government: "Government",
+  government:       "Government",
 };
 
 /* ─── AUTH SCREEN ──────────────────────────────────────────────────────────── */
@@ -164,7 +129,7 @@ function AuthScreen() {
       <div className="bg-glow1" />
       <div className="bg-glow2" />
 
-      {/* Left side — branding & features */}
+      {/* Left — branding */}
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">
         <div className="max-w-lg">
           <div className="flex items-center gap-3 mb-8">
@@ -187,9 +152,9 @@ function AuthScreen() {
 
           <div className="space-y-4">
             {[
-              { icon: Battery, title: "Battery Registry", desc: "21-character BPAN generation with QR codes and lifecycle tracking" },
-              { icon: Brain, title: "AI SOH Prediction", desc: "CNN-LSTM models with less than 2% RMSE for health estimation" },
-              { icon: Shield, title: "Regulatory Compliance", desc: "EU Battery Passport, India BWMR, China MIIT adapters" },
+              { icon: Battery,      title: "Battery Registry",    desc: "21-character BPAN generation with QR codes and lifecycle tracking" },
+              { icon: Brain,        title: "AI SOH Prediction",   desc: "CNN-LSTM models with less than 2% RMSE for health estimation" },
+              { icon: Shield,       title: "Regulatory Compliance", desc: "EU Battery Passport, India BWMR, China MIIT adapters" },
               { icon: ShoppingCart, title: "Second-Life Marketplace", desc: "Multi-currency marketplace with dynamic spot pricing" },
             ].map((feature) => (
               <div key={feature.title} className="flex items-start gap-3 group">
@@ -198,7 +163,7 @@ function AuthScreen() {
                 </div>
                 <div>
                   <div className="text-sm font-semibold mb-0.5">{feature.title}</div>
-                  <div className="text-xs text-muted-foreground">{feature.desc}</div>
+                  <div className="text-sm text-muted-foreground">{feature.desc}</div>
                 </div>
               </div>
             ))}
@@ -206,15 +171,12 @@ function AuthScreen() {
         </div>
       </div>
 
-      {/* Right side — sign in card */}
+      {/* Right — sign-in card */}
       <div className="flex-1 flex items-center justify-center relative z-10 px-6">
         <div className="w-full max-w-md">
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl shadow-primary/5">
-            {/* Top accent */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
             <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-primary" />
-
             <div className="p-8">
-              {/* Mobile logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
                 <CirculairLogo size={30} />
                 <div>
@@ -240,8 +202,8 @@ function AuthScreen() {
               <div className="mt-6 pt-6 border-t border-border/50">
                 <div className="flex items-center justify-center gap-6 text-muted-foreground">
                   {[
-                    { icon: Lock, label: "Encrypted" },
-                    { icon: Globe, label: "Multi-Region" },
+                    { icon: Lock,   label: "Encrypted" },
+                    { icon: Globe,  label: "Multi-Region" },
                     { icon: Shield, label: "RBAC" },
                   ].map((badge) => (
                     <div key={badge.label} className="flex items-center gap-1.5">
@@ -280,114 +242,210 @@ function LoadingScreen() {
   );
 }
 
+/* ─── SIDEBAR NAV ITEM ─────────────────────────────────────────────────────── */
+function NavItem({
+  icon: Icon, label, href, badge, badgeCount, collapsed, isActive,
+}: {
+  icon: React.ElementType; label: string; href: string;
+  badge?: boolean; badgeCount?: number; collapsed: boolean; isActive: boolean;
+}) {
+  return (
+    <Link href={href} aria-current={isActive ? "page" : undefined}>
+      <div
+        title={collapsed ? label : undefined}
+        className={`
+          flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium
+          transition-all duration-150 cursor-pointer group relative
+          ${isActive
+            ? "bg-primary/12 text-primary"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+          }
+        `}
+      >
+        {/* Active indicator bar */}
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" aria-hidden="true" />
+        )}
+        <Icon
+          className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? "text-primary" : "group-hover:text-foreground"}`}
+          aria-hidden="true"
+        />
+        {!collapsed && (
+          <>
+            <span className="truncate flex-1">{label}</span>
+            {badge && (badgeCount ?? 0) > 0 && (
+              <Badge className="ml-auto bg-destructive text-white text-[9px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center rounded-full">
+                {badgeCount}
+              </Badge>
+            )}
+          </>
+        )}
+        {collapsed && badge && (badgeCount ?? 0) > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-destructive rounded-full border border-sidebar" aria-hidden="true" />
+        )}
+      </div>
+    </Link>
+  );
+}
+
+/* ─── COLLAPSIBLE SECTION ──────────────────────────────────────────────────── */
+function NavSection({
+  section, location, unreadCount, collapsed, sidebarCollapsed,
+}: {
+  section: ReturnType<typeof useNavSections>[number];
+  location: string;
+  unreadCount: number;
+  collapsed: boolean;
+  sidebarCollapsed: boolean;
+}) {
+  const [open, setOpen] = useState(!("collapsible" in section && section.collapsible));
+  const hasActive = section.items.some(
+    (item) => location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href))
+  );
+
+  // Auto-open if an item in this section is active
+  useEffect(() => {
+    if (hasActive) setOpen(true);
+  }, [hasActive]);
+
+  const isCollapsible = "collapsible" in section && section.collapsible;
+
+  return (
+    <div className="mb-1">
+      {/* Section label */}
+      {!sidebarCollapsed && (
+        <button
+          onClick={isCollapsible ? () => setOpen(!open) : undefined}
+          className={`
+            w-full flex items-center justify-between px-2.5 py-1.5 mb-0.5
+            font-mono text-[10px] tracking-widest uppercase
+            text-muted-foreground/50 hover:text-muted-foreground
+            transition-colors
+            ${isCollapsible ? "cursor-pointer" : "cursor-default"}
+          `}
+          aria-expanded={isCollapsible ? open : undefined}
+        >
+          <span>{section.label}</span>
+          {isCollapsible && (
+            <ChevronRight
+              className={`w-3 h-3 transition-transform ${open ? "rotate-90" : ""}`}
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      )}
+
+      {/* Items */}
+      {(open || sidebarCollapsed) && (
+        <div className="space-y-0.5">
+          {section.items.map((item) => {
+            const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+            return (
+              <NavItem
+                key={item.href}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                badge={"badge" in item ? item.badge : undefined}
+                badgeCount={unreadCount}
+                collapsed={sidebarCollapsed}
+                isActive={isActive}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── MAIN LAYOUT ──────────────────────────────────────────────────────────── */
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const NAV_SECTIONS = useNavSections();
+
+  const isAdmin = (user as any)?.role === "admin";
+  const platformRole = (user as any)?.platformRole ?? "oem";
+  const NAV_SECTIONS = useNavSections(isAdmin);
 
   const { data: unreadCount } = trpc.alerts.unreadCount.useQuery(undefined, {
     refetchInterval: 30000,
     enabled: isAuthenticated,
   });
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location]);
+  useEffect(() => { setMobileOpen(false); }, [location]);
 
   if (loading) return <LoadingScreen />;
   if (!isAuthenticated) return <AuthScreen />;
 
-  const platformRole = (user as any)?.platformRole ?? "oem";
-  const isAdmin = (user as any)?.role === "admin";
-
-  const SidebarContent = () => (
+  /* ── Sidebar inner content ── */
+  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
-        <CirculairLogo size={24} className="flex-shrink-0" />
-        {!collapsed && (
+      {/* Logo row */}
+      <div className={`flex items-center gap-3 border-b border-sidebar-border ${collapsed && !isMobile ? "px-3 py-4 justify-center" : "px-4 py-4"}`}>
+        <CirculairLogo size={22} className="flex-shrink-0" />
+        {(!collapsed || isMobile) && (
           <div className="min-w-0">
-            <div className="font-display text-sm font-bold leading-tight">
+            <div className="font-display text-sm font-bold leading-tight tracking-tight">
               Circul<span className="text-primary">-AI-</span>r
             </div>
-            <div className="font-mono text-[9px] text-muted-foreground tracking-widest uppercase">
+            <div className="font-mono text-[9px] text-muted-foreground/60 tracking-widest uppercase">
               Battery Intelligence
             </div>
           </div>
         )}
+        {isMobile && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="ml-auto p-1 rounded-md text-muted-foreground hover:text-foreground"
+            aria-label="Close navigation"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-        {NAV_SECTIONS.map((section) => {
-          // Filter admin items for non-admin users
-          const items = section.sectionKey === "ADMIN" && !isAdmin
-            ? section.items.filter((item) => item.href !== "/admin/users" && item.href !== "/admin/system")
-            : section.items;
-          if (items.length === 0) return null;
-
-          return (
-            <div key={section.sectionKey} className="mb-2">
-              {!collapsed && (
-                <div className="font-mono text-[9px] text-muted-foreground/60 tracking-widest uppercase px-2 py-1.5">
-                  {section.sectionKey}
-                </div>
-              )}
-              {items.map((item) => {
-                const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
-                return (
-                  <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}>
-                    <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all cursor-pointer group relative ${
-                      isActive
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
-                    }`}>
-                      <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : "group-hover:text-foreground"}`} />
-                      {!collapsed && (
-                        <span className="truncate">{item.label}</span>
-                      )}
-                      {!collapsed && (item as any).badge && (unreadCount ?? 0) > 0 && (
-                        <Badge className="ml-auto bg-destructive text-destructive-foreground text-[9px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center">
-                          {unreadCount}
-                        </Badge>
-                      )}
-                      {collapsed && (item as any).badge && (unreadCount ?? 0) > 0 && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+      {/* Nav sections */}
+      <nav
+        className="flex-1 overflow-y-auto py-3 px-2"
+        aria-label="Main navigation"
+      >
+        {NAV_SECTIONS.map((section) => (
+          <NavSection
+            key={section.sectionKey}
+            section={section}
+            location={location}
+            unreadCount={unreadCount ?? 0}
+            collapsed={collapsed && !isMobile}
+            sidebarCollapsed={collapsed && !isMobile}
+          />
+        ))}
       </nav>
 
-      {/* User & Footer */}
-      <div className="border-t border-border p-3 space-y-2">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-secondary/50">
+      {/* User footer */}
+      <div className="border-t border-sidebar-border p-3 space-y-2">
+        {(!collapsed || isMobile) && (
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-sidebar-accent/60">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-chart-2 to-chart-3 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
               {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-medium truncate">{user?.name ?? "User"}</div>
+              <div className="text-xs font-semibold truncate text-foreground">{user?.name ?? "User"}</div>
               <div className="font-mono text-[9px] text-primary truncate">
                 {ROLE_LABELS[platformRole] ?? platformRole}
               </div>
             </div>
           </div>
         )}
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div className="px-1">
             <LanguageSelector />
           </div>
         )}
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-1 pb-0.5">
+        {(!collapsed || isMobile) && (
+          <div className="flex items-center gap-3 px-1">
             <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors font-mono">Privacy</a>
             <span className="text-muted-foreground/30 text-[10px]">·</span>
             <button
@@ -400,10 +458,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         )}
         <button
           onClick={() => logout()}
-          className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ${collapsed ? "justify-center" : ""}`}
+          title={collapsed && !isMobile ? "Sign Out" : undefined}
+          className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ${collapsed && !isMobile ? "justify-center" : ""}`}
         >
-          <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
-          {!collapsed && <span>{"Sign Out"}</span>}
+          <LogOut className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+          {(!collapsed || isMobile) && <span>Sign Out</span>}
         </button>
       </div>
     </div>
@@ -411,64 +470,72 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* WCAG: Skip-to-content link for keyboard users */}
+      {/* WCAG: Skip-to-content */}
       <a href="#main-content" className="skip-to-content">Skip to main content</a>
-
       <div className="bg-grid" aria-hidden="true" />
       <div className="bg-glow1" aria-hidden="true" />
       <div className="bg-glow2" aria-hidden="true" />
 
       {/* Desktop Sidebar */}
       <aside
-        className={`relative z-20 hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${collapsed ? "w-16" : "w-56"}`}
+        className={`relative z-20 hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-200 ease-out ${collapsed ? "w-14" : "w-56"}`}
         aria-label="Main navigation"
       >
         <SidebarContent />
+        {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!collapsed}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-sidebar border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-all z-10"
+          className="absolute -right-3 top-[4.5rem] w-6 h-6 rounded-full bg-sidebar border border-sidebar-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-all z-10 shadow-sm"
         >
-          {collapsed ? <ChevronRight className="w-3 h-3" aria-hidden="true" /> : <ChevronLeft className="w-3 h-3" aria-hidden="true" />}
+          {collapsed
+            ? <ChevronRight className="w-3 h-3" aria-hidden="true" />
+            : <ChevronLeft  className="w-3 h-3" aria-hidden="true" />
+          }
         </button>
       </aside>
 
       {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden="true" />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border z-50" aria-label="Main navigation">
-            <SidebarContent />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border z-50 shadow-2xl">
+            <SidebarContent isMobile />
           </aside>
         </div>
       )}
 
-      {/* Main Content Area — WCAG landmark */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Topbar */}
-        <header className="flex items-center justify-between h-14 px-4 lg:px-6 border-b border-border bg-background/80 backdrop-blur-sm flex-shrink-0" role="banner">
+        <header
+          className="flex items-center justify-between h-13 px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0"
+          role="banner"
+          style={{ height: "52px" }}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
               aria-label="Open navigation menu"
               aria-expanded={mobileOpen}
-              aria-controls="mobile-nav"
               className="lg:hidden p-2 rounded-lg hover:bg-secondary text-muted-foreground"
             >
               <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-1.5" aria-hidden="true">
+            {/* Search hint */}
+            <div className="hidden sm:flex items-center gap-2 bg-secondary/60 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-secondary transition-colors" aria-hidden="true">
               <Search className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Search batteries, BPANs...</span>
-              <kbd className="hidden md:inline text-[9px] text-muted-foreground bg-background border border-border rounded px-1.5 py-0.5 font-mono ml-4">Ctrl+K</kbd>
+              <span className="text-xs text-muted-foreground">Search batteries, BPANs…</span>
+              <kbd className="hidden md:inline text-[9px] text-muted-foreground/60 bg-background/80 border border-border rounded px-1.5 py-0.5 font-mono ml-3">⌘K</kbd>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5">
             <Link href="/alerts">
               <button
-                className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-                aria-label={`Alerts${(unreadCount ?? 0) > 0 ? ` (${unreadCount} unread)` : ""}`}
+                className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={`Alerts${(unreadCount ?? 0) > 0 ? ` — ${unreadCount} unread` : ""}`}
               >
                 <Bell className="w-4 h-4" aria-hidden="true" />
                 {(unreadCount ?? 0) > 0 && (
@@ -480,7 +547,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             </Link>
             <Link href="/settings/platform">
               <button
-                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Platform settings"
               >
                 <Settings className="w-4 h-4" aria-hidden="true" />
