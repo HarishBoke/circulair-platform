@@ -1108,3 +1108,14 @@
 - [x] Sidebar width: 14rem (expanded) / 3.5rem (collapsed) — tighter than before
 - [x] Topbar height: 52px, backdrop-blur-md, ⌘K hint in search bar
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 80 (Complete): Getting Started Progress Widget on Dashboard
+- [x] GettingStartedWidget.tsx built — compact collapsible card with progress bar, 4 category tabs, step rows
+- [x] Queries trpc.tutorial.progress (real per-user DB progress, 14 steps)
+- [x] trpc.tutorial.complete mutation wired — click circle to mark step done, invalidates cache
+- [x] Category tabs: Platform Basics, Operations, AI & Knowledge, Developer Setup
+- [x] Collapsed state shows next incomplete step with direct link
+- [x] Dismiss button persists to localStorage (cai_gs_dismissed)
+- [x] WCAG: role=progressbar aria-valuenow, aria-live on count, role=tablist/tab/tabpanel, aria-label on all buttons
+- [x] Added to Dashboard.tsx above KPI strip — import + <GettingStartedWidget />
+- [x] TypeScript: 0 errors, 420/420 tests passing

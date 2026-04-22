@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAuth } from "@/_core/hooks/useAuth";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import GettingStartedWidget from "@/components/GettingStartedWidget";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,9 @@ function DashboardContent({ user }: { user: any }) {
       </div>
 
       {/* KPI Strip */}
+      {/* Getting Started progress widget — shown to all users, dismissible */}
+      <GettingStartedWidget />
+
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Total Batteries", value: batteryStats?.total ?? 0, icon: Battery, change: "+12%", up: true },
