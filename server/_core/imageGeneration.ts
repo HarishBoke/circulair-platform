@@ -1,20 +1,10 @@
 /**
- * Image generation helper using internal ImageService
+ * Image Generation - Independent OpenAI DALL-E 3 implementation
  *
- * Example usage:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "A serene landscape with mountains"
- *   });
- *
- * For editing:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "Add a rainbow to this landscape",
- *     originalImages: [{
- *       url: "https://example.com/original.jpg",
- *       mimeType: "image/jpeg"
- *     }]
- *   });
+ * Primary: OpenAI DALL-E 3 (OPENAI_API_KEY)
+ * Fallback: Manus Forge image service (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
  */
+import OpenAI from "openai";
 import { storagePut } from "server/storage";
 import { ENV } from "./env";
 
@@ -31,25 +21,29 @@ export type GenerateImageResponse = {
   url?: string;
 };
 
-export async function generateImage(
+async function generateViaOpenAI(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
-  }
+  const client = new OpenAI({ apiKey: ENV.openaiApiKey });
+  const response = await client.images.generate({
+    model: ENV.openaiImageModel || "dall-e-3",
+    prompt: options.prompt,
+    n: 1,
+    size: "1024x1024",
+    response_format: "b64_json",
+  });
+  const b64 = (response.data ?? [])[0]?.b64_json;
+  if (!b64) throw new Error("OpenAI image generation returned no image data");
+  const buffer = Buffer.from(b64, "base64");
+  const { url } = await storagePut(`generated/${Date.now()}.png`, buffer, "image/png");
+  return { url };
+}
 
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "images.v1.ImageService/GenerateImage",
-    baseUrl
-  ).toString();
-
+async function generateViaForge(
+  options: GenerateImageOptions
+): Promise<GenerateImageResponse> {
+  const baseUrl = ENV.forgeApiUrl.endsWith("/") ? ENV.forgeApiUrl : `${ENV.forgeApiUrl}/`;
+  const fullUrl = new URL("images.v1.ImageService/GenerateImage", baseUrl).toString();
   const response = await fetch(fullUrl, {
     method: "POST",
     headers: {
@@ -58,35 +52,24 @@ export async function generateImage(
       "connect-protocol-version": "1",
       authorization: `Bearer ${ENV.forgeApiKey}`,
     },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      original_images: options.originalImages || [],
-    }),
+    body: JSON.stringify({ prompt: options.prompt, original_images: options.originalImages || [] }),
   });
-
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+    throw new Error(`Forge image generation failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`);
   }
+  const result = (await response.json()) as { image: { b64Json: string; mimeType: string } };
+  const buffer = Buffer.from(result.image.b64Json, "base64");
+  const { url } = await storagePut(`generated/${Date.now()}.png`, buffer, result.image.mimeType);
+  return { url };
+}
 
-  const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
-    };
-  };
-  const base64Data = result.image.b64Json;
-  const buffer = Buffer.from(base64Data, "base64");
-
-  // Save to S3
-  const { url } = await storagePut(
-    `generated/${Date.now()}.png`,
-    buffer,
-    result.image.mimeType
+export async function generateImage(
+  options: GenerateImageOptions
+): Promise<GenerateImageResponse> {
+  if (ENV.openaiApiKey) return generateViaOpenAI(options);
+  if (ENV.forgeApiUrl && ENV.forgeApiKey) return generateViaForge(options);
+  throw new Error(
+    "Image generation not configured: set OPENAI_API_KEY (or BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY for Manus hosting)"
   );
-  return {
-    url,
-  };
 }

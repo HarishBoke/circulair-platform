@@ -1138,3 +1138,18 @@
 - [x] Residual opacity-modified neutral status classes fixed: bg-zinc-500/10→bg-secondary/50, bg-slate-500/20→bg-secondary/60, etc.
 - [x] Preserved intentional semantic colours: text-red-*, text-emerald-*, text-amber-*, text-sky-*, text-violet-* (status/role indicators)
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 83 (Complete): Full Independence - Replace All Manus-Specific Dependencies
+- [x] Audited all BUILT_IN_FORGE_API usages: LLM (llm.ts), image gen (imageGeneration.ts), voice (voiceTranscription.ts), notifications (notification.ts), storage (storage.ts), maps (map.ts + Map.tsx)
+- [x] Auth confirmed fully independent: JWT email/password in auth.ts, Manus OAuth is dead code
+- [x] Replaced invokeLLM: OpenAI SDK (gpt-4o) primary, Manus Forge fallback when OPENAI_API_KEY absent
+- [x] Replaced generateImage: OpenAI DALL-E 3 primary, Manus Forge fallback
+- [x] Replaced transcribeAudio: OpenAI Whisper API primary, Manus Forge fallback
+- [x] Replaced notifyOwner: Resend email to OWNER_EMAIL primary, Manus Forge webhook fallback
+- [x] Replaced Maps (server): Google Maps API direct (GOOGLE_MAPS_API_KEY), Manus Forge fallback
+- [x] Replaced Maps (client): VITE_GOOGLE_MAPS_API_KEY direct, Manus Forge proxy fallback
+- [x] Replaced storage: AWS S3 SDK (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_S3_BUCKET + AWS_REGION), Manus Forge fallback
+- [x] Rewrote env.ts: all independent keys documented, Manus keys moved to optional fallback section
+- [x] DEPLOYMENT.md updated: full independent deployment section added (Render, Railway, Docker, S3 setup, Google Maps setup)
+- [x] Installed: openai, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+- [x] TypeScript: 0 errors, 420/420 tests passing

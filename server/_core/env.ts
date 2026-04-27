@@ -1,15 +1,46 @@
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
+  // ── Auth & Session ──────────────────────────────────────────────────────────
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
-  isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+
+  // ── Owner identity (used for admin notifications) ────────────────────────────
+  ownerEmail: process.env.OWNER_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? "",
+  ownerName: process.env.OWNER_NAME ?? "Platform Owner",
+
+  // ── OpenAI (LLM + Image generation + Voice transcription) ────────────────────
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  openaiModel: process.env.OPENAI_MODEL ?? "gpt-4o",
+  openaiImageModel: process.env.OPENAI_IMAGE_MODEL ?? "dall-e-3",
+
+  // ── AWS S3 (file storage) ─────────────────────────────────────────────────────
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+  awsRegion: process.env.AWS_REGION ?? "us-east-1",
+  awsS3Bucket: process.env.AWS_S3_BUCKET ?? "",
+
+  // ── Google Maps ───────────────────────────────────────────────────────────────
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+
+  // ── Email (Resend) ────────────────────────────────────────────────────────────
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@circulair.energy",
+
+  // ── Stripe ────────────────────────────────────────────────────────────────────
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
+
+  // ── Runtime ───────────────────────────────────────────────────────────────────
+  isProduction: process.env.NODE_ENV === "production",
+
+  // ── Manus built-in forge (optional — used as fallback when independent keys absent) ──
+  // These are auto-injected by Manus hosting. When deploying independently,
+  // set the above independent keys instead.
+  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+
+  // ── Legacy Manus OAuth (kept for backward compat, not used in active auth) ────
+  appId: process.env.VITE_APP_ID ?? "",
+  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
+  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
 };

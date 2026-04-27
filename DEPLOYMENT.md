@@ -1,21 +1,153 @@
-# Deployment Guide — Circul-AI-r Platform
+# Deployment Guide - Circul-AI-r Platform
 
-This document covers the complete production deployment process for the Circul-AI-r Battery Intelligence Platform, including pre-deployment checks, DNS configuration, secrets management, rollback procedures, and an operational runbook.
+This document covers the complete production deployment process for the Circul-AI-r Battery Intelligence Platform, including independent deployment (Render.com, Railway, Docker), pre-deployment checks, DNS configuration, secrets management, rollback procedures, and an operational runbook.
 
 ---
 
 ## Table of Contents
 
-1. [Deployment Architecture](#deployment-architecture)
-2. [Pre-Deployment Checklist](#pre-deployment-checklist)
-3. [Secrets Configuration](#secrets-configuration)
-4. [DNS & Domain Setup](#dns--domain-setup)
-5. [Publishing to Production](#publishing-to-production)
-6. [Post-Deployment Verification](#post-deployment-verification)
-7. [Rollback Procedure](#rollback-procedure)
-8. [Operational Runbook](#operational-runbook)
-9. [Monitoring & Alerting](#monitoring--alerting)
-10. [Database Operations](#database-operations)
+1. [Independent Deployment (Render / Railway / Docker)](#independent-deployment)
+2. [Deployment Architecture](#deployment-architecture)
+3. [Pre-Deployment Checklist](#pre-deployment-checklist)
+4. [Secrets Configuration](#secrets-configuration)
+5. [DNS & Domain Setup](#dns--domain-setup)
+6. [Publishing to Production](#publishing-to-production)
+7. [Post-Deployment Verification](#post-deployment-verification)
+8. [Rollback Procedure](#rollback-procedure)
+9. [Operational Runbook](#operational-runbook)
+10. [Monitoring & Alerting](#monitoring--alerting)
+11. [Database Operations](#database-operations)
+
+---
+
+## Independent Deployment
+
+The platform is fully portable and runs 100% without Manus infrastructure when the following independent API keys are configured. Every Manus-specific service has a graceful fallback:
+
+| Service | Independent key | Fallback (Manus hosting only) |
+|---|---|---|
+| LLM (GPT-4o) | `OPENAI_API_KEY` | Manus Forge proxy |
+| Image generation (DALL-E 3) | `OPENAI_API_KEY` | Manus Forge proxy |
+| Voice transcription (Whisper) | `OPENAI_API_KEY` | Manus Forge proxy |
+| File storage | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `AWS_S3_BUCKET` | Manus Forge proxy |
+| Maps (server) | `GOOGLE_MAPS_API_KEY` | Manus Forge proxy |
+| Maps (client) | `VITE_GOOGLE_MAPS_API_KEY` | Manus Forge proxy |
+| Email notifications | `RESEND_API_KEY` | Manus Forge webhook |
+
+### Required Environment Variables
+
+```bash
+# Core
+DATABASE_URL=mysql://user:password@host:3306/circulair?ssl={"rejectUnauthorized":true}
+JWT_SECRET=<openssl rand -hex 32>
+OWNER_EMAIL=owner@yourdomain.com
+
+# AI features (LLM + image gen + voice)
+OPENAI_API_KEY=sk-...
+
+# File storage (AWS S3 or S3-compatible)
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=circulair-storage
+
+# Maps
+GOOGLE_MAPS_API_KEY=AIza...
+VITE_GOOGLE_MAPS_API_KEY=AIza...
+
+# Email
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# Payments
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+# IoT (optional)
+MQTT_BROKER_URL=mqtts://broker.hivemq.cloud:8883
+MQTT_USERNAME=circulair
+MQTT_PASSWORD=...
+MQTT_TOPIC_PREFIX=circulair/batteries
+```
+
+### Render.com Deployment
+
+1. Push this repo to GitHub.
+2. Create a new **Web Service** on Render, connect your repo.
+3. **Build Command:** `pnpm install && pnpm build && pnpm db:push`
+4. **Start Command:** `node dist/server/index.js`
+5. **Health Check Path:** `/api/health`
+6. Add all environment variables above in the Render dashboard.
+7. Create a **MySQL** database (or use PlanetScale/TiDB Cloud) and set `DATABASE_URL`.
+
+### Railway.app Deployment
+
+1. Connect your GitHub repo to Railway.
+2. Add a MySQL plugin and copy the `DATABASE_URL`.
+3. Set all environment variables in the Railway dashboard.
+4. Railway auto-detects `pnpm build` and `node dist/server/index.js`.
+
+### Docker Deployment
+
+```dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm build
+EXPOSE 3000
+CMD ["node", "dist/server/index.js"]
+```
+
+```bash
+docker build -t circulair-platform .
+docker run -p 3000:3000 --env-file .env circulair-platform
+```
+
+### S3 Bucket Setup
+
+Create a public-read S3 bucket for file storage:
+
+```bash
+# Create bucket
+aws s3 mb s3://circulair-storage --region us-east-1
+
+# Enable public read (for direct URL access without presigning)
+aws s3api put-bucket-policy --bucket circulair-storage --policy '{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::circulair-storage/*"
+  }]
+}'
+
+# Disable block public access
+aws s3api put-public-access-block --bucket circulair-storage \
+  --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+```
+
+> **S3 alternatives:** Cloudflare R2, MinIO, Backblaze B2 - all are S3-compatible and work with the same `AWS_*` env vars.
+
+### Google Maps API Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Create a new API key.
+3. Enable these APIs: Maps JavaScript API, Geocoding API, Places API (New), Directions API, Distance Matrix API.
+4. Restrict the key to your domain (HTTP referrers for `VITE_GOOGLE_MAPS_API_KEY`, IP for `GOOGLE_MAPS_API_KEY`).
+
+### Health Check
+
+```
+GET /api/health
+```
+
+Returns `{ "status": "ok", "version": "1.0.0", "uptime": 12345 }`. Use this as the health check path in Render/Railway.
+
+---
 
 ---
 

@@ -86,16 +86,27 @@ declare global {
   }
 }
 
-const API_KEY = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
+// Primary: direct Google Maps JS API key (VITE_GOOGLE_MAPS_API_KEY)
+// Fallback: Manus Forge proxy (VITE_FRONTEND_FORGE_API_KEY + VITE_FRONTEND_FORGE_API_URL)
+const DIRECT_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const FORGE_API_KEY = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
 const FORGE_BASE_URL =
   import.meta.env.VITE_FRONTEND_FORGE_API_URL ||
   "https://forge.butterfly-effect.dev";
-const MAPS_PROXY_URL = `${FORGE_BASE_URL}/v1/maps/proxy`;
+
+function getMapsScriptUrl(): string {
+  const libs = "marker,places,geocoding,geometry";
+  if (DIRECT_MAPS_KEY) {
+    return `https://maps.googleapis.com/maps/api/js?key=${DIRECT_MAPS_KEY}&v=weekly&libraries=${libs}`;
+  }
+  // Manus proxy fallback
+  return `${FORGE_BASE_URL}/v1/maps/proxy/maps/api/js?key=${FORGE_API_KEY}&v=weekly&libraries=${libs}`;
+}
 
 function loadMapScript() {
   return new Promise(resolve => {
     const script = document.createElement("script");
-    script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
+    script.src = getMapsScriptUrl();
     script.async = true;
     script.crossOrigin = "anonymous";
     script.onload = () => {

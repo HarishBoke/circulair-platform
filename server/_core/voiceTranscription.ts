@@ -1,4 +1,9 @@
 /**
+ * Voice Transcription - Independent OpenAI Whisper implementation
+ *
+ * Primary: OpenAI Whisper API (OPENAI_API_KEY)
+ * Fallback: Manus Forge Whisper proxy (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+ *
  * Voice transcription helper using internal Speech-to-Text service
  *
  * Frontend implementation guide:
@@ -25,6 +30,7 @@
  * });
  * ```
  */
+import OpenAI from "openai";
 import { ENV } from "./env";
 
 export type TranscribeOptions = {
@@ -70,23 +76,57 @@ export type TranscriptionError = {
  * @param options - Audio data and metadata
  * @returns Transcription result or error
  */
+// ── OpenAI Whisper primary path ───────────────────────────────────────────────
+async function transcribeViaOpenAI(
+  options: TranscribeOptions
+): Promise<TranscriptionResponse | TranscriptionError> {
+  try {
+    const client = new OpenAI({ apiKey: ENV.openaiApiKey });
+    const audioResponse = await fetch(options.audioUrl);
+    if (!audioResponse.ok) {
+      return { error: "Failed to download audio file", code: "INVALID_FORMAT", details: `HTTP ${audioResponse.status}` };
+    }
+    const buffer = Buffer.from(await audioResponse.arrayBuffer());
+    if (buffer.length > 16 * 1024 * 1024) {
+      return { error: "Audio file exceeds 16 MB limit", code: "FILE_TOO_LARGE" };
+    }
+    const mimeType = audioResponse.headers.get("content-type") || "audio/mpeg";
+    const ext = getFileExtension(mimeType);
+    const file = new File([buffer], `audio.${ext}`, { type: mimeType });
+    const prompt = options.prompt || (options.language ? `Transcribe the user's voice to text, the user's working language is ${getLanguageName(options.language)}` : "Transcribe the user's voice to text");
+    const result = await client.audio.transcriptions.create({
+      model: "whisper-1",
+      file,
+      language: options.language,
+      prompt,
+      response_format: "verbose_json",
+    });
+    return result as unknown as TranscriptionResponse;
+  } catch (err) {
+    return { error: "OpenAI Whisper transcription failed", code: "SERVICE_ERROR", details: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export async function transcribeAudio(
   options: TranscribeOptions
 ): Promise<TranscriptionResponse | TranscriptionError> {
+  // Use OpenAI Whisper directly if API key is available
+  if (ENV.openaiApiKey) return transcribeViaOpenAI(options);
+
   try {
     // Step 1: Validate environment configuration
     if (!ENV.forgeApiUrl) {
       return {
         error: "Voice transcription service is not configured",
         code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_URL is not set"
+        details: "Set OPENAI_API_KEY or BUILT_IN_FORGE_API_URL"
       };
     }
     if (!ENV.forgeApiKey) {
       return {
         error: "Voice transcription service authentication is missing",
         code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_KEY is not set"
+        details: "Set OPENAI_API_KEY or BUILT_IN_FORGE_API_KEY"
       };
     }
 
