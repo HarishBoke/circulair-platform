@@ -1,6 +1,122 @@
 # Deployment Guide - Circul-AI-r Platform
 
-This document covers the complete production deployment process for the Circul-AI-r Battery Intelligence Platform, including independent deployment (Render.com, Railway, Docker), pre-deployment checks, DNS configuration, secrets management, rollback procedures, and an operational runbook.
+This document covers the complete production deployment process for the Circul-AI-r Battery Intelligence Platform. The **primary deployment target** is **Render.com** with **GitHub Actions CI/CD** from the **Setoos** GitHub organisation.
+
+---
+
+## GitHub Actions + Render CI/CD (Primary)
+
+### Architecture
+
+```
+GitHub (Setoos/circulair-platform)
+  └── push to main
+        ├── GitHub Actions
+        │     ├── 1. TypeScript check (pnpm check)
+        │     ├── 2. Vitest tests (420 tests)
+        │     ├── 3. Production build (Vite + esbuild)
+        │     └── 4. Trigger Render deploy via API → poll /api/health
+        └── Render.com Web Service
+              ├── Node.js 22, Singapore region
+              ├── Custom domain: circulair.energy
+              └── MySQL/TiDB (external)
+```
+
+### Step 1 — Push to Setoos GitHub Organisation
+
+1. Create a **private** repository at https://github.com/organizations/Setoos/repositories/new named `circulair-platform`.
+2. Add the remote and push:
+
+```bash
+git remote add setoos https://github.com/Setoos/circulair-platform.git
+git push setoos main
+```
+
+### Step 2 — Add GitHub Repository Secrets
+
+Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+| Secret | Description |
+|---|---|
+| `DATABASE_URL` | MySQL/TiDB connection string |
+| `JWT_SECRET` | 64-char random string (`openssl rand -hex 32`) |
+| `OPENAI_API_KEY` | OpenAI API key (LLM + image + voice) |
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `AWS_REGION` | S3 bucket region (e.g. `eu-west-1`) |
+| `AWS_S3_BUCKET` | S3 bucket name |
+| `GOOGLE_MAPS_API_KEY` | Server-side Google Maps key |
+| `VITE_GOOGLE_MAPS_API_KEY` | Client-side Google Maps key |
+| `RESEND_API_KEY` | Resend email API key |
+| `RESEND_FROM_EMAIL` | Verified sender address |
+| `OWNER_EMAIL` | Owner email for system alerts |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `MQTT_BROKER_URL` | MQTT broker URL |
+| `MQTT_USERNAME` | MQTT broker username |
+| `MQTT_PASSWORD` | MQTT broker password |
+| `RENDER_API_KEY` | Render API key — https://dashboard.render.com/u/settings#api-keys |
+| `RENDER_SERVICE_ID` | Render service ID (format: `srv-xxxxxxxxxxxxxxxx`) |
+
+### Step 3 — Create the Render Web Service
+
+1. Go to https://dashboard.render.com/new/web
+2. Connect the `Setoos/circulair-platform` repository
+3. Configure:
+
+| Setting | Value |
+|---|---|
+| Name | `circulair-platform` |
+| Region | Singapore |
+| Branch | `main` |
+| Runtime | Node |
+| Build Command | `pnpm install --frozen-lockfile && pnpm build` |
+| Start Command | `node dist/index.js` |
+| Health Check Path | `/api/health` |
+| Auto-Deploy | Yes |
+
+4. Add all environment variables from Step 2 in the Render dashboard, plus:
+
+| Key | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `VITE_APP_TITLE` | `Circul-AI-r Platform` |
+| `OWNER_NAME` | `Setoos` |
+| `MQTT_TOPIC_PREFIX` | `CAI_` |
+| `RESEND_FROM_EMAIL` | `noreply@circulair.energy` |
+
+5. After creation, copy the **Service ID** from Settings and add it as `RENDER_SERVICE_ID` in GitHub Secrets.
+
+### Step 4 — Run Database Migrations
+
+```bash
+DATABASE_URL="mysql://..." pnpm db:push
+```
+
+### Step 5 — Register Stripe Webhook
+
+1. Go to https://dashboard.stripe.com/webhooks → **Add endpoint**
+2. URL: `https://circulair.energy/api/stripe/webhook`
+3. Events: `checkout.session.completed`, `payment_intent.succeeded`, `invoice.paid`
+4. Copy the signing secret → update `STRIPE_WEBHOOK_SECRET` in both GitHub Secrets and Render env vars
+
+### CI/CD Workflow Summary
+
+| Trigger | Jobs |
+|---|---|
+| Push to `main` | typecheck → test → build → deploy to Render |
+| Pull request | typecheck → test → build → PR comment |
+| Weekly Monday | `pnpm audit` security scan |
+
+### Rollback via Render
+
+1. Go to Render dashboard → **Deploys**
+2. Click any previous successful deploy → **Rollback to this deploy**
+
+Or revert the commit in GitHub and push to `main` — CI/CD redeploys automatically.
+
+---
 
 ---
 

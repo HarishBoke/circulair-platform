@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: circulair-platform
+    runtime: node
+    region: singapore
+    plan: starter
+    branch: main
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
+    startCommand: node dist/index.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
+      # ── Core ──────────────────────────────────────────────────────────────────
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OWNER_NAME
+        value: Platform Owner
+      # ── OpenAI (LLM + Image + Voice) ──────────────────────────────────────────
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: OPENAI_IMAGE_MODEL
+        value: dall-e-3
+      # ── AWS S3 ────────────────────────────────────────────────────────────────
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+      # ── Google Maps ───────────────────────────────────────────────────────────
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
+      # ── Email (Resend) ────────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: noreply@circulair.energy
+      # ── Stripe ────────────────────────────────────────────────────────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      # ── MQTT ─────────────────────────────────────────────────────────────────
+      - key: MQTT_BROKER_URL
+        sync: false
+      - key: MQTT_USERNAME
+        sync: false
+      - key: MQTT_PASSWORD
+        sync: false
+      - key: MQTT_TOPIC_PREFIX
+        value: CAI_
+      # ── App Identity ─────────────────────────────────────────────────────────
+      - key: VITE_APP_TITLE
+        value: Circul-AI-r Platform

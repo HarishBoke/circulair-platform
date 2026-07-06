@@ -1153,3 +1153,23 @@
 - [x] DEPLOYMENT.md updated: full independent deployment section added (Render, Railway, Docker, S3 setup, Google Maps setup)
 - [x] Installed: openai, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
 - [x] TypeScript: 0 errors, 420/420 tests passing
+
+## Phase 84 (Complete): Render.com + GitHub Actions CI/CD Setup (Setoos Org)
+
+### CI/CD Files Added
+- [x] .github/workflows/ci.yml - main branch pipeline: typecheck -> test -> build -> deploy to Render via API
+- [x] .github/workflows/pr-preview.yml - PR pipeline: typecheck -> test -> build -> PR status comment
+- [x] .github/workflows/security.yml - weekly pnpm audit (Monday 08:00 UTC)
+- [x] render.yaml - Render Blueprint: web service, env var declarations, health check /api/health
+- [x] .env.example - all 20 required env vars documented with descriptions
+- [x] DEPLOYMENT.md - updated with Render + GitHub CI/CD step-by-step guide (Steps 1-5)
+- [x] package.json - start script fixed to "node dist/index.js" (was "dist/server/index.js")
+- [x] Build confirmed: dist/index.js (485 KB) + dist/public/ generated in 48s
+- [x] TypeScript: 0 errors, 420/420 tests passing
+
+### Required GitHub Secrets (20 total)
+DATABASE_URL, JWT_SECRET, OPENAI_API_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+AWS_REGION, AWS_S3_BUCKET, GOOGLE_MAPS_API_KEY, VITE_GOOGLE_MAPS_API_KEY,
+RESEND_API_KEY, RESEND_FROM_EMAIL, OWNER_EMAIL, STRIPE_SECRET_KEY,
+STRIPE_WEBHOOK_SECRET, VITE_STRIPE_PUBLISHABLE_KEY, MQTT_BROKER_URL,
+MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
