@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("./db", () => {
   const mockInsert = vi.fn().mockReturnValue({
     values: vi.fn().mockReturnValue({
-      $returningId: vi.fn().mockResolvedValue([{ id: 1 }]),
+      returning: vi.fn().mockResolvedValue([{ id: 1 }]),
     }),
   });
 

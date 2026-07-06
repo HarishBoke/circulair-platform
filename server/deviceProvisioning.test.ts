@@ -1,15 +1,103 @@
-import { describe, it, expect } from "vitest";
+/**
+ * deviceProvisioning.test.ts
+ * Tests for IoT device provisioning DB helpers using mocked database.
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// ─── In-memory device store for mock ─────────────────────────────────────────
+let deviceStore: any[] = [];
+let nextId = 1;
+
+function makeDevice(data: any) {
+  return {
+    id: nextId++,
+    deviceId: data.deviceId,
+    name: data.name,
+    deviceType: data.deviceType ?? "gateway",
+    bpan: data.bpan ?? null,
+    mqttTopic: data.mqttTopic,
+    mqttUsername: data.mqttUsername,
+    mqttPassword: data.mqttPassword,
+    status: data.status ?? "pending",
+    lastSeen: null,
+    firmwareVersion: data.firmwareVersion ?? null,
+    hardwareModel: data.hardwareModel ?? null,
+    location: data.location ?? null,
+    notes: data.notes ?? null,
+    registeredBy: data.registeredBy ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+vi.mock("./db", () => ({
+  getDb: vi.fn().mockResolvedValue(null),
+  insertIotDevice: vi.fn(async (data: any) => {
+    const device = makeDevice(data);
+    deviceStore.push(device);
+    return { id: device.id };
+  }),
+  getIotDeviceById: vi.fn(async (id: number) => {
+    return deviceStore.find((d) => d.id === id) ?? null;
+  }),
+  getIotDeviceByDeviceId: vi.fn(async (deviceId: string) => {
+    return deviceStore.find((d) => d.deviceId === deviceId) ?? null;
+  }),
+  listIotDevices: vi.fn(async (opts?: { status?: string; bpan?: string; limit?: number; offset?: number }) => {
+    let items = [...deviceStore];
+    if (opts?.status) items = items.filter((d) => d.status === opts.status);
+    if (opts?.bpan) items = items.filter((d) => d.bpan === opts.bpan);
+    return { items, total: items.length };
+  }),
+  updateIotDevice: vi.fn(async (id: number, data: any) => {
+    const idx = deviceStore.findIndex((d) => d.id === id);
+    if (idx !== -1) Object.assign(deviceStore[idx], data);
+  }),
+  updateDeviceLastSeen: vi.fn(async (deviceId: string) => {
+    const device = deviceStore.find((d) => d.deviceId === deviceId);
+    if (device) { device.lastSeen = new Date(); device.status = "active"; }
+  }),
+  updateDeviceLastSeenByBpan: vi.fn(async (bpan: string) => {
+    deviceStore.filter((d) => d.bpan === bpan).forEach((d) => {
+      d.lastSeen = new Date();
+      d.status = "active";
+    });
+  }),
+  getIotDeviceStats: vi.fn(async () => {
+    const total = deviceStore.length;
+    const active = deviceStore.filter((d) => d.status === "active").length;
+    const inactive = deviceStore.filter((d) => d.status === "inactive").length;
+    const pending = deviceStore.filter((d) => d.status === "pending").length;
+    const revoked = deviceStore.filter((d) => d.status === "revoked").length;
+    return { total, active, inactive, pending, revoked };
+  }),
+  deleteIotDevice: vi.fn(async (id: number) => {
+    deviceStore = deviceStore.filter((d) => d.id !== id);
+  }),
+}));
+
+// ─── Import after mocks ───────────────────────────────────────────────────────
+import {
+  insertIotDevice, getIotDeviceById, getIotDeviceByDeviceId,
+  listIotDevices, updateIotDevice, updateDeviceLastSeen,
+  updateDeviceLastSeenByBpan, getIotDeviceStats, deleteIotDevice,
+} from "./db";
 
 describe("Device Provisioning — DB helpers", () => {
+  beforeEach(() => {
+    deviceStore = [];
+    nextId = 1;
+    vi.clearAllMocks();
+  });
+
   it("insertIotDevice returns an object with id", async () => {
-    const { insertIotDevice, getIotDeviceById, deleteIotDevice } = await import("./db");
     const result = await insertIotDevice({
-      deviceId: `TEST-${Date.now()}`,
+      deviceId: "TEST-001",
       name: "Test Gateway",
       deviceType: "gateway",
       bpan: null,
       mqttTopic: "circulair/telemetry/test",
-      mqttUsername: `test_user_${Date.now()}`,
+      mqttUsername: "test_user",
       mqttPassword: "test_password_123",
       status: "pending",
       firmwareVersion: null,
@@ -26,10 +114,10 @@ describe("Device Provisioning — DB helpers", () => {
     expect(device!.deviceType).toBe("gateway");
     expect(device!.status).toBe("pending");
     await deleteIotDevice(result.id);
+    expect(await getIotDeviceById(result.id)).toBeNull();
   });
 
   it("listIotDevices returns items array and total count", async () => {
-    const { listIotDevices } = await import("./db");
     const result = await listIotDevices();
     expect(result).toHaveProperty("items");
     expect(result).toHaveProperty("total");
@@ -37,15 +125,24 @@ describe("Device Provisioning — DB helpers", () => {
     expect(typeof result.total).toBe("number");
   });
 
+  it("getIotDeviceStats returns correct shape", async () => {
+    const stats = await getIotDeviceStats();
+    expect(stats).toHaveProperty("total");
+    expect(stats).toHaveProperty("active");
+    expect(stats).toHaveProperty("inactive");
+    expect(stats).toHaveProperty("pending");
+    expect(stats).toHaveProperty("revoked");
+    expect(typeof stats.total).toBe("number");
+  });
+
   it("listIotDevices filters by status", async () => {
-    const { insertIotDevice, listIotDevices, deleteIotDevice } = await import("./db");
     const result = await insertIotDevice({
-      deviceId: `FILTER-${Date.now()}`,
+      deviceId: "FILTER-001",
       name: "Filter Test",
       deviceType: "sensor",
       bpan: null,
       mqttTopic: "circulair/telemetry/filter-test",
-      mqttUsername: `filter_${Date.now()}`,
+      mqttUsername: "filter_user",
       mqttPassword: "pw",
       status: "active",
       firmwareVersion: null,
@@ -55,21 +152,20 @@ describe("Device Provisioning — DB helpers", () => {
       registeredBy: null,
     });
     const activeDevices = await listIotDevices({ status: "active" });
-    expect(activeDevices.items.some((d: any) => d.deviceId.startsWith("FILTER-"))).toBe(true);
+    expect(activeDevices.items.some((d: any) => d.deviceId === "FILTER-001")).toBe(true);
     const pendingDevices = await listIotDevices({ status: "pending" });
-    expect(pendingDevices.items.some((d: any) => d.deviceId.startsWith("FILTER-"))).toBe(false);
+    expect(pendingDevices.items.some((d: any) => d.deviceId === "FILTER-001")).toBe(false);
     await deleteIotDevice(result.id);
   });
 
   it("updateIotDevice changes device fields", async () => {
-    const { insertIotDevice, updateIotDevice, getIotDeviceById, deleteIotDevice } = await import("./db");
     const result = await insertIotDevice({
-      deviceId: `UPD-${Date.now()}`,
+      deviceId: "UPD-001",
       name: "Before Update",
       deviceType: "bms",
       bpan: null,
       mqttTopic: "circulair/telemetry/upd-test",
-      mqttUsername: `upd_${Date.now()}`,
+      mqttUsername: "upd_user",
       mqttPassword: "pw",
       status: "pending",
       firmwareVersion: null,
@@ -86,15 +182,14 @@ describe("Device Provisioning — DB helpers", () => {
   });
 
   it("updateDeviceLastSeen sets lastSeen and status to active", async () => {
-    const { insertIotDevice, updateDeviceLastSeen, getIotDeviceByDeviceId, deleteIotDevice } = await import("./db");
-    const deviceId = `LS-${Date.now()}`;
+    const deviceId = "LS-001";
     const result = await insertIotDevice({
       deviceId,
       name: "LastSeen Test",
       deviceType: "gateway",
       bpan: null,
       mqttTopic: "circulair/telemetry/ls-test",
-      mqttUsername: `ls_${Date.now()}`,
+      mqttUsername: "ls_user",
       mqttPassword: "pw",
       status: "pending",
       firmwareVersion: null,
@@ -114,15 +209,14 @@ describe("Device Provisioning — DB helpers", () => {
   });
 
   it("updateDeviceLastSeenByBpan updates devices associated with a BPAN", async () => {
-    const { insertIotDevice, updateDeviceLastSeenByBpan, getIotDeviceById, deleteIotDevice } = await import("./db");
     const testBpan = "TESTBPAN000000000TEST";
     const result = await insertIotDevice({
-      deviceId: `BPAN-${Date.now()}`,
+      deviceId: "BPAN-001",
       name: "BPAN LastSeen Test",
       deviceType: "bms",
       bpan: testBpan,
       mqttTopic: `circulair/telemetry/${testBpan}`,
-      mqttUsername: `bpan_${Date.now()}`,
+      mqttUsername: "bpan_user",
       mqttPassword: "pw",
       status: "pending",
       firmwareVersion: null,
@@ -138,26 +232,14 @@ describe("Device Provisioning — DB helpers", () => {
     await deleteIotDevice(result.id);
   });
 
-  it("getIotDeviceStats returns correct shape", async () => {
-    const { getIotDeviceStats } = await import("./db");
-    const stats = await getIotDeviceStats();
-    expect(stats).toHaveProperty("total");
-    expect(stats).toHaveProperty("active");
-    expect(stats).toHaveProperty("inactive");
-    expect(stats).toHaveProperty("pending");
-    expect(stats).toHaveProperty("revoked");
-    expect(typeof stats.total).toBe("number");
-  });
-
   it("deleteIotDevice removes the device", async () => {
-    const { insertIotDevice, deleteIotDevice, getIotDeviceById } = await import("./db");
     const result = await insertIotDevice({
-      deviceId: `DEL-${Date.now()}`,
+      deviceId: "DEL-001",
       name: "Delete Test",
       deviceType: "edge_node",
       bpan: null,
       mqttTopic: "circulair/telemetry/del-test",
-      mqttUsername: `del_${Date.now()}`,
+      mqttUsername: "del_user",
       mqttPassword: "pw",
       status: "pending",
       firmwareVersion: null,

@@ -634,7 +634,7 @@ export async function listConsentLogs(limit = 100) {
 export async function insertIotDevice(data: InsertIotDevice) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(iotDevices).values(data).returning({ id: undefined as any });
+  const [result] = await db.insert(iotDevices).values(data).returning({ id: iotDevices.id });
   return result;
 }
 

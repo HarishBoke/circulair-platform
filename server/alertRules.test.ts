@@ -8,6 +8,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock the db module so alertCooldown's DB check doesn't attempt a real connection
+vi.mock("./db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return {
+    ...actual,
+    getDb: vi.fn().mockResolvedValue(null), // return null so DB path is skipped
+  };
+});
+
 import { evaluateAlertRules } from "./db";
 import { shouldCreateAlert, recordAlert, clearCooldown } from "./alertCooldown";
 

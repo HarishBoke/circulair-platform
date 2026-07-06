@@ -31,6 +31,30 @@ function makeMockDb() {
   return new Proxy({}, dbHandler);
 }
 
+// Separate insert mock that supports .returning() for PostgreSQL
+function makeMockDbWithInsert(insertResult: any[]) {
+  const insertChain = {
+    values: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue(insertResult),
+    }),
+  };
+  const handler: ProxyHandler<object> = {
+    get(_target, prop) {
+      if (prop === "then") {
+        const val = queryResult;
+        return (res: (v: any) => void) => res(val);
+      }
+      return (..._args: any[]) => new Proxy({}, handler);
+    },
+  };
+  return {
+    insert: vi.fn().mockReturnValue(insertChain),
+    select: vi.fn().mockImplementation(() => new Proxy({}, handler)),
+    update: vi.fn().mockImplementation(() => new Proxy({}, handler)),
+    delete: vi.fn().mockImplementation(() => new Proxy({}, handler)),
+  };
+}
+
 vi.mock("./db", () => ({
   getDb: vi.fn(async () => makeMockDb()),
 }));
@@ -170,7 +194,8 @@ describe("Wiki Feedback Review System", () => {
 
   describe("submitFeedback", () => {
     it("inserts feedback with all fields", async () => {
-      queryResult = [{ insertId: 99 }];
+      const { getDb } = await import("./db");
+      vi.mocked(getDb).mockResolvedValueOnce(makeMockDbWithInsert([{ id: 99 }]) as any);
       const { submitFeedback } = await import("./db-wiki");
       const result = await submitFeedback({
         articleId: "platform-overview",
@@ -184,9 +209,9 @@ describe("Wiki Feedback Review System", () => {
       });
       expect(result).toEqual({ id: 99 });
     });
-
     it("inserts feedback with minimal fields", async () => {
-      queryResult = [{ insertId: 100 }];
+      const { getDb } = await import("./db");
+      vi.mocked(getDb).mockResolvedValueOnce(makeMockDbWithInsert([{ id: 100 }]) as any);
       const { submitFeedback } = await import("./db-wiki");
       const result = await submitFeedback({
         articleId: "data-model",

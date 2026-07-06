@@ -6,7 +6,11 @@
 
 import puppeteer from "puppeteer-core";
 
-const CHROMIUM_PATH = "/usr/bin/chromium-browser";
+import { existsSync } from "fs";
+const CHROMIUM_PATH = process.env.CHROMIUM_PATH ||
+  ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]
+    .find((p) => existsSync(p)) ||
+  "/usr/bin/chromium";
 const LAUNCH_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
