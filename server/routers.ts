@@ -775,8 +775,8 @@ Respond with JSON only: { "triageReason": string, "maintenanceRecommendations": 
           currency: input.currency,
           message: input.message ?? null,
           status: "pending",
-        });
-        return { success: true, offerId: (offer as any).insertId };
+        }).returning({ id: marketplaceOffers.id });
+        return { success: true, offerId: offer.id };
       }),
     // Create a Stripe checkout session for an accepted/pending offer
     createCheckout: protectedProcedure
@@ -3390,8 +3390,8 @@ Rules:
           quantity: input.quantity,
           deliveryMonth: input.deliveryMonth,
           maxPricePerKwh: input.maxPricePerKwh ? String(input.maxPricePerKwh) : null,
-        });
-        return { success: true, id: (result as any).insertId };
+        }).returning({ id: forwardOrders.id });
+        return { success: true, id: result.id };
       }),
     listForwardOrders: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
@@ -3460,8 +3460,8 @@ Rules:
           bpan: input.bpanFilter ?? null,
           expiresAt,
           requestMessage: `Org: ${input.recipientOrgName} (${input.recipientOrgId})`,
-        });
-        return { success: true, id: (result as any).insertId };
+        }).returning({ id: dataSharingAgreements.id });
+        return { success: true, id: result.id };
       }),
     revokeConsent: protectedProcedure
       .input(z.object({ id: z.number() }))

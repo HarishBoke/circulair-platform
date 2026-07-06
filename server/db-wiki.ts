@@ -20,7 +20,7 @@ export async function submitFeedback(data: {
   userEmail?: string;
 }) {
   const db = await getDb();
-  const result = await db!.insert(wikiFeedback).values({
+  const [result] = await db!.insert(wikiFeedback).values({
     articleId: data.articleId,
     articleTitle: data.articleTitle,
     type: data.type,
@@ -31,8 +31,8 @@ export async function submitFeedback(data: {
     userId: data.userId ?? null,
     userName: data.userName ?? null,
     userEmail: data.userEmail ?? null,
-  });
-  return { id: result[0].insertId };
+  }).returning({ id: wikiFeedback.id });
+  return { id: result.id };
 }
 
 export async function listFeedback(opts: {
@@ -255,11 +255,11 @@ export async function getUserProgress(userId: number) {
 export async function completeStep(userId: number, stepKey: string) {
   const db = await getDb();
   
-  // Upsert — try insert, on duplicate key update
+  // Upsert — insert or update on conflict
   await db!.execute(
-    sql`INSERT INTO tutorial_progress (userId, stepKey, completed, completedAt)
+    sql`INSERT INTO tutorial_progress ("userId", "stepKey", completed, "completedAt")
         VALUES (${userId}, ${stepKey}, TRUE, NOW())
-        ON DUPLICATE KEY UPDATE completed = TRUE, completedAt = NOW()`
+        ON CONFLICT ("userId", "stepKey") DO UPDATE SET completed = TRUE, "completedAt" = NOW()`
   );
   
   return { success: true };

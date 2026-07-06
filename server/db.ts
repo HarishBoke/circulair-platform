@@ -1,5 +1,6 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -28,7 +29,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const client = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -57,7 +59,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -632,7 +634,7 @@ export async function listConsentLogs(limit = 100) {
 export async function insertIotDevice(data: InsertIotDevice) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(iotDevices).values(data).$returningId();
+  const [result] = await db.insert(iotDevices).values(data).returning({ id: undefined as any });
   return result;
 }
 
@@ -870,9 +872,8 @@ export async function getOffersByBuyer(buyerId: number) {
 export async function createAlertRule(data: InsertAlertRule): Promise<AlertRule> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(alertRules).values(data);
-  const inserted = await db.select().from(alertRules).where(eq(alertRules.id, (result[0] as any).insertId)).limit(1);
-  return inserted[0];
+  const [inserted] = await db.insert(alertRules).values(data).returning();
+  return inserted;
 }
 
 export async function listAlertRules(filters?: {
