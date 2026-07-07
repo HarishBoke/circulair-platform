@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -404,6 +404,13 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   useEffect(() => { setMobileOpen(false); }, [location]);
 
+  // Track whether the main content area has been scrolled — used to show header shadow
+  const [scrolled, setScrolled] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const handleScroll = useCallback(() => {
+    setScrolled((mainRef.current?.scrollTop ?? 0) > 4);
+  }, []);
+
   if (loading) return <LoadingScreen />;
   if (!isAuthenticated) return <AuthScreen />;
 
@@ -539,7 +546,9 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Topbar — sticky so it stays visible while page content scrolls */}
         <header
-          className="sticky top-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0"
+          className={`sticky top-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0 transition-shadow duration-300 ease-out${
+            scrolled ? " shadow-[0_2px_16px_0_oklch(0_0_0/0.18)]" : ""
+          }`}
           role="banner"
           style={{ height: "52px" }}
         >
@@ -588,7 +597,13 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         </header>
 
         {/* Page Content — scrolls independently under the sticky header */}
-        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
+        <main
+          id="main-content"
+          ref={mainRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto"
+          tabIndex={-1}
+        >
           {children}
         </main>
       </div>
