@@ -165,8 +165,11 @@
   * { @apply border-border; }
 
   /* color-scheme switches with theme */
-  html            { color-scheme: light; }
+  html            { color-scheme: light; height: 100%; overflow: hidden; }
   html.dark       { color-scheme: dark; }
+
+  /* Prevent body scroll — all scrolling happens inside the app shell's <main> */
+  body            { height: 100%; overflow: hidden; }
 
   /* ── Smooth theme transition ──────────────────────────────────────────────
    * Applied to every element so background, text, border, and shadow colors

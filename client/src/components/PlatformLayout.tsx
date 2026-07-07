@@ -545,7 +545,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       <div className="flex-1 flex flex-col min-w-0 relative z-10 overflow-hidden">
         {/* Topbar — fixed at top of the right column, never scrolls away */}
         <header
-          className={`flex-shrink-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md transition-shadow duration-300 ease-out${
+          className={`flex-shrink-0 sticky top-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md transition-shadow duration-300 ease-out${
             scrolled ? " shadow-[0_2px_16px_0_oklch(0_0_0/0.18)]" : ""
           }`}
           role="banner"
