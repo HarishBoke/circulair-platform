@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 
 type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme?: () => void;
+  toggleTheme?: (event?: React.MouseEvent) => void;
   switchable: boolean;
 }
 
@@ -14,6 +14,19 @@ interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   switchable?: boolean;
+}
+
+/** Apply the .dark class to <html> and update localStorage */
+function applyTheme(theme: Theme, switchable: boolean) {
+  const root = document.documentElement;
+  if (theme === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+  if (switchable) {
+    localStorage.setItem("theme", theme);
+  }
 }
 
 export function ThemeProvider({
@@ -29,22 +42,51 @@ export function ThemeProvider({
     return defaultTheme;
   });
 
+  // Sync on mount and whenever theme changes
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
+    applyTheme(theme, switchable);
   }, [theme, switchable]);
 
   const toggleTheme = switchable
-    ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
+    ? (event?: React.MouseEvent) => {
+        const nextTheme: Theme = theme === "light" ? "dark" : "light";
+
+        // Use the View Transition API for a smooth circular ripple if available
+        const vt = (document as any).startViewTransition;
+        if (vt && event) {
+          // Capture click position for the radial clip-path origin
+          const x = event.clientX;
+          const y = event.clientY;
+          const endRadius = Math.hypot(
+            Math.max(x, window.innerWidth - x),
+            Math.max(y, window.innerHeight - y)
+          );
+
+          const transition = vt(() => {
+            applyTheme(nextTheme, switchable);
+            setTheme(nextTheme);
+          });
+
+          transition.ready.then(() => {
+            const clipPath = [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`,
+            ];
+            document.documentElement.animate(
+              { clipPath },
+              {
+                duration: 400,
+                easing: "ease-in-out",
+                pseudoElement: "::view-transition-new(root)",
+              }
+            );
+          }).catch(() => {
+            // Transition animation failed — theme already applied, no action needed
+          });
+        } else {
+          // Fallback: CSS transition handles the visual change (0.3s ease on all props)
+          setTheme(nextTheme);
+        }
       }
     : undefined;
 

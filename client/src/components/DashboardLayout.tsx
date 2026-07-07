@@ -224,12 +224,18 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 {switchable && toggleTheme && (
-                  <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
-                    {theme === "dark" ? (
-                      <><Sun className="mr-2 h-4 w-4" /><span>Light mode</span></>
-                    ) : (
-                      <><Moon className="mr-2 h-4 w-4" /><span>Dark mode</span></>
-                    )}
+                  <DropdownMenuItem onClick={(e) => toggleTheme(e as unknown as React.MouseEvent)} className="cursor-pointer">
+                    <span
+                      key={theme}
+                      className="flex items-center"
+                      style={{ animation: "theme-icon-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}
+                    >
+                      {theme === "dark" ? (
+                        <><Sun className="mr-2 h-4 w-4" /><span>Light mode</span></>
+                      ) : (
+                        <><Moon className="mr-2 h-4 w-4" /><span>Dark mode</span></>
+                      )}
+                    </span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem

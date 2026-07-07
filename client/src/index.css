@@ -168,6 +168,32 @@
   html            { color-scheme: light; }
   html.dark       { color-scheme: dark; }
 
+  /* ── Smooth theme transition ──────────────────────────────────────────────
+   * Applied to every element so background, text, border, and shadow colors
+   * all cross-fade when the .dark class is toggled on <html>.
+   * The `prefers-reduced-motion` block disables it for users who opt out.
+   * ──────────────────────────────────────────────────────────────────────── */
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 0.3s ease,
+      border-color     0.3s ease,
+      color            0.3s ease,
+      fill             0.3s ease,
+      stroke           0.3s ease,
+      box-shadow       0.3s ease,
+      opacity          0.15s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
@@ -223,6 +249,26 @@
 @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes blink    { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── Theme toggle icon spring-in animation ── */
+@keyframes theme-icon-in {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.15) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ── View Transition API — circular ripple for theme switch ── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+}
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 18px oklch(0.74 0.18 155 / 35%); }
   50%       { box-shadow: 0 0 32px oklch(0.74 0.18 155 / 60%); }

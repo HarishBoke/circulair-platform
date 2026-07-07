@@ -368,12 +368,21 @@ function ThemeToggleButton() {
   if (!switchable || !toggleTheme) return null;
   return (
     <button
-      onClick={toggleTheme}
-      className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+      onClick={(e) => toggleTheme(e)}
+      className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors overflow-hidden group"
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {theme === "dark" ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+      {/* Icon cross-fade animation */}
+      <span
+        key={theme}
+        className="block transition-all duration-300 ease-in-out"
+        style={{
+          animation: "theme-icon-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        }}
+      >
+        {theme === "dark" ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+      </span>
     </button>
   );
 }
