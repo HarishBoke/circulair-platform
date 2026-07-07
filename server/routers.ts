@@ -6,7 +6,6 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
-import bcrypt from "bcryptjs";
 import {
   createBattery, getBatteryByBpan, getBatteryById, listBatteries, updateBatteryStatus, getBatteryStats,
   insertTelemetry, getLatestTelemetry, getTelemetryHistory, getThermalAnomalies,
@@ -20,7 +19,6 @@ import {
   createChatSession, getChatSessions, addChatMessage, getChatMessages,
   getPlatformKpis, getAllUsers, upsertUser,
   listUsersAdmin, getUserRoleStats, updateUserRoleById, createRoleAuditEntry, getRoleAuditLog,
-  getUserByEmail, createLocalUser, getUserByOpenId,
   getMonthlyBatteryActivity, getSohDistribution, getSohTrend,
   getChemistryDistribution, getTriageDistribution, getMarketplaceWeeklyActivity,
   insertConsentLog,
@@ -155,42 +153,6 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-    // ── TEMPORARY: one-time admin bootstrap — remove after first use ──────────
-    bootstrapAdmin: publicProcedure
-      .input(z.object({ secret: z.string() }))
-      .mutation(async ({ input }) => {
-        const BOOTSTRAP_SECRET = process.env.ADMIN_BOOTSTRAP_SECRET ?? "";
-        if (!BOOTSTRAP_SECRET || input.secret !== BOOTSTRAP_SECRET) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid bootstrap secret" });
-        }
-        const email = "admin@circulair.energy";
-        const password = "CirculAIr@Admin2026!";
-        const existing = await getUserByEmail(email);
-        if (existing) {
-          // Already exists — just promote to admin
-          const db = await getDb();
-          if (db) {
-            const { users } = await import("../drizzle/schema");
-            const { eq } = await import("drizzle-orm");
-            await db.update(users).set({ role: "admin", platformRole: "oem" }).where(eq(users.email, email));
-          }
-          return { created: false, email, message: "Promoted existing user to admin" };
-        }
-        const passwordHash = await bcrypt.hash(password, 12);
-        const openId = `local_${nanoid(16)}`;
-        await createLocalUser({ openId, name: "Platform Admin", email, passwordHash, loginMethod: "email" });
-        const newUser = await getUserByOpenId(openId);
-        if (newUser) {
-          const db = await getDb();
-          if (db) {
-            const { users } = await import("../drizzle/schema");
-            const { eq } = await import("drizzle-orm");
-            await db.update(users).set({ role: "admin", platformRole: "oem" }).where(eq(users.id, newUser.id));
-          }
-        }
-        return { created: true, email, password, message: "Admin user created successfully" };
-      }),
-    // ── END TEMPORARY ─────────────────────────────────────────────────────────
   }),
 
   // ─── BPAN REGISTRY ──────────────────────────────────────────────────────────
