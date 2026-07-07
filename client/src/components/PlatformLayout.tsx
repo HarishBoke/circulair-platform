@@ -364,11 +364,10 @@ function NavSection({
 /* ─── MAIN LAYOUT ──────────────────────────────────────────────────────────── */
 /* ─── THEME TOGGLE BUTTON ─────────────────────────────────────────────────── */
 function ThemeToggleButton() {
-  const { theme, toggleTheme, switchable } = useTheme();
-  if (!switchable || !toggleTheme) return null;
+  const { theme, toggleTheme } = useTheme();
   return (
     <button
-      onClick={(e) => toggleTheme(e)}
+      onClick={(e) => toggleTheme?.(e)}
       className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors overflow-hidden group"
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -543,10 +542,10 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Topbar — sticky so it stays visible while page content scrolls */}
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 overflow-hidden">
+        {/* Topbar — fixed at top of the right column, never scrolls away */}
         <header
-          className={`sticky top-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0 transition-shadow duration-300 ease-out${
+          className={`flex-shrink-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md transition-shadow duration-300 ease-out${
             scrolled ? " shadow-[0_2px_16px_0_oklch(0_0_0/0.18)]" : ""
           }`}
           role="banner"
