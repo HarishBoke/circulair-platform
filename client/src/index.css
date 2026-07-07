@@ -43,38 +43,94 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * Circul-AI-r Design System v3 — Dual Theme (Light + Dark)
+ *
+ * :root  = LIGHT theme (default)
+ * .dark  = DARK theme (toggled by ThemeProvider adding .dark to <html>)
+ *
+ * Green accent: oklch(0.52 0.18 155) in light / oklch(0.74 0.18 155) in dark
+ * Both pass WCAG AA 4.5:1 on their respective backgrounds.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── LIGHT THEME (default) ─────────────────────────────────────────────────── */
 :root {
-  /* ─────────────────────────────────────────────────────────────────────────
-   * Circul-AI-r Design System v2 — "Dark Slate" Theme
-   *
-   * Design principles:
-   *  1. Background is a warm-neutral dark slate (not pure black / not teal-washed)
-   *  2. Cards sit clearly above the background — visible separation without borders
-   *  3. Body text at 95% lightness, muted text at 68% — both pass WCAG AA 4.5:1
-   *  4. Green accent (hue 155) is used sparingly for CTAs and active states only
-   *  5. Borders are neutral-grey, not green-tinted, to reduce visual noise
-   * ───────────────────────────────────────────────────────────────────────── */
   --radius: 0.625rem;
 
-  /* Backgrounds — warm dark slate (hue 220, low chroma) */
-  --background:         oklch(0.11 0.008 240);   /* #0f1117 equivalent — readable dark */
-  --card:               oklch(0.155 0.010 240);  /* cards clearly above bg */
+  /* Backgrounds — clean white/off-white */
+  --background:         oklch(0.98 0.002 240);   /* near-white, slightly cool */
+  --card:               oklch(1.00 0.000 0);     /* pure white cards */
+  --popover:            oklch(1.00 0.000 0);
+  --secondary:          oklch(0.94 0.004 240);   /* light grey hover surfaces */
+  --muted:              oklch(0.94 0.004 240);
+  --input:              oklch(0.96 0.003 240);
+
+  /* Text — dark, high contrast */
+  --foreground:         oklch(0.14 0.010 240);   /* near-black */
+  --card-foreground:    oklch(0.14 0.010 240);
+  --popover-foreground: oklch(0.14 0.010 240);
+  --secondary-foreground: oklch(0.30 0.010 240);
+  --muted-foreground:   oklch(0.45 0.010 240);   /* 4.5:1+ on white */
+  --accent-foreground:  oklch(0.14 0.010 240);
+
+  /* Green accent — darker in light mode for contrast */
+  --primary:            oklch(0.46 0.16 155);    /* deep green — readable on white */
+  --primary-foreground: oklch(0.98 0.002 240);   /* white text on green */
+  --accent:             oklch(0.92 0.04 155);    /* very light green tint for hover */
+  --ring:               oklch(0.46 0.16 155);
+
+  /* Semantic */
+  --destructive:        oklch(0.55 0.22 15);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Borders */
+  --border:             oklch(0.88 0.006 240);   /* light grey border */
+
+  /* Sidebar — slightly off-white for separation */
+  --sidebar:            oklch(0.96 0.004 240);
+  --sidebar-foreground: oklch(0.14 0.010 240);
+  --sidebar-primary:    oklch(0.46 0.16 155);
+  --sidebar-primary-foreground: oklch(0.98 0.002 240);
+  --sidebar-accent:     oklch(0.92 0.04 155);
+  --sidebar-accent-foreground: oklch(0.14 0.010 240);
+  --sidebar-border:     oklch(0.88 0.006 240);
+  --sidebar-ring:       oklch(0.46 0.16 155);
+
+  /* Charts */
+  --chart-1: oklch(0.46 0.16 155);   /* green */
+  --chart-2: oklch(0.50 0.18 240);   /* blue */
+  --chart-3: oklch(0.52 0.16 290);   /* violet */
+  --chart-4: oklch(0.62 0.18 55);    /* amber */
+  --chart-5: oklch(0.55 0.22 15);    /* red */
+
+  /* Typography */
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+  --font-body:    "Inter", system-ui, sans-serif;
+  --accent-glow:  oklch(0.46 0.16 155);
+}
+
+/* ── DARK THEME ────────────────────────────────────────────────────────────── */
+.dark {
+  /* Backgrounds — warm dark slate */
+  --background:         oklch(0.11 0.008 240);
+  --card:               oklch(0.155 0.010 240);
   --popover:            oklch(0.155 0.010 240);
-  --secondary:          oklch(0.19 0.010 240);   /* hover surfaces */
+  --secondary:          oklch(0.19 0.010 240);
   --muted:              oklch(0.19 0.010 240);
   --input:              oklch(0.19 0.010 240);
 
-  /* Text — high contrast, neutral white */
-  --foreground:         oklch(0.96 0.004 240);   /* near-white, slightly cool */
+  /* Text — near-white */
+  --foreground:         oklch(0.96 0.004 240);
   --card-foreground:    oklch(0.96 0.004 240);
   --popover-foreground: oklch(0.96 0.004 240);
   --secondary-foreground: oklch(0.72 0.008 240);
-  --muted-foreground:   oklch(0.68 0.008 240);   /* 7:1+ contrast on card bg */
+  --muted-foreground:   oklch(0.68 0.008 240);
   --accent-foreground:  oklch(0.08 0.010 240);
 
-  /* Green accent — Circul-AI-r brand (hue 155, slightly shifted from 165) */
-  --primary:            oklch(0.74 0.18 155);    /* bright, readable green */
-  --primary-foreground: oklch(0.08 0.010 240);   /* dark text on green bg */
+  /* Green accent — brighter in dark mode */
+  --primary:            oklch(0.74 0.18 155);
+  --primary-foreground: oklch(0.08 0.010 240);
   --accent:             oklch(0.74 0.18 155);
   --ring:               oklch(0.74 0.18 155);
 
@@ -82,10 +138,10 @@
   --destructive:        oklch(0.65 0.22 15);
   --destructive-foreground: oklch(0.98 0 0);
 
-  /* Borders — neutral grey, not green-tinted */
-  --border:             oklch(0.28 0.006 240);   /* subtle but visible */
+  /* Borders */
+  --border:             oklch(0.28 0.006 240);
 
-  /* Sidebar — slightly darker than main bg for visual separation */
+  /* Sidebar */
   --sidebar:            oklch(0.095 0.008 240);
   --sidebar-foreground: oklch(0.96 0.004 240);
   --sidebar-primary:    oklch(0.74 0.18 155);
@@ -95,28 +151,27 @@
   --sidebar-border:     oklch(0.22 0.006 240);
   --sidebar-ring:       oklch(0.74 0.18 155);
 
-  /* Charts — distinct, accessible palette */
-  --chart-1: oklch(0.74 0.18 155);   /* green — primary */
-  --chart-2: oklch(0.65 0.20 240);   /* blue */
-  --chart-3: oklch(0.68 0.18 290);   /* violet */
-  --chart-4: oklch(0.78 0.16 55);    /* amber */
-  --chart-5: oklch(0.65 0.22 15);    /* red */
+  /* Charts */
+  --chart-1: oklch(0.74 0.18 155);
+  --chart-2: oklch(0.65 0.20 240);
+  --chart-3: oklch(0.68 0.18 290);
+  --chart-4: oklch(0.78 0.16 55);
+  --chart-5: oklch(0.65 0.22 15);
 
-  /* Typography */
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
-  --font-body:    "Inter", system-ui, sans-serif;
-  --accent-glow:  oklch(0.74 0.18 155);
+  --accent-glow: oklch(0.74 0.18 155);
 }
 
 @layer base {
   * { @apply border-border; }
-  html { color-scheme: dark; }
+
+  /* color-scheme switches with theme */
+  html            { color-scheme: light; }
+  html.dark       { color-scheme: dark; }
 
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    font-size: 0.9375rem;        /* 15px — slightly larger than 14px default */
+    font-size: 0.9375rem;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -128,16 +183,14 @@
     letter-spacing: -0.01em;
   }
 
-  /* Larger, more readable heading scale */
-  h1 { font-size: 2rem;   font-weight: 700; }
-  h2 { font-size: 1.5rem; font-weight: 650; }
-  h3 { font-size: 1.25rem; font-weight: 600; }
+  h1 { font-size: 2rem;      font-weight: 700; }
+  h2 { font-size: 1.5rem;    font-weight: 650; }
+  h3 { font-size: 1.25rem;   font-weight: 600; }
   h4 { font-size: 1.0625rem; font-weight: 600; }
 
   p, li, dd, dt { line-height: 1.65; }
   label { line-height: 1.5; }
 
-  /* Cursor helpers */
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled), [type="submit"]:not(:disabled),
   [type="reset"]:not(:disabled), a[href], select:not(:disabled),
@@ -145,9 +198,9 @@
     @apply cursor-pointer;
   }
 
-  /* ── WCAG 2.1 AA Focus Rings ── */
+  /* WCAG 2.1 AA Focus Rings */
   :focus-visible {
-    outline: 2px solid oklch(0.74 0.18 155);
+    outline: 2px solid var(--ring);
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -157,11 +210,12 @@
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.30 0.006 240);
+    background: var(--border);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.74 0.18 155 / 50%);
+    background: var(--primary);
+    opacity: 0.5;
   }
 }
 
@@ -181,13 +235,14 @@
 .animate-blink      { animation: blink 1.5s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
 
-/* ── Background decorations ── */
+/* ── Background decorations (theme-aware) ── */
 .bg-grid {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    linear-gradient(oklch(0.74 0.18 155 / 2.5%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.74 0.18 155 / 2.5%) 1px, transparent 1px);
+    linear-gradient(var(--primary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--primary) 1px, transparent 1px);
   background-size: 48px 48px;
+  opacity: 0.025;
 }
 .bg-glow1 {
   position: fixed; top: -180px; right: -80px; width: 550px; height: 550px;
@@ -210,8 +265,8 @@
 .skip-to-content {
   position: absolute; top: -100%; left: 0; z-index: 9999;
   padding: 0.75rem 1.5rem;
-  background: oklch(0.74 0.18 155);
-  color: oklch(0.08 0.010 240);
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 600; font-size: 0.875rem;
   border-radius: 0 0 0.5rem 0;
   text-decoration: none; transition: top 0.1s;
@@ -224,22 +279,58 @@
   clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
 }
 
-/* ── Card elevation system ── */
-/* Cards use box-shadow instead of borders for a cleaner look */
+/* ── Card elevation system (theme-aware) ── */
 .card-elevated {
-  background: oklch(0.155 0.010 240);
+  background: var(--card);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 12%), 0 1px 2px oklch(0 0 0 / 8%);
+}
+.dark .card-elevated {
   box-shadow: 0 1px 3px oklch(0 0 0 / 30%), 0 1px 2px oklch(0 0 0 / 20%);
 }
 .card-elevated-lg {
-  background: oklch(0.155 0.010 240);
+  background: var(--card);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 10%), 0 1px 4px oklch(0 0 0 / 6%);
+}
+.dark .card-elevated-lg {
   box-shadow: 0 4px 16px oklch(0 0 0 / 35%), 0 1px 4px oklch(0 0 0 / 20%);
 }
 
 /* ── Status colours (semantic, accessible) ── */
-.status-operational { color: oklch(0.74 0.18 155); }
-.status-warning      { color: oklch(0.82 0.18 75); }
-.status-critical     { color: oklch(0.65 0.22 15); }
-.status-info         { color: oklch(0.70 0.16 240); }
+.status-operational { color: var(--primary); }
+.status-warning      { color: oklch(0.62 0.18 75); }
+.status-critical     { color: oklch(0.55 0.22 15); }
+.status-info         { color: oklch(0.50 0.16 240); }
+
+.dark .status-operational { color: oklch(0.74 0.18 155); }
+.dark .status-warning      { color: oklch(0.82 0.18 75); }
+.dark .status-critical     { color: oklch(0.65 0.22 15); }
+.dark .status-info         { color: oklch(0.70 0.16 240); }
+
+/* ── Swagger UI dark theme override ── */
+.dark .swagger-ui,
+.dark .swagger-ui .wrapper,
+.dark .swagger-ui .opblock-summary-description,
+.dark .swagger-ui .opblock-description-wrapper p,
+.dark .swagger-ui .info .title,
+.dark .swagger-ui .info li,
+.dark .swagger-ui .info p,
+.dark .swagger-ui table thead tr th,
+.dark .swagger-ui .parameter__name,
+.dark .swagger-ui .parameter__type,
+.dark .swagger-ui .response-col_status,
+.dark .swagger-ui .response-col_description,
+.dark .swagger-ui label,
+.dark .swagger-ui select,
+.dark .swagger-ui input[type=text] {
+  color: oklch(0.90 0.004 240);
+}
+.dark .swagger-ui .scheme-container,
+.dark .swagger-ui .opblock,
+.dark .swagger-ui .model-box,
+.dark .swagger-ui section.models {
+  background: oklch(0.155 0.010 240);
+  border-color: oklch(0.28 0.006 240);
+}
 
 @layer components {
   .container {

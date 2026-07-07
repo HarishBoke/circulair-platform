@@ -64,6 +64,7 @@ import PredictiveProcurement from "./pages/PredictiveProcurement";
 import SolidStateBattery from "./pages/SolidStateBattery";
 import ApiReference from "./pages/ApiReference";
 import McpServer from "./pages/McpServer";
+import HealthPortal from "./pages/HealthPortal";
 
 function Router() {
   return (
@@ -131,6 +132,8 @@ function Router() {
       {/* Developer & API pages */}
       <Route path="/api-reference" component={() => <PlatformLayout><ApiReference /></PlatformLayout>} />
       <Route path="/mcp-server" component={() => <PlatformLayout><McpServer /></PlatformLayout>} />
+      {/* Health Portal */}
+      <Route path="/health" component={() => <PlatformLayout><HealthPortal /></PlatformLayout>} />
       {/* Public legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
@@ -179,7 +182,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="dark" switchable={true}>
         <TooltipProvider>
           <Toaster richColors position="top-right" />
           <Router />

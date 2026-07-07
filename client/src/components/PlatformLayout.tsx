@@ -14,8 +14,9 @@ import {
   Settings, Menu, Search, Database, Users, Globe,
   ArrowRight, Lock, Cpu, ShieldCheck, Upload, BookOpen, Rocket,
   GitBranch, Leaf, Network, Code2, Zap, TrendingUp, Bot,
-  ListChecks, Package, Settings2, Radio, AlertTriangle
+  ListChecks, Package, Settings2, Radio, AlertTriangle, HeartPulse, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 /* ─── NAV STRUCTURE ────────────────────────────────────────────────────────────
  * Consolidated from 15 sections → 7 clean groups.
@@ -90,6 +91,7 @@ function useNavSections(isAdmin: boolean) {
       label: "ADMIN",
       sectionKey: "ADMIN",
       items: [
+        { icon: HeartPulse, label: "Health Portal",       href: "/health" },
         { icon: Users,    label: "User Management",     href: "/admin/users" },
         { icon: Cpu,      label: "Super Admin",         href: "/admin/system" },
         { icon: Settings2,label: "Platform Settings",   href: "/settings/platform" },
@@ -360,6 +362,22 @@ function NavSection({
 }
 
 /* ─── MAIN LAYOUT ──────────────────────────────────────────────────────────── */
+/* ─── THEME TOGGLE BUTTON ─────────────────────────────────────────────────── */
+function ThemeToggleButton() {
+  const { theme, toggleTheme, switchable } = useTheme();
+  if (!switchable || !toggleTheme) return null;
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {theme === "dark" ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+    </button>
+  );
+}
+
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, loading, isAuthenticated, logout } = useAuth();
@@ -532,6 +550,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </div>
 
           <div className="flex items-center gap-1.5">
+            <ThemeToggleButton />
             <Link href="/alerts">
               <button
                 className="relative p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
