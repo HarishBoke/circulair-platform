@@ -12,6 +12,7 @@
  * - Versioned endpoints under /api/v1/*
  */
 import { Router, Request, Response, NextFunction } from "express";
+import { openapiSpec as trpcOpenapiSpec } from "./openapi";
 import {
   validateApiKey, logApiUsage, writeAuditLog, writeSecurityEvent, generateTraceId,
 } from "./compliance";
@@ -380,20 +381,32 @@ const openApiSpec = {
   ],
 };
 
-// ─── SWAGGER UI HTML ────────────────────────────────────────────────────────
+// ─── SWAGGER UI HTML (REST Gateway) ─────────────────────────────────────────
 const swaggerHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Circul-AI-r API Documentation</title>
+  <title>Circul-AI-r REST API v1</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
   <style>
-    body { margin: 0; background: #0a0f0d; }
+    body { margin: 0; background: #0a0f0d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     .swagger-ui .topbar { display: none; }
-    .swagger-ui { max-width: 1200px; margin: 0 auto; }
+    .swagger-ui { max-width: 1280px; margin: 0 auto; }
+    .api-nav { background: #0d1f17; border-bottom: 1px solid #1a3a28; padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    .api-nav a { color: #4ade80; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #1a3a28; }
+    .api-nav a:hover { background: #1a3a28; }
+    .api-nav .active { background: #166534; border-color: #4ade80; }
+    .api-nav .brand { color: #4ade80; font-weight: 700; font-size: 15px; margin-right: 8px; }
   </style>
 </head>
 <body>
+  <div class="api-nav">
+    <span class="brand">Circul-AI-r API Docs</span>
+    <a href="/api/v1/docs" class="active">REST API v1 (Bearer Token)</a>
+    <a href="/api/trpc/docs">tRPC API (Session Cookie)</a>
+    <a href="/api/v1/openapi.json" target="_blank">REST OpenAPI JSON</a>
+    <a href="/api/trpc/openapi.json" target="_blank">tRPC OpenAPI JSON</a>
+  </div>
   <div id="swagger-ui"></div>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script>
@@ -401,8 +414,59 @@ const swaggerHtml = `<!DOCTYPE html>
       url: '/api/v1/openapi.json',
       dom_id: '#swagger-ui',
       deepLinking: true,
+      tryItOutEnabled: true,
+      requestInterceptor: (req) => { req.headers['X-Requested-With'] = 'SwaggerUI'; return req; },
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
       layout: "BaseLayout",
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2,
+      docExpansion: 'list',
+    });
+  </script>
+</body>
+</html>`;
+
+// ─── SWAGGER UI HTML (tRPC full spec) ────────────────────────────────────────
+const trpcSwaggerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Circul-AI-r tRPC API — Full Reference</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #0a0f0d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui { max-width: 1280px; margin: 0 auto; }
+    .api-nav { background: #0d1f17; border-bottom: 1px solid #1a3a28; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .api-nav a { color: #4ade80; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #1a3a28; }
+    .api-nav a:hover { background: #1a3a28; }
+    .api-nav .active { background: #166534; border-color: #4ade80; }
+    .api-nav .brand { color: #4ade80; font-weight: 700; font-size: 15px; margin-right: 8px; }
+    .api-nav .badge { background: #166534; color: #4ade80; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+  </style>
+</head>
+<body>
+  <div class="api-nav">
+    <span class="brand">Circul-AI-r API Docs</span>
+    <a href="/api/v1/docs">REST API v1 (Bearer Token)</a>
+    <a href="/api/trpc/docs" class="active">tRPC API (Session Cookie) <span class="badge">130+ endpoints</span></a>
+    <a href="/api/v1/openapi.json" target="_blank">REST OpenAPI JSON</a>
+    <a href="/api/trpc/openapi.json" target="_blank">tRPC OpenAPI JSON</a>
+  </div>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/api/trpc/openapi.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      tryItOutEnabled: true,
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: "BaseLayout",
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2,
+      docExpansion: 'list',
+      withCredentials: true,
     });
   </script>
 </body>
@@ -424,6 +488,15 @@ export function createApiGateway(): Router {
   api.get("/docs", (_req, res) => {
     res.setHeader("Content-Type", "text/html");
     res.send(swaggerHtml);
+  });
+
+  // tRPC OpenAPI spec + Swagger UI
+  api.get("/trpc/openapi.json", (_req, res) => {
+    res.json(trpcOpenapiSpec);
+  });
+  api.get("/trpc/docs", (_req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send(trpcSwaggerHtml);
   });
 
   // Protected endpoints (API key required)

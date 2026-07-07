@@ -695,21 +695,73 @@ export default function ApiReference() {
         </div>
       )}
 
+      {/* Interactive Swagger UI */}
+      <Card className="border-emerald-500/20 bg-emerald-500/5">
+        <CardContent className="pt-4 pb-4">
+          <p className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Interactive API Documentation (Swagger UI)
+          </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">REST API v1</p>
+                <p className="text-xs text-muted-foreground">Bearer token auth — batteries, telemetry, warranty, marketplace, compliance</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0"
+                onClick={() => window.open("/api/v1/docs", "_blank")}
+              >
+                Open Swagger UI
+              </Button>
+            </div>
+            <div className="h-px bg-border/50" />
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  tRPC API — Full Platform
+                  <Badge className="ml-2 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">130+ endpoints</Badge>
+                </p>
+                <p className="text-xs text-muted-foreground">Session cookie auth — all platform features across 37 routers</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0"
+                onClick={() => window.open("/api/trpc/docs", "_blank")}
+              >
+                Open Swagger UI
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* OpenAPI download */}
       <Card className="border-border/50 bg-card/50">
-        <CardContent className="pt-4 pb-3 flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">OpenAPI 3.1 Specification</p>
-            <p className="text-xs text-muted-foreground">Download the machine-readable spec to generate SDKs or import into Postman / Insomnia</p>
+        <CardContent className="pt-4 pb-3">
+          <p className="text-sm font-medium text-foreground mb-2">Download OpenAPI Specs</p>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => window.open("/api/v1/openapi.json", "_blank")}
+            >
+              REST API openapi.json
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => window.open("/api/trpc/openapi.json", "_blank")}
+            >
+              tRPC API openapi.json
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-            onClick={() => window.open("/api/v1/openapi.json", "_blank")}
-          >
-            openapi.json
-          </Button>
+          <p className="text-xs text-muted-foreground mt-2">Import into Postman, Insomnia, or use to generate client SDKs</p>
         </CardContent>
       </Card>
     </div>
