@@ -134,15 +134,15 @@ function AuthScreen() {
       {/* Left — branding */}
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">
         <div className="max-w-lg">
-          <div className="flex items-center gap-3 mb-8">
-            <CirculairLogo size={36} />
+          <Link href="/" aria-label="Back to home" className="flex items-center gap-3 mb-8 group w-fit">
+            <CirculairLogo size={36} className="group-hover:opacity-80 transition-opacity" />
             <div>
-              <div className="font-display text-2xl font-bold leading-tight">
+              <div className="font-display text-2xl font-bold leading-tight group-hover:text-primary transition-colors">
                 Circul<span className="text-primary">-AI-</span>r
               </div>
               <div className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Battery Intelligence Platform</div>
             </div>
-          </div>
+          </Link>
 
           <h1 className="font-display text-4xl font-bold mb-4 leading-tight">
             The Operating System for{" "}
@@ -179,15 +179,15 @@ function AuthScreen() {
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
             <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-primary" />
             <div className="p-8">
-              <div className="lg:hidden flex items-center gap-3 mb-8">
-                <CirculairLogo size={30} />
+              <Link href="/" aria-label="Back to home" className="lg:hidden flex items-center gap-3 mb-8 group w-fit">
+                <CirculairLogo size={30} className="group-hover:opacity-80 transition-opacity" />
                 <div>
-                  <div className="font-display text-lg font-bold leading-tight">
+                  <div className="font-display text-lg font-bold leading-tight group-hover:text-primary transition-colors">
                     Circul<span className="text-primary">-AI-</span>r
                   </div>
                   <div className="font-mono text-[9px] text-muted-foreground tracking-widest uppercase">Battery Intelligence</div>
                 </div>
-              </div>
+              </Link>
 
               <h2 className="font-display text-2xl font-bold mb-2">Welcome Back</h2>
               <p className="text-muted-foreground text-sm mb-8">
@@ -410,19 +410,21 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   /* ── Sidebar inner content ── */
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
-      {/* Logo row */}
+      {/* Logo row — clicking navigates back to the landing page */}
       <div className={`flex items-center gap-3 border-b border-sidebar-border ${collapsed && !isMobile ? "px-3 py-4 justify-center" : "px-4 py-4"}`}>
-        <CirculairLogo size={22} className="flex-shrink-0" />
-        {(!collapsed || isMobile) && (
-          <div className="min-w-0">
-            <div className="font-display text-sm font-bold leading-tight tracking-tight">
-              Circul<span className="text-primary">-AI-</span>r
+        <Link href="/" aria-label="Go to landing page" className="flex items-center gap-3 min-w-0 group flex-1">
+          <CirculairLogo size={22} className="flex-shrink-0 group-hover:opacity-80 transition-opacity" />
+          {(!collapsed || isMobile) && (
+            <div className="min-w-0">
+              <div className="font-display text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
+                Circul<span className="text-primary">-AI-</span>r
+              </div>
+              <div className="font-mono text-[9px] text-muted-foreground/60 tracking-widest uppercase">
+                Battery Intelligence
+              </div>
             </div>
-            <div className="font-mono text-[9px] text-muted-foreground/60 tracking-widest uppercase">
-              Battery Intelligence
-            </div>
-          </div>
-        )}
+          )}
+        </Link>
         {isMobile && (
           <button
             onClick={() => setMobileOpen(false)}
@@ -535,9 +537,9 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Topbar */}
+        {/* Topbar — sticky so it stays visible while page content scrolls */}
         <header
-          className="flex items-center justify-between h-13 px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0"
+          className="sticky top-0 z-30 flex items-center justify-between px-4 lg:px-5 border-b border-border bg-background/90 backdrop-blur-md flex-shrink-0"
           role="banner"
           style={{ height: "52px" }}
         >
@@ -559,6 +561,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Theme toggle — always visible in topbar */}
             <ThemeToggleButton />
             <Link href="/alerts">
               <button
@@ -584,7 +587,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Page Content — scrolls independently under the sticky header */}
         <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
           {children}
         </main>
