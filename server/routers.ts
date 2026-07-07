@@ -1140,6 +1140,248 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     chemistryDistribution: protectedProcedure.query(() => getChemistryDistribution()),
     triageDistribution: protectedProcedure.query(() => getTriageDistribution()),
     marketplaceWeekly: protectedProcedure.query(() => getMarketplaceWeeklyActivity()),
+
+    /**
+     * Natural Language Query — accepts a plain-English question about battery data,
+     * uses LLM to interpret intent, fetches relevant data from DB, returns structured results.
+     */
+    nlQuery: protectedProcedure
+      .input(z.object({
+        query: z.string().min(1).max(500),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await import("./db").then((m) => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { batteries, telemetry, alerts, sohPredictions, marketplaceListings } = await import("../drizzle/schema");
+        const { sql: drizzleSql, desc, lte, gte, eq, and } = await import("drizzle-orm");
+
+        // Step 1: Ask LLM to classify the query intent and extract parameters
+        const classifyResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a battery data query classifier for the Circul-AI-r platform.\nGiven a natural language question, extract the query intent and parameters.\nRespond ONLY with valid JSON matching this exact schema:\n{\n  "intent": "batteries" | "telemetry" | "alerts" | "soh" | "marketplace" | "summary",\n  "filters": {\n    "chemistry": string | null,\n    "status": "operational" | "second_life" | "end_of_life" | null,\n    "minSoh": number | null,\n    "maxSoh": number | null,\n    "severity": "critical" | "warning" | "info" | null,\n    "thermalAnomaly": boolean | null,\n    "limit": number\n  },\n  "explanation": string\n}\nFor "limit", default to 10 unless user asks for more/all. Max 50.\nFor chemistry, map common names: "NMC", "LFP", "NCA", "LCO", "LMO".\nFor status: "operational", "second_life", "end_of_life".\nFor "summary" intent, return a platform-wide summary.`,
+            },
+            { role: "user", content: input.query },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "query_intent",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  intent: { type: "string" },
+                  filters: {
+                    type: "object",
+                    properties: {
+                      chemistry: { type: ["string", "null"] },
+                      status: { type: ["string", "null"] },
+                      minSoh: { type: ["number", "null"] },
+                      maxSoh: { type: ["number", "null"] },
+                      severity: { type: ["string", "null"] },
+                      thermalAnomaly: { type: ["boolean", "null"] },
+                      limit: { type: "number" },
+                    },
+                    required: ["chemistry", "status", "minSoh", "maxSoh", "severity", "thermalAnomaly", "limit"],
+                    additionalProperties: false,
+                  },
+                  explanation: { type: "string" },
+                },
+                required: ["intent", "filters", "explanation"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = classifyResponse.choices?.[0]?.message?.content ?? "{}";
+        let parsed: {
+          intent: string;
+          filters: {
+            chemistry: string | null;
+            status: string | null;
+            minSoh: number | null;
+            maxSoh: number | null;
+            severity: string | null;
+            thermalAnomaly: boolean | null;
+            limit: number;
+          };
+          explanation: string;
+        };
+        try {
+          parsed = JSON.parse(rawContent);
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse LLM response" });
+        }
+
+        const { intent, filters, explanation } = parsed;
+        const limit = Math.min(filters.limit ?? 10, 50);
+
+        // Step 2: Execute the appropriate DB query based on intent
+        type ResultRow = Record<string, unknown>;
+        let results: ResultRow[] = [];
+        let totalCount = 0;
+        let summaryStats: Record<string, unknown> | null = null;
+
+        if (intent === "batteries") {
+          const conditions = [];
+          if (filters.chemistry) conditions.push(eq(batteries.chemistry, filters.chemistry));
+          if (filters.status) conditions.push(eq(batteries.status, filters.status));
+          if (filters.minSoh != null) conditions.push(gte(batteries.currentSoh, String(filters.minSoh)));
+          if (filters.maxSoh != null) conditions.push(lte(batteries.currentSoh, String(filters.maxSoh)));
+          const rows = await db
+            .select({
+              bpan: batteries.bpan,
+              chemistry: batteries.chemistry,
+              status: batteries.status,
+              currentSoh: batteries.currentSoh,
+              capacityKwh: batteries.capacityKwh,
+              cycleCount: batteries.cycleCount,
+              mfgYear: batteries.mfgYear,
+              cellOriginCountry: batteries.cellOriginCountry,
+              createdAt: batteries.createdAt,
+            })
+            .from(batteries)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined)
+            .orderBy(desc(batteries.createdAt))
+            .limit(limit);
+          results = rows as ResultRow[];
+          const [countRow] = await db.select({ count: drizzleSql<number>`count(*)` }).from(batteries)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined);
+          totalCount = Number(countRow?.count ?? 0);
+
+        } else if (intent === "telemetry") {
+          const conditions = [];
+          if (filters.thermalAnomaly != null) conditions.push(eq(telemetry.thermalAnomaly, filters.thermalAnomaly));
+          const rows = await db
+            .select({
+              bpan: telemetry.bpan,
+              tMax: telemetry.tMax,
+              tPack: telemetry.tPack,
+              vPack: telemetry.vPack,
+              sohEstimate: telemetry.sohEstimate,
+              cycleCount: telemetry.cycleCount,
+              thermalAnomaly: telemetry.thermalAnomaly,
+              anomalyType: telemetry.anomalyType,
+              recordedAt: telemetry.recordedAt,
+            })
+            .from(telemetry)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined)
+            .orderBy(desc(telemetry.recordedAt))
+            .limit(limit);
+          results = rows as ResultRow[];
+          const [countRow] = await db.select({ count: drizzleSql<number>`count(*)` }).from(telemetry)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined);
+          totalCount = Number(countRow?.count ?? 0);
+
+        } else if (intent === "alerts") {
+          const conditions = [];
+          if (filters.severity) conditions.push(eq(alerts.severity, filters.severity));
+          const rows = await db
+            .select({
+              id: alerts.id,
+              bpan: alerts.bpan,
+              type: alerts.type,
+              severity: alerts.severity,
+              title: alerts.title,
+              message: alerts.message,
+              read: alerts.read,
+              createdAt: alerts.createdAt,
+            })
+            .from(alerts)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined)
+            .orderBy(desc(alerts.createdAt))
+            .limit(limit);
+          results = rows as ResultRow[];
+          const [countRow] = await db.select({ count: drizzleSql<number>`count(*)` }).from(alerts)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined);
+          totalCount = Number(countRow?.count ?? 0);
+
+        } else if (intent === "soh") {
+          const conditions = [];
+          if (filters.minSoh != null) conditions.push(gte(sohPredictions.predictedSoh, String(filters.minSoh)));
+          if (filters.maxSoh != null) conditions.push(lte(sohPredictions.predictedSoh, String(filters.maxSoh)));
+          const rows = await db
+            .select({
+              bpan: sohPredictions.bpan,
+              predictedSoh: sohPredictions.predictedSoh,
+              rulCycles: sohPredictions.rulCycles,
+              confidence: sohPredictions.confidence,
+              triagePath: sohPredictions.triagePath,
+              triageReason: sohPredictions.triageReason,
+              predictedAt: sohPredictions.predictedAt,
+            })
+            .from(sohPredictions)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined)
+            .orderBy(desc(sohPredictions.predictedAt))
+            .limit(limit);
+          results = rows as ResultRow[];
+          const [countRow] = await db.select({ count: drizzleSql<number>`count(*)` }).from(sohPredictions)
+            .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>])) : undefined);
+          totalCount = Number(countRow?.count ?? 0);
+
+        } else if (intent === "marketplace") {
+          const rows = await db
+            .select({
+              id: marketplaceListings.id,
+              bpan: marketplaceListings.bpan,
+              listingType: marketplaceListings.listingType,
+              askPriceInr: marketplaceListings.askingPriceInr,
+              sohAtListing: marketplaceListings.sohAtListing,
+              status: marketplaceListings.status,
+              createdAt: marketplaceListings.createdAt,
+            })
+            .from(marketplaceListings)
+            .orderBy(desc(marketplaceListings.createdAt))
+            .limit(limit);
+          results = rows as ResultRow[];
+          const [countRow] = await db.select({ count: drizzleSql<number>`count(*)` }).from(marketplaceListings);
+          totalCount = Number(countRow?.count ?? 0);
+
+        } else {
+          // summary intent — fetch platform-wide stats
+          const [bStats, mStats, eStats] = await Promise.all([
+            getBatteryStats(),
+            getMarketplaceStats(),
+            getEprStats(),
+          ]);
+          summaryStats = { batteries: bStats, marketplace: mStats, epr: eStats };
+          totalCount = 1;
+        }
+
+        // Step 3: Ask LLM to generate a human-readable answer
+        const dataContext = summaryStats
+          ? JSON.stringify(summaryStats, null, 2)
+          : JSON.stringify(results.slice(0, 5), null, 2);
+
+        const answerResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a battery analytics assistant for the Circul-AI-r platform.\nGiven a user question and relevant data, provide a concise, insightful answer in 2-4 sentences.\nFocus on key numbers, trends, or anomalies. Be specific. Do not repeat the raw data verbatim.`,
+            },
+            {
+              role: "user",
+              content: `Question: ${input.query}\n\nData (first 5 rows of ${totalCount} total):\n${dataContext}`,
+            },
+          ],
+        });
+
+        const answer = answerResponse.choices?.[0]?.message?.content ?? explanation;
+
+        return {
+          intent,
+          query: input.query,
+          explanation,
+          answer,
+          results,
+          totalCount,
+          summaryStats,
+          filters,
+        };
+      }),
   }),
 
   // ─── ADMIN ──────────────────────────────────────────────────────────────────

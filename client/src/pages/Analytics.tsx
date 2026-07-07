@@ -3,6 +3,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, Battery, ShoppingCart, Shield, Activity } from "lucide-react";
+import NaturalLanguageSearch from "@/components/NaturalLanguageSearch";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -33,6 +34,9 @@ export default function Analytics() {
 
   return (
     <div className="p-6 space-y-5 animate-fade-up">
+      {/* AI Natural Language Search */}
+      <NaturalLanguageSearch />
+
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Analytics & KPIs</h1>

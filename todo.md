@@ -1189,3 +1189,13 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Performance/accessibility tests: 18/18 pass (WCAG basics, responsive design)
 - [x] Forms/interactions tests: pass
 - [x] Admin/settings tests: pass
+
+## Phase NL-Search: Natural Language Battery Query Search Bar [IN PROGRESS]
+- [ ] Read Analytics.tsx to understand current dashboard structure
+- [ ] Add analytics.nlQuery tRPC procedure — accepts plain English query, uses LLM to generate SQL-like filter, runs against battery/telemetry/alerts DB, returns structured results + explanation
+- [ ] Build NaturalLanguageSearch.tsx component — search bar with suggestions, loading state, result cards, query history
+- [ ] Wire NaturalLanguageSearch into Analytics.tsx at the top of the dashboard
+- [ ] Add suggested queries (e.g. "Show batteries below 80% SOH", "List thermal anomalies this week")
+- [ ] Write vitest tests for nlQuery procedure
+- [ ] TypeScript: 0 errors
+- [ ] Save checkpoint and deliver
