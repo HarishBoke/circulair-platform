@@ -1,4 +1,9 @@
-import { useState, useId } from "react";
+import { useState, useId, lazy, Suspense } from "react";
+
+// Lazy-load the heavy Swagger UI bundle so it doesn't slow the initial portal load
+const EmbeddedSwaggerUI = lazy(() =>
+  import("@/components/EmbeddedSwaggerUI").then((m) => ({ default: m.EmbeddedSwaggerUI }))
+);
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield, Webhook, CheckCircle2, AlertCircle, Download, Package } from "lucide-react";
+import { Code2, Key, Copy, Trash2, Plus, Eye, EyeOff, Globe, Zap, BarChart3, Shield, Webhook, CheckCircle2, AlertCircle, Download, Package, BookOpen, FlaskConical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -114,6 +119,152 @@ function SdkDownloadSection() {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Embedded Interactive API Explorer ─────────────────────────────────────
+type ApiSpec = "rest" | "trpc";
+
+function EmbeddedApiExplorer() {
+  const [activeSpec, setActiveSpec] = useState<ApiSpec>("rest");
+  const [tryItEnabled, setTryItEnabled] = useState(false);
+
+  const specs: Record<ApiSpec, { label: string; url: string; badge: string; description: string }> = {
+    rest: {
+      label: "REST API v1",
+      url: "/api/v1/openapi.json",
+      badge: "Bearer Token",
+      description: "Battery data, telemetry, SOH predictions, compliance, marketplace",
+    },
+    trpc: {
+      label: "tRPC Full Platform",
+      url: "/api/trpc/openapi.json",
+      badge: "130+ endpoints",
+      description: "All platform features across 37 routers — session cookie auth",
+    },
+  };
+
+  const current = specs[activeSpec];
+
+  return (
+    <Card className="border-orange-500/20 bg-orange-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <FlaskConical className="w-4 h-4 text-orange-400" aria-hidden="true" />
+          Interactive API Explorer
+          <Badge className="ml-1 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+            Live
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          Browse and test all API endpoints directly inside the portal — no external tools needed
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* Spec selector tabs */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex rounded-lg border border-border/50 overflow-hidden" role="tablist" aria-label="API specification">
+            {(Object.keys(specs) as ApiSpec[]).map((key) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={activeSpec === key}
+                onClick={() => setActiveSpec(key)}
+                className={[
+                  "px-4 py-2 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400",
+                  activeSpec === key
+                    ? "bg-orange-500/15 text-orange-400 border-r border-border/50"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border-r border-border/50 last:border-r-0",
+                ].join(" ")}
+              >
+                {specs[key].label}
+              </button>
+            ))}
+          </div>
+
+          <Badge variant="outline" className="border-orange-500/30 text-orange-400 text-[10px]">
+            {current.badge}
+          </Badge>
+
+          <span className="text-xs text-muted-foreground hidden sm:inline">{current.description}</span>
+
+          {/* Try it out toggle */}
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Try it out</span>
+            <button
+              role="switch"
+              aria-checked={tryItEnabled}
+              onClick={() => setTryItEnabled((v) => !v)}
+              className={[
+                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400",
+                tryItEnabled ? "bg-emerald-600" : "bg-muted/50 border border-border",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
+                  tryItEnabled ? "translate-x-4" : "translate-x-0.5",
+                ].join(" ")}
+              />
+            </button>
+            {tryItEnabled && (
+              <Badge className="text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30">
+                Requests use your session cookie
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Swagger UI panel */}
+        <div
+          className="rounded-lg border border-border/40 bg-[#080f0b] overflow-hidden"
+          style={{ minHeight: 480, maxHeight: 720, overflowY: "auto" }}
+        >
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-20 text-muted-foreground gap-3">
+                <svg className="animate-spin h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-sm">Loading API specification…</span>
+              </div>
+            }
+          >
+            <EmbeddedSwaggerUI
+              key={`${activeSpec}-${tryItEnabled}`}
+              specUrl={current.url}
+              title={current.label}
+              tryItOutEnabled={tryItEnabled}
+            />
+          </Suspense>
+        </div>
+
+        {/* Footer links */}
+        <div className="flex items-center gap-3 flex-wrap pt-1">
+          <a
+            href={current.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-orange-400 transition-colors"
+          >
+            <Download className="w-3 h-3" />
+            Download {current.label} spec
+          </a>
+          <span className="text-border">·</span>
+          <a
+            href={activeSpec === "rest" ? "/api/v1/docs" : "/api/trpc/docs"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-orange-400 transition-colors"
+          >
+            <BookOpen className="w-3 h-3" />
+            Open in full-page Swagger UI
+          </a>
+        </div>
       </CardContent>
     </Card>
   );
@@ -700,6 +851,9 @@ export default function DeveloperPortal() {
 
       {/* SDK Downloads */}
       <SdkDownloadSection />
+
+      {/* ── Interactive API Explorer ─────────────────────────────── */}
+      <EmbeddedApiExplorer />
 
       {/* Quick Start */}
       <Card className="border-border/50 bg-card/50">
