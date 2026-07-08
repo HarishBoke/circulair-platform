@@ -386,11 +386,30 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   const options: IClientOptions = {
     clientId: resolved.clientId,
     clean: true,
-    reconnectPeriod: 5000,      // Reconnect every 5s on disconnect
-    connectTimeout: 15_000,     // 15s connection timeout
-    keepalive: 60,
+    reconnectPeriod: 0,         // Disable built-in fixed reconnect — we use exponential backoff below
+    connectTimeout: 20_000,     // 20s connection timeout
+    keepalive: 90,              // 90s keepalive — reduces timeout events on cloud brokers
     resubscribe: true,
   };
+
+  // Exponential backoff state
+  let _reconnectDelay = 5_000;   // Start at 5s
+  const MAX_RECONNECT_DELAY = 60_000; // Cap at 60s
+  let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleReconnect() {
+    if (_reconnectTimer) return; // Already scheduled
+    _reconnectTimer = setTimeout(() => {
+      _reconnectTimer = null;
+      if (_client && !_status.connected) {
+        _status.reconnectCount++;
+        console.log(`[MQTT] Reconnecting... (attempt ${_status.reconnectCount}, delay was ${_reconnectDelay / 1000}s)`);
+        _client.reconnect();
+        // Increase delay exponentially up to the cap
+        _reconnectDelay = Math.min(_reconnectDelay * 2, MAX_RECONNECT_DELAY);
+      }
+    }, _reconnectDelay);
+  }
 
   if (resolved.username) options.username = resolved.username;
   if (resolved.password) options.password = resolved.password;
@@ -410,6 +429,12 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   _client.on("connect", () => {
     console.log(`[MQTT] Connected to ${resolved.brokerUrl}`);
     _status.connected = true;
+    // Reset backoff delay on successful connection
+    _reconnectDelay = 5_000;
+    if (_reconnectTimer) {
+      clearTimeout(_reconnectTimer);
+      _reconnectTimer = null;
+    }
 
     // Subscribe to wildcard topic: <prefix>/+  (single level = one BPAN per topic)
     const wildcardTopic = `${resolved.topicPrefix}/+`;
@@ -431,14 +456,14 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   });
 
   _client.on("reconnect", () => {
-    _status.reconnectCount++;
+    // Fired by manual _client.reconnect() calls from scheduleReconnect()
     _status.connected = false;
-    console.log(`[MQTT] Reconnecting... (attempt ${_status.reconnectCount})`);
   });
 
   _client.on("offline", () => {
     _status.connected = false;
-    console.log("[MQTT] Client offline");
+    console.log("[MQTT] Client offline — scheduling reconnect");
+    scheduleReconnect();
   });
 
   _client.on("error", (err) => {
@@ -447,10 +472,13 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
     _status.errors.push(msg);
     if (_status.errors.length > 20) _status.errors.shift();
     console.error(`[MQTT] Error:`, err.message);
+    // Schedule reconnect on keepalive timeout or other connection errors
+    scheduleReconnect();
   });
 
   _client.on("close", () => {
     _status.connected = false;
+    scheduleReconnect();
   });
 }
 

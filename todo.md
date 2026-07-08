@@ -1199,3 +1199,7 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [ ] Write vitest tests for nlQuery procedure
 - [ ] TypeScript: 0 errors
 - [ ] Save checkpoint and deliver
+
+## Phase QA-Fixes: Fix Issues Found in QA Report
+- [x] Fix landing page counter animation — trigger on mount if element already in viewport, not just on scroll
+- [x] Fix MQTT keepalive timeout — increase keepalive to 90s, add exponential backoff reconnection (5s → 10s → 20s → ... → 60s cap)

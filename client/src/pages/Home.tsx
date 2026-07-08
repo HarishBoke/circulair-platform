@@ -23,9 +23,17 @@ function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2000 }: {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // If the element is already visible in the viewport on mount, trigger immediately
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        setVisible(true);
+        return;
+      }
+    }
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.3 }
+      { threshold: 0.1 }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
