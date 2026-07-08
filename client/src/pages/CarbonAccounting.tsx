@@ -117,7 +117,7 @@ export default function CarbonAccounting() {
               />
             </div>
           </div>
-          <Button onClick={handleCalculate} disabled={calcMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={handleCalculate} disabled={calcMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-foreground">
             <Leaf className="w-4 h-4 mr-2" />
             {calcMutation.isPending ? "Calculating…" : "Calculate Carbon Footprint"}
           </Button>

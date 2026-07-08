@@ -1203,3 +1203,29 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 ## Phase QA-Fixes: Fix Issues Found in QA Report
 - [x] Fix landing page counter animation — trigger on mount if element already in viewport, not just on scroll
 - [x] Fix MQTT keepalive timeout — increase keepalive to 90s, add exponential backoff reconnection (5s → 10s → 20s → ... → 60s cap)
+
+## Phase QA-Theme: Light/Dark Theme Implementation [COMPLETE]
+- [x] Audit existing theme setup — CSS variables, ThemeProvider, ThemeContext, index.css
+- [x] Confirmed full light/dark CSS variable palettes already defined in index.css
+- [x] Confirmed smooth 0.3s transition applied to all elements via * selector
+- [x] Confirmed View Transition API ripple animation wired to toggleTheme
+- [x] Confirmed localStorage persistence via ThemeContext
+- [x] Created reusable ThemeToggle component (client/src/components/ThemeToggle.tsx)
+- [x] Added ThemeToggle to Login page (top-right corner)
+- [x] Added ThemeToggle to Register page (top-right corner)
+- [x] Added ThemeToggle to ForgotPassword page
+- [x] Added ThemeToggle to ResetPassword page
+- [x] Added ThemeToggle to WarrantyCheck page
+- [x] Added ThemeToggle to Privacy page
+- [x] Added ThemeToggle to Terms page
+- [x] Added ThemeToggle to NotFound (404) page
+- [x] Added ThemeToggle to PaymentSuccess page
+- [x] Added ThemeToggle to EuBatteryPassport public page
+- [x] Replaced hardcoded bg-zinc-9xx/bg-gray-9xx colours with bg-background/bg-card/bg-muted
+- [x] Replaced hardcoded text-zinc-xxx/text-gray-xxx with text-foreground/text-muted-foreground
+- [x] Replaced hardcoded border-zinc-xxx with border-border
+- [x] Replaced bg-white/5, bg-white/10 with bg-muted/50, bg-muted
+- [x] Replaced border-white/10, border-white/20 with border-border
+- [x] Replaced text-white (page content) with text-foreground in all pages
+- [x] Retained intentional bg-black/50 overlays (modal backdrops, image overlays)
+- [x] TypeScript: 0 errors

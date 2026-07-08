@@ -264,7 +264,7 @@ export default function DigitalTwin() {
           <Button
             onClick={handleGenerate}
             disabled={isLoading || !bpan || (compareMode && !bpanB)}
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-foreground"
             aria-busy={isLoading}
           >
             {isLoading ? (

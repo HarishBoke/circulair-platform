@@ -74,7 +74,7 @@ export default function WarrantyDashboard() {
             </Button>
           </Link>
           <Link href="/warranty/register">
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground text-xs">
               <Plus className="w-3.5 h-3.5 mr-1" /> Register Warranty
             </Button>
           </Link>
@@ -141,7 +141,7 @@ export default function WarrantyDashboard() {
             <p className="text-sm font-medium mb-1">No warranty records found</p>
             <p className="text-xs text-muted-foreground mb-4">Register your first warranty to get started</p>
             <Link href="/warranty/register">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground text-xs">
                 <Plus className="w-3.5 h-3.5 mr-1" /> Register Warranty
               </Button>
             </Link>

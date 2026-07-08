@@ -184,7 +184,7 @@ export default function TriageQueue() {
           <div className="ml-auto flex gap-2">
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
               onClick={handleBulkApprove}
               disabled={bulkApproveMutation.isPending}
               aria-busy={bulkApproveMutation.isPending}

@@ -127,7 +127,7 @@ export default function BlockchainAudit() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleAnchor} disabled={anchorMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleAnchor} disabled={anchorMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700 text-foreground">
               <Shield className="w-4 h-4 mr-2" />
               {anchorMutation.isPending ? "Anchoring…" : "Anchor to Blockchain"}
             </Button>
@@ -184,7 +184,7 @@ export default function BlockchainAudit() {
                 onChange={(e) => setVerifyPayload(e.target.value)}
               />
             </div>
-            <Button onClick={handleVerifyQuery} className="w-full bg-violet-600 hover:bg-violet-700 text-white">
+            <Button onClick={handleVerifyQuery} className="w-full bg-violet-600 hover:bg-violet-700 text-foreground">
               <Hash className="w-4 h-4 mr-2" />
               Verify Hash
             </Button>

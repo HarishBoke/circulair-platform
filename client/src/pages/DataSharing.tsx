@@ -89,7 +89,7 @@ export default function DataSharing() {
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-foreground">
                   <Plus className="w-4 h-4 mr-1.5" />New Agreement
                 </Button>
               </DialogTrigger>
@@ -131,7 +131,7 @@ export default function DataSharing() {
                       ))}
                     </div>
                   </div>
-                  <Button onClick={handleGrant} disabled={grantMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button onClick={handleGrant} disabled={grantMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700 text-foreground">
                     {grantMutation.isPending ? "Creating…" : "Create Agreement"}
                   </Button>
                 </div>

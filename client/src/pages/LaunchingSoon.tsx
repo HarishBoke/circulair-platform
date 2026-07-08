@@ -105,7 +105,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
   ];
 
   return (
-    <div className="min-h-screen bg-[#060d0d] text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#060d0d] text-foreground relative overflow-hidden">
       {/* Animated background grid */}
       <div className="absolute inset-0 opacity-[0.03]" style={{
         backgroundImage: `linear-gradient(rgba(16,185,129,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.3) 1px, transparent 1px)`,
@@ -220,7 +220,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                   ].map((item) => (
                     <div key={item.label} className="text-center">
                       <div className="w-16 h-16 md:w-18 md:h-18 rounded-xl bg-background/80 border border-border/60 flex items-center justify-center mb-1.5">
-                        <span className="text-2xl md:text-3xl font-bold text-white tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
+                        <span className="text-2xl md:text-3xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
                           {String(item.value).padStart(2, "0")}
                         </span>
                       </div>
@@ -276,7 +276,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                           value={username}
                           onChange={(e) => { setUsername(e.target.value); setError(""); }}
                           placeholder="Enter your username"
-                          className="w-full px-4 py-3 bg-background/60 border border-border/60 rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                          className="w-full px-4 py-3 bg-background/60 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                           autoComplete="off"
                           autoFocus
                         />
@@ -292,7 +292,7 @@ export default function LaunchingSoon({ onAccessGranted }: { onAccessGranted: ()
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setError(""); }}
                             placeholder="Enter your password"
-                            className="w-full px-4 py-3 pr-11 bg-background/60 border border-border/60 rounded-xl text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                            className="w-full px-4 py-3 pr-11 bg-background/60 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                             autoComplete="off"
                           />
                           <button

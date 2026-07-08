@@ -153,7 +153,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
           <div className="flex items-center gap-3">
             <Initials name={user.name} email={user.email} />
             <div className="min-w-0">
-              <DialogTitle className="text-sm font-semibold text-white leading-tight truncate">
+              <DialogTitle className="text-sm font-semibold text-foreground leading-tight truncate">
                 {user.name ?? user.email ?? `User #${user.id}`}
               </DialogTitle>
               {user.email && (
@@ -168,7 +168,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground font-medium">Platform Role</Label>
             <Select value={platformRole} onValueChange={(v) => setPlatformRole(v as RoleValue)}>
-              <SelectTrigger className="h-9 bg-background border-border text-sm text-white rounded-lg">
+              <SelectTrigger className="h-9 bg-background border-border text-sm text-foreground rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border-border rounded-xl">
@@ -189,7 +189,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground font-medium">System Access</Label>
             <Select value={systemRole} onValueChange={(v) => setSystemRole(v as "user" | "admin")}>
-              <SelectTrigger className="h-9 bg-background border-border text-sm text-white rounded-lg">
+              <SelectTrigger className="h-9 bg-background border-border text-sm text-foreground rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border-border rounded-xl">
@@ -212,7 +212,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
               value={org}
               onChange={(e) => setOrg(e.target.value)}
               placeholder="e.g. Tata Motors, CPCB…"
-              className="h-9 bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 rounded-lg"
+              className="h-9 bg-background border-border text-sm text-foreground placeholder:text-muted-foreground/60 rounded-lg"
             />
           </div>
 
@@ -227,7 +227,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why is this change being made?"
               rows={2}
-              className="bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 resize-none rounded-lg"
+              className="bg-background border-border text-sm text-foreground placeholder:text-muted-foreground/60 resize-none rounded-lg"
             />
           </div>
 
@@ -235,7 +235,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
           <div className="flex gap-2 pt-1">
             <Button
               variant="ghost"
-              className="flex-1 h-9 text-sm text-muted-foreground hover:text-white hover:bg-secondary rounded-lg"
+              className="flex-1 h-9 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg"
               onClick={onClose}
               disabled={mutation.isPending}
             >
@@ -523,7 +523,7 @@ export default function AdminUserManagement() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 sm:px-8 py-5 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-semibold text-white tracking-tight">
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">
             User Management
           </h1>
           <p className="text-sm text-muted-foreground/70 mt-0.5">
@@ -579,7 +579,7 @@ export default function AdminUserManagement() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
               tab === t
-                ? "bg-secondary text-white"
+                ? "bg-secondary text-foreground"
                 : "text-muted-foreground/70 hover:text-foreground/90"
             }`}
           >
@@ -604,7 +604,7 @@ export default function AdminUserManagement() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, email or org…"
-                  className="pl-9 h-9 bg-background border-border text-sm text-white placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-primary/50"
+                  className="pl-9 h-9 bg-background border-border text-sm text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-primary/50"
                 />
               </div>
 
@@ -722,7 +722,7 @@ export default function AdminUserManagement() {
                         variant="ghost"
                         disabled={page === 0}
                         onClick={() => setPage((p) => p - 1)}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-secondary disabled:opacity-30 rounded-lg"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30 rounded-lg"
                         aria-label="Previous page"
                       >
                         <ChevronLeft className="w-4 h-4" />
@@ -735,7 +735,7 @@ export default function AdminUserManagement() {
                         variant="ghost"
                         disabled={page >= totalPages - 1}
                         onClick={() => setPage((p) => p + 1)}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-secondary disabled:opacity-30 rounded-lg"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30 rounded-lg"
                         aria-label="Next page"
                       >
                         <ChevronRight className="w-4 h-4" />

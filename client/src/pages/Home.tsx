@@ -11,8 +11,9 @@ import {
   CheckCircle2, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, CircuitBoard, Play,
-  Sparkles, TrendingUp, Database, Wifi, FileCheck
+  Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 /* ─── ANIMATED COUNTER ─────────────────────────────────────────────────────── */
 function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2000 }: {
@@ -198,6 +199,7 @@ export default function Home() {
   ]);
 
   const { isAuthenticated, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeStakeholder, setActiveStakeholder] = useState(0);
 
   return (
@@ -230,6 +232,14 @@ export default function Home() {
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-blink" />
             <span className="text-[10px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>LIVE</span>
           </div>
+          <button
+            onClick={(e) => toggleTheme?.(e)}
+            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           {!loading && (
             isAuthenticated ? (
               <Link href="/dashboard">

@@ -419,7 +419,7 @@ export default function MqttFlowTester() {
                     <Button
                       onClick={handlePublish}
                       disabled={!isConnected || publishMut.isPending}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-foreground gap-2"
                     >
                       <Send className="w-4 h-4" />
                       {publishMut.isPending ? "Publishing…" : "Publish to Broker"}
@@ -489,7 +489,7 @@ export default function MqttFlowTester() {
                       <Button
                         onClick={handleStartStream}
                         disabled={!isConnected || isStreaming || startStreamMut.isPending}
-                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white gap-2"
+                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-foreground gap-2"
                       >
                         <Play className="w-4 h-4" />
                         {isStreaming ? "Streaming…" : "Start Stream"}
@@ -613,7 +613,7 @@ export default function MqttFlowTester() {
                   logs.map((entry) => (
                     <div
                       key={entry.id}
-                      className={`border-l-2 pl-3 pr-2 py-1.5 rounded-r-lg cursor-pointer transition-colors hover:bg-white/5 ${logColors[entry.direction]}`}
+                      className={`border-l-2 pl-3 pr-2 py-1.5 rounded-r-lg cursor-pointer transition-colors hover:bg-muted/50 ${logColors[entry.direction]}`}
                       onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
                     >
                       <div className="flex items-start gap-2">

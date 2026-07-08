@@ -449,7 +449,7 @@ export default function WarrantyRegister() {
               <Button
                 type="submit"
                 disabled={mutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
               >
                 {mutation.isPending ? "Registering..." : "Register Warranty"}
               </Button>

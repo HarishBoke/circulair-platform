@@ -3,6 +3,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { Zap } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function NotFound() {
   usePageTitle("Page Not Found");
@@ -12,6 +13,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
       <div className="bg-grid" />
+      <ThemeToggle />
       <div className="bg-glow1" />
       <div className="bg-glow2" />
 

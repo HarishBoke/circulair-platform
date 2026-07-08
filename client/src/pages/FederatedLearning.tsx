@@ -102,7 +102,7 @@ export default function FederatedLearning() {
                     <p className="text-xs text-muted-foreground mt-0.5">Submit your fleet's local model update to improve global accuracy</p>
                   </div>
                   <Button size="sm" onClick={() => submitUpdateMutation.mutate({})} disabled={submitUpdateMutation.isPending}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                    className="bg-cyan-600 hover:bg-cyan-700 text-foreground">
                     {submitUpdateMutation.isPending ? "Submitting…" : "Submit Update"}
                   </Button>
                 </div>

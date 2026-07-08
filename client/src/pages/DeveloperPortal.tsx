@@ -94,7 +94,7 @@ function SdkDownloadSection() {
               <a
                 href={sdk.downloadUrl}
                 download={sdk.filename}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors flex-shrink-0"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-foreground text-sm font-medium transition-colors flex-shrink-0"
                 aria-label={`Download ${sdk.name} SDK ZIP`}
               >
                 <Download className="w-4 h-4" aria-hidden="true" />
@@ -488,7 +488,7 @@ export default function DeveloperPortal() {
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-foreground">
                   <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />
                   New Key
                 </Button>
@@ -575,7 +575,7 @@ export default function DeveloperPortal() {
                   <Button
                     onClick={handleCreate}
                     disabled={createMutation.isPending}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-foreground"
                     aria-busy={createMutation.isPending}
                   >
                     {createMutation.isPending ? "Creating…" : "Create API Key"}
@@ -761,7 +761,7 @@ export default function DeveloperPortal() {
                   <Button
                     onClick={handleCreateWebhook}
                     disabled={createWebhookMutation.isPending}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-foreground"
                     aria-busy={createWebhookMutation.isPending}
                   >
                     {createWebhookMutation.isPending ? "Registering…" : "Register Webhook"}

@@ -144,7 +144,7 @@ export default function PredictiveProcurement() {
             </div>
             <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white">
+                <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-foreground">
                   <Plus className="w-4 h-4 mr-1.5" />New Order
                 </Button>
               </DialogTrigger>
@@ -196,7 +196,7 @@ export default function PredictiveProcurement() {
                         onChange={(e) => setOrderForm((f) => ({ ...f, maxPricePerKwh: Number(e.target.value) }))} />
                     </div>
                   </div>
-                  <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending} className="w-full bg-violet-600 hover:bg-violet-700 text-white">
+                  <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending} className="w-full bg-violet-600 hover:bg-violet-700 text-foreground">
                     {createOrderMutation.isPending ? "Creating…" : "Create Forward Order"}
                   </Button>
                 </div>

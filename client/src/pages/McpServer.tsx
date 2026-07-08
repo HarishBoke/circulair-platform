@@ -586,7 +586,7 @@ export default function McpServer() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
                   onClick={() => window.open("/developer-portal", "_self")}
                 >
                   <Key className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />

@@ -9,6 +9,7 @@ import {
   AlertCircle, Eye, EyeOff, Loader2,
 } from "lucide-react";
 import CirculairLogo from "@/components/CirculairLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type TokenState = "validating" | "valid" | "invalid";
 
@@ -104,6 +105,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-background flex relative overflow-hidden">
       <div className="bg-grid" />
+      <ThemeToggle />
       <div className="bg-glow1" />
       <div className="bg-glow2" />
 

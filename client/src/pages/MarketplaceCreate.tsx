@@ -421,7 +421,7 @@ export default function MarketplaceCreate() {
                   )}
                   {photo.uploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                      <Loader2 className="w-6 h-6 text-foreground animate-spin" />
                     </div>
                   )}
                   {photo.uploaded && (
@@ -436,7 +436,7 @@ export default function MarketplaceCreate() {
                   )}
                   <button
                     onClick={() => removePhoto(photo.id)}
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -444,7 +444,7 @@ export default function MarketplaceCreate() {
                     value={photo.caption}
                     onChange={(e) => setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, caption: e.target.value } : p))}
                     placeholder="Caption..."
-                    className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-2 py-1 border-none outline-none placeholder:text-white/50"
+                    className="absolute bottom-0 left-0 right-0 bg-black/60 text-foreground text-[10px] px-2 py-1 border-none outline-none placeholder:text-foreground/50"
                   />
                 </div>
               ))}

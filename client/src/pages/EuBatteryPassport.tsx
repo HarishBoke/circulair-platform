@@ -26,15 +26,16 @@ import {
   QrCode,
   AlertTriangle,
 } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // ─── CARBON CLASS BADGE ───────────────────────────────────────────────────────
 
 const CLASS_COLORS: Record<string, string> = {
-  A: "bg-emerald-500 text-white",
-  B: "bg-green-500 text-white",
+  A: "bg-emerald-500 text-foreground",
+  B: "bg-green-500 text-foreground",
   C: "bg-yellow-500 text-black",
-  D: "bg-orange-500 text-white",
-  E: "bg-red-500 text-white",
+  D: "bg-orange-500 text-foreground",
+  E: "bg-red-500 text-foreground",
 };
 
 function CarbonClassBadge({ cls }: { cls: string }) {
@@ -138,7 +139,8 @@ export default function EuBatteryPassport() {
   const profileData = profile?.profileData as Record<string, any> | undefined;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      <ThemeToggle />
       {/* Top bar */}
       <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">

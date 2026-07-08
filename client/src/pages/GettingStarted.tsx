@@ -113,14 +113,14 @@ export default function GettingStarted() {
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
             <Rocket className="w-8 h-8 text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Getting Started</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-3">Getting Started</h1>
           <p className="text-muted-foreground mb-6">
             Sign in to begin your guided tour of the Circul-AI-r platform. We'll walk you through
             every key feature step by step.
           </p>
           <Button
             onClick={() => (window.location.href = "/login")}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white"
+            className="bg-emerald-600 hover:bg-emerald-500 text-foreground"
           >
             Sign In to Start
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -156,16 +156,16 @@ export default function GettingStarted() {
         <div className="relative max-w-4xl mx-auto px-6 pt-12 pb-10">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-              <Rocket className="w-6 h-6 text-white" />
+              <Rocket className="w-6 h-6 text-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">Getting Started</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Getting Started</h1>
               <p className="text-sm text-muted-foreground">Your guided tour of the Circul-AI-r platform</p>
             </div>
           </div>
 
           {/* Progress bar */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="bg-muted/50 border border-border rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 {allComplete ? (
@@ -173,7 +173,7 @@ export default function GettingStarted() {
                 ) : (
                   <Sparkles className="w-5 h-5 text-emerald-400" />
                 )}
-                <span className="text-sm font-medium text-white">
+                <span className="text-sm font-medium text-foreground">
                   {allComplete
                     ? "Congratulations! You've completed the tour!"
                     : `${completedCount} of ${totalSteps} steps completed`}
@@ -228,7 +228,7 @@ export default function GettingStarted() {
                     ? "bg-emerald-500/5 border-emerald-500/20"
                     : isNext
                     ? "bg-white/[0.04] border-emerald-500/30 shadow-lg shadow-emerald-500/5"
-                    : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                    : "bg-white/[0.02] border-white/5 hover:border-border"
                 } ${isCelebrating ? "scale-[1.02] shadow-xl shadow-emerald-500/20" : ""}`}
               >
                 {/* Step number / check */}
@@ -247,7 +247,7 @@ export default function GettingStarted() {
                   )}
                   {/* Connector line */}
                   {index < progress.length - 1 && (
-                    <div className={`absolute left-5 top-12 w-px h-6 ${step.completed ? "bg-emerald-500/30" : "bg-white/5"}`} />
+                    <div className={`absolute left-5 top-12 w-px h-6 ${step.completed ? "bg-emerald-500/30" : "bg-muted/50"}`} />
                   )}
                 </div>
 
@@ -268,7 +268,7 @@ export default function GettingStarted() {
                       </span>
                     )}
                   </div>
-                  <h3 className={`font-medium ${step.completed ? "text-emerald-300" : "text-white"}`}>
+                  <h3 className={`font-medium ${step.completed ? "text-emerald-300" : "text-foreground"}`}>
                     {step.title}
                   </h3>
                   <p className="text-sm text-muted-foreground/70 mt-1 leading-relaxed">
@@ -291,8 +291,8 @@ export default function GettingStarted() {
                     onClick={() => handleNavigate(step.href)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       isNext
-                        ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                        : "bg-white/5 hover:bg-white/10 text-foreground/90"
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-foreground"
+                        : "bg-muted/50 hover:bg-muted text-foreground/90"
                     }`}
                   >
                     {step.completed ? "Revisit" : "Go"}
@@ -308,7 +308,7 @@ export default function GettingStarted() {
         <div className="mt-12 p-6 bg-white/[0.02] border border-white/5 rounded-xl">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-white">Pro Tips</h3>
+            <h3 className="text-sm font-semibold text-foreground">Pro Tips</h3>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex items-start gap-3">

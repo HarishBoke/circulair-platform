@@ -521,7 +521,7 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
               size="sm"
               onClick={handleTry}
               disabled={trying}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
               aria-busy={trying}
             >
               {trying ? (
@@ -644,7 +644,7 @@ export default function ApiReference() {
                 key={cat}
                 variant={activeCategory === cat ? "default" : "outline"}
                 size="sm"
-                className={`h-9 text-xs ${activeCategory === cat ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+                className={`h-9 text-xs ${activeCategory === cat ? "bg-emerald-600 hover:bg-emerald-700 text-foreground" : ""}`}
                 onClick={() => setActiveCategory(cat)}
                 aria-pressed={activeCategory === cat}
               >

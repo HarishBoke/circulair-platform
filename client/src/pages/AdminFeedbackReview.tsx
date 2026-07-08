@@ -182,17 +182,17 @@ export default function AdminFeedbackReview() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-white" />
+              <MessageSquare className="w-5 h-5 text-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Feedback Review</h1>
+              <h1 className="text-xl font-bold text-foreground">Feedback Review</h1>
               <p className="text-xs text-muted-foreground/70">Manage wiki article feedback and suggestions</p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="border-white/10 text-muted-foreground hover:text-white"
+            className="border-border text-muted-foreground hover:text-foreground"
             onClick={() => { refetchList(); refetchStats(); }}
           >
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
@@ -204,7 +204,7 @@ export default function AdminFeedbackReview() {
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
             {[
-              { key: "total", label: "Total", value: stats.total, icon: BarChart3, color: "text-foreground/90", bg: "bg-white/5 border-white/10" },
+              { key: "total", label: "Total", value: stats.total, icon: BarChart3, color: "text-foreground/90", bg: "bg-muted/50 border-border" },
               { key: "pending", label: "Pending", value: stats.pending, icon: Clock, color: "text-amber-400", bg: "bg-amber-500/5 border-amber-500/20" },
               { key: "approved", label: "Approved", value: stats.approved, icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/5 border-emerald-500/20" },
               { key: "rejected", label: "Rejected", value: stats.rejected, icon: XCircle, color: "text-red-400", bg: "bg-red-500/5 border-red-500/20" },
@@ -219,7 +219,7 @@ export default function AdminFeedbackReview() {
                 className={`p-3 rounded-xl border transition-all text-left ${s.bg} ${
                   (s.key === "total" && statusFilter === "all") || statusFilter === s.key
                     ? "ring-1 ring-white/20"
-                    : "hover:border-white/20"
+                    : "hover:border-border"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -240,12 +240,12 @@ export default function AdminFeedbackReview() {
               placeholder="Search articles, content, users..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-              className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-muted-foreground/60 h-9"
+              className="pl-9 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/60 h-9"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as StatusType | "all"); setPage(0); }}>
-            <SelectTrigger className="w-[140px] bg-white/5 border-white/10 text-foreground/90 h-9">
+            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground/90 h-9">
               <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground/70" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -259,7 +259,7 @@ export default function AdminFeedbackReview() {
           </Select>
 
           <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as FeedbackType | "all"); setPage(0); }}>
-            <SelectTrigger className="w-[160px] bg-white/5 border-white/10 text-foreground/90 h-9">
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground/90 h-9">
               <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground/70" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -440,7 +440,7 @@ export default function AdminFeedbackReview() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 border-white/10 text-muted-foreground"
+                        className="h-7 border-border text-muted-foreground"
                         disabled={page === 0}
                         onClick={() => setPage((p) => p - 1)}
                       >
@@ -449,7 +449,7 @@ export default function AdminFeedbackReview() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 border-white/10 text-muted-foreground"
+                        className="h-7 border-border text-muted-foreground"
                         disabled={page >= totalPages - 1}
                         onClick={() => setPage((p) => p + 1)}
                       >
@@ -472,12 +472,12 @@ export default function AdminFeedbackReview() {
                     <span className="text-[10px] font-mono text-muted-foreground/60 uppercase">Feedback #{selectedItem.id}</span>
                     <button
                       onClick={() => setSelectedId(null)}
-                      className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground/70 hover:text-foreground/90 transition-colors"
+                      className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground/70 hover:text-foreground/90 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <h3 className="text-sm font-medium text-white mb-1">{selectedItem.articleTitle}</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-1">{selectedItem.articleTitle}</h3>
                   <div className="flex items-center gap-2 flex-wrap">
                     {(() => {
                       const tc = getTypeConfig(selectedItem.type!);
@@ -506,7 +506,7 @@ export default function AdminFeedbackReview() {
                   <div>
                     <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">Submitted By</label>
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-muted/50 flex items-center justify-center">
                         <User className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
                       <div>
@@ -558,7 +558,7 @@ export default function AdminFeedbackReview() {
                   {selectedItem.section && (
                     <div>
                       <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">Article Section</label>
-                      <p className="text-xs text-foreground/90 bg-white/5 rounded-lg px-3 py-2">{selectedItem.section}</p>
+                      <p className="text-xs text-foreground/90 bg-muted/50 rounded-lg px-3 py-2">{selectedItem.section}</p>
                     </div>
                   )}
 
@@ -566,7 +566,7 @@ export default function AdminFeedbackReview() {
                   {selectedItem.content && (
                     <div>
                       <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">Feedback Content</label>
-                      <div className="text-xs text-foreground/90 bg-white/5 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+                      <div className="text-xs text-foreground/90 bg-muted/50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
                         {selectedItem.content}
                       </div>
                     </div>
@@ -612,14 +612,14 @@ export default function AdminFeedbackReview() {
                           placeholder="Add review notes..."
                           value={reviewNotes}
                           onChange={(e) => setReviewNotes(e.target.value)}
-                          className="bg-white/5 border-white/10 text-white placeholder:text-muted-foreground/60 h-8 text-xs"
+                          className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/60 h-8 text-xs"
                         />
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        className="flex-1 h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+                        className="flex-1 h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-foreground"
                         onClick={() => handleReview(selectedItem.id, "approved")}
                         disabled={reviewMutation.isPending}
                       >

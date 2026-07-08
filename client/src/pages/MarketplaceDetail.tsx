@@ -175,13 +175,13 @@ export default function MarketplaceDetail() {
                 <>
                   <button
                     onClick={() => setPhotoIndex((i) => (i - 1 + photos.length) % photos.length)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-foreground rounded-full p-2 transition-colors"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => setPhotoIndex((i) => (i + 1) % photos.length)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-foreground rounded-full p-2 transition-colors"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>

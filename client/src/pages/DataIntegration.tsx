@@ -19,8 +19,8 @@ import MqttBrokerPanel from "@/components/MqttBrokerPanel";
 function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
   const copy = () => { navigator.clipboard.writeText(code); toast.success("Copied to clipboard"); };
   return (
-    <div className="relative group rounded-lg bg-[#0d1117] border border-white/10 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
+    <div className="relative group rounded-lg bg-[#0d1117] border border-border overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
         <span className="text-xs text-muted-foreground font-mono">{language}</span>
         <Button variant="ghost" size="sm" onClick={copy} className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
           <Copy className="w-3 h-3 mr-1" /> Copy
@@ -45,7 +45,7 @@ function ConnectorCard({ icon: Icon, title, description, status, children }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <Card className="border-white/10 bg-white/5">
+    <Card className="border-border bg-muted/50">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -61,7 +61,7 @@ function ConnectorCard({ icon: Icon, title, description, status, children }: {
         </div>
       </CardHeader>
       <CardContent>
-        <Button variant="outline" size="sm" onClick={() => setExpanded(!expanded)} className="w-full mb-4 border-white/10">
+        <Button variant="outline" size="sm" onClick={() => setExpanded(!expanded)} className="w-full mb-4 border-border">
           <ChevronRight className={`w-4 h-4 mr-2 transition-transform ${expanded ? "rotate-90" : ""}`} />
           {expanded ? "Hide" : "Show"} Integration Guide
         </Button>
@@ -116,7 +116,7 @@ export default function DataIntegration() {
         </Card>
 
         {/* Re-seed command */}
-        <Card className="border-white/10 bg-white/5">
+        <Card className="border-border bg-muted/50">
           <CardContent className="pt-4 pb-4 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -125,7 +125,7 @@ export default function DataIntegration() {
                   Run the seed script to regenerate fresh demo data. Safe to re-run — uses ON DUPLICATE KEY UPDATE.
                 </p>
               </div>
-              <Button variant="outline" size="sm" className="border-white/10 shrink-0"
+              <Button variant="outline" size="sm" className="border-border shrink-0"
                 onClick={() => toast.info("Run: node seed.mjs from the project root")}>
                 <Terminal className="w-4 h-4 mr-2" />View Command
               </Button>
@@ -136,7 +136,7 @@ export default function DataIntegration() {
 
         {/* Integration Tabs */}
         <Tabs defaultValue="mqtt">
-          <TabsList className="bg-white/5 border border-white/10 h-auto p-1 flex-wrap gap-1">
+          <TabsList className="bg-muted/50 border border-border h-auto p-1 flex-wrap gap-1">
             <TabsTrigger value="mqtt" className="data-[state=active]:bg-primary/20"><Wifi className="w-4 h-4 mr-2" />MQTT / IoT</TabsTrigger>
             <TabsTrigger value="rest" className="data-[state=active]:bg-primary/20"><Globe className="w-4 h-4 mr-2" />REST API</TabsTrigger>
             <TabsTrigger value="csv" className="data-[state=active]:bg-primary/20"><Upload className="w-4 h-4 mr-2" />CSV Import</TabsTrigger>
@@ -156,18 +156,18 @@ export default function DataIntegration() {
               </div>
               <MqttBrokerPanel />
             </div>
-            <div className="border-t border-white/10 pt-4">
+            <div className="border-t border-border pt-4">
               <h3 className="text-sm font-semibold text-muted-foreground mb-4">Device Integration Guides</h3>
             </div>
             <ConnectorCard icon={Wifi} title="MQTT Broker - Real-Time IoT Telemetry" description="Connect BMS/IoT devices to stream live voltage, temperature, current, and SOH data." status="live">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Broker Host</Label><Input value={mqttHost} onChange={e=>setMqttHost(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
-                <div className="space-y-2"><Label>Port (TLS)</Label><Input value={mqttPort} onChange={e=>setMqttPort(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
+                <div className="space-y-2"><Label>Broker Host</Label><Input value={mqttHost} onChange={e=>setMqttHost(e.target.value)} className="bg-muted/50 border-border font-mono text-sm"/></div>
+                <div className="space-y-2"><Label>Port (TLS)</Label><Input value={mqttPort} onChange={e=>setMqttPort(e.target.value)} className="bg-muted/50 border-border font-mono text-sm"/></div>
               </div>
               <div className="space-y-2">
                 <Label>Topic Pattern</Label>
-                <Input value={mqttTopic} onChange={e=>setMqttTopic(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/>
-                <p className="text-xs text-muted-foreground">Replace <code className="bg-white/10 px-1 rounded">{"{BPAN}"}</code> with the 21-character Battery Pack Aadhaar Number.</p>
+                <Input value={mqttTopic} onChange={e=>setMqttTopic(e.target.value)} className="bg-muted/50 border-border font-mono text-sm"/>
+                <p className="text-xs text-muted-foreground">Replace <code className="bg-muted px-1 rounded">{"{BPAN}"}</code> with the 21-character Battery Pack Aadhaar Number.</p>
               </div>
               <div className="space-y-2"><Label>MQTT Payload Schema (JSON)</Label>
                 <CodeBlock language="json" code={`{
@@ -256,7 +256,7 @@ client.on("message", async (topic, message) => {
               <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <div className="flex gap-2">
                   <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0"/>
-                  <p className="text-sm text-blue-300"><strong>Production setup:</strong> Install the <code className="bg-white/10 px-1 rounded">mqtt</code> package, set <code className="bg-white/10 px-1 rounded">MQTT_USERNAME</code> and <code className="bg-white/10 px-1 rounded">MQTT_PASSWORD</code> env vars, then call <code className="bg-white/10 px-1 rounded">initMqttSubscriber()</code> from <code className="bg-white/10 px-1 rounded">server/_core/index.ts</code>. The existing Socket.io broadcaster will automatically push live readings to the Telemetry dashboard.</p>
+                  <p className="text-sm text-blue-300"><strong>Production setup:</strong> Install the <code className="bg-muted px-1 rounded">mqtt</code> package, set <code className="bg-muted px-1 rounded">MQTT_USERNAME</code> and <code className="bg-muted px-1 rounded">MQTT_PASSWORD</code> env vars, then call <code className="bg-muted px-1 rounded">initMqttSubscriber()</code> from <code className="bg-muted px-1 rounded">server/_core/index.ts</code>. The existing Socket.io broadcaster will automatically push live readings to the Telemetry dashboard.</p>
                 </div>
               </div>
             </ConnectorCard>
@@ -265,11 +265,11 @@ client.on("message", async (topic, message) => {
           {/* REST API */}
           <TabsContent value="rest" className="space-y-4 mt-4">
             <ConnectorCard icon={Globe} title="REST API - Ingest & Query Battery Data" description="Use tRPC-over-HTTP endpoints to push telemetry and query battery records programmatically." status="live">
-              <div className="space-y-2"><Label>API Base URL</Label><Input value={`${baseUrl}/api/trpc`} readOnly className="bg-white/5 border-white/10 font-mono text-sm"/></div>
+              <div className="space-y-2"><Label>API Base URL</Label><Input value={`${baseUrl}/api/trpc`} readOnly className="bg-muted/50 border-border font-mono text-sm"/></div>
               <div className="space-y-2">
                 <Label>API Key</Label>
-                <Input value={apiKey} onChange={e=>setApiKey(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm" placeholder="ck_live_..."/>
-                <p className="text-xs text-muted-foreground">Pass as <code className="bg-white/10 px-1 rounded">Authorization: Bearer &lt;key&gt;</code> header.</p>
+                <Input value={apiKey} onChange={e=>setApiKey(e.target.value)} className="bg-muted/50 border-border font-mono text-sm" placeholder="ck_live_..."/>
+                <p className="text-xs text-muted-foreground">Pass as <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;key&gt;</code> header.</p>
               </div>
               <div className="space-y-2"><Label>Ingest Telemetry - cURL</Label>
                 <CodeBlock language="bash" code={`curl -X POST ${baseUrl}/api/trpc/telemetry.ingest \\
@@ -373,7 +373,7 @@ await db.end();`}/>
               </div>
               <div className="space-y-2">
                 <Label>Paste CSV Preview</Label>
-                <Textarea value={csvPreview} onChange={e=>setCsvPreview(e.target.value)} placeholder="Paste CSV rows here to preview..." className="bg-white/5 border-white/10 font-mono text-xs h-32"/>
+                <Textarea value={csvPreview} onChange={e=>setCsvPreview(e.target.value)} placeholder="Paste CSV rows here to preview..." className="bg-muted/50 border-border font-mono text-xs h-32"/>
                 {csvPreview && (
                   <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-300">
                     <CheckCircle2 className="w-4 h-4 inline mr-2"/>
@@ -387,10 +387,10 @@ await db.end();`}/>
           {/* Webhooks */}
           <TabsContent value="webhook" className="space-y-4 mt-4">
             <ConnectorCard icon={Webhook} title="Outbound Webhooks - Push Events to External Systems" description="Configure webhooks to push battery events (thermal anomalies, EOL, EPR tokens) to your systems." status="demo">
-              <div className="space-y-2"><Label>Your Webhook Endpoint</Label><Input value={webhookUrl} onChange={e=>setWebhookUrl(e.target.value)} className="bg-white/5 border-white/10 font-mono text-sm"/></div>
+              <div className="space-y-2"><Label>Your Webhook Endpoint</Label><Input value={webhookUrl} onChange={e=>setWebhookUrl(e.target.value)} className="bg-muted/50 border-border font-mono text-sm"/></div>
               <div className="space-y-2"><Label>Webhook Payload Examples</Label>
                 <Tabs defaultValue="thermal">
-                  <TabsList className="bg-white/5 h-auto p-1 flex-wrap gap-1">
+                  <TabsList className="bg-muted/50 h-auto p-1 flex-wrap gap-1">
                     <TabsTrigger value="thermal" className="text-xs">Thermal Anomaly</TabsTrigger>
                     <TabsTrigger value="eol" className="text-xs">EOL Detected</TabsTrigger>
                     <TabsTrigger value="epr" className="text-xs">EPR Token</TabsTrigger>
@@ -467,7 +467,7 @@ await db.end();`}/>
               <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <div className="flex gap-2">
                   <Shield className="w-4 h-4 text-blue-400 mt-0.5 shrink-0"/>
-                  <p className="text-sm text-blue-300"><strong>Security:</strong> All webhook payloads are signed with HMAC-SHA256 using your <code className="bg-white/10 px-1 rounded">WEBHOOK_SECRET</code>. Always verify the <code className="bg-white/10 px-1 rounded">x-circulair-signature</code> header before processing.</p>
+                  <p className="text-sm text-blue-300"><strong>Security:</strong> All webhook payloads are signed with HMAC-SHA256 using your <code className="bg-muted px-1 rounded">WEBHOOK_SECRET</code>. Always verify the <code className="bg-muted px-1 rounded">x-circulair-signature</code> header before processing.</p>
                 </div>
               </div>
             </ConnectorCard>
@@ -578,7 +578,7 @@ WHERE status IN ('operational', 'second_life')`}/>
         </Tabs>
 
         {/* Architecture Diagram */}
-        <Card className="border-white/10 bg-white/5">
+        <Card className="border-border bg-muted/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Mail, Lock, Shield, CheckCircle2, Loader2 } from "lucide-react";
 import CirculairLogo from "@/components/CirculairLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ForgotPassword() {
   usePageTitle("Forgot Password");
@@ -47,6 +48,7 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen bg-background flex relative overflow-hidden">
       <div className="bg-grid" />
+      <ThemeToggle />
       <div className="bg-glow1" />
       <div className="bg-glow2" />
 

@@ -185,7 +185,7 @@ export default function AutonomousTriage() {
             <Button
               onClick={handleTriage}
               disabled={triageMutation.isPending || !bpan}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              className="bg-rose-600 hover:bg-rose-700 text-foreground"
               aria-busy={triageMutation.isPending}
             >
               {triageMutation.isPending ? (
@@ -322,7 +322,7 @@ export default function AutonomousTriage() {
                       onClick={() => handleApprove(result.recommendedRoute)}
                       disabled={approveMutation.isPending}
                       aria-busy={approveMutation.isPending}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
                       Approve: {result.recommendedRoute}

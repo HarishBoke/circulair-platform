@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  ArrowRight, Lock, Globe, Shield, Eye, EyeOff, Loader2, UserPlus,
+  ArrowRight, Lock, Globe, Shield, Eye, EyeOff, Loader2, UserPlus, Sun, Moon,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import CirculairLogo from "@/components/CirculairLogo";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Register() {
   usePageTitle("Sign Up");
@@ -23,6 +24,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const utils = trpc.useUtils();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +71,14 @@ export default function Register() {
       <div className="bg-grid" />
       <div className="bg-glow1" />
       <div className="bg-glow2" />
+      {/* Theme toggle */}
+      <button
+        onClick={(e) => toggleTheme?.(e)}
+        className="absolute top-4 right-4 z-20 p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      </button>
 
       {/* Left side — branding */}
       <div className="hidden lg:flex flex-col justify-center flex-1 relative z-10 px-12 xl:px-20">

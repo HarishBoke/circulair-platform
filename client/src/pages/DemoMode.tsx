@@ -151,7 +151,7 @@ export default function DemoMode() {
   const thermalCount = Array.from(liveReadings.values()).filter((r) => r.thermalAnomaly).length;
 
   return (
-    <div className="min-h-screen bg-[#0a0f1a] text-white p-6">
+    <div className="min-h-screen bg-[#0a0f1a] text-foreground p-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
@@ -160,7 +160,7 @@ export default function DemoMode() {
               <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                 <Radio className="w-4 h-4 text-emerald-400" />
               </div>
-              <h1 className="text-2xl font-bold text-white">Demo Mode</h1>
+              <h1 className="text-2xl font-bold text-foreground">Demo Mode</h1>
               {isRunning && (
                 <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
                   LIVE
@@ -185,7 +185,7 @@ export default function DemoMode() {
               </Button>
             ) : (
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
                 onClick={() => startDemo.mutate({ intervalMs: 2000 })}
                 disabled={startDemo.isPending || batteryList.length === 0}
               >
@@ -220,7 +220,7 @@ export default function DemoMode() {
               colour: anomalyCount > 0 ? "text-amber-400" : "text-muted-foreground",
             },
           ].map((kpi) => (
-            <Card key={kpi.label} className="bg-background/60 border-slate-700/50">
+            <Card key={kpi.label} className="bg-background/60 border-border/50">
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                   {kpi.icon}
@@ -249,7 +249,7 @@ export default function DemoMode() {
             </div>
 
             {batteryList.length === 0 ? (
-              <Card className="bg-background/60 border-slate-700/50">
+              <Card className="bg-background/60 border-border/50">
                 <CardContent className="p-8 text-center text-muted-foreground">
                   No batteries registered. <Link href="/bpan/register" className="text-emerald-400 underline">Register a battery</Link> first.
                 </CardContent>
@@ -268,7 +268,7 @@ export default function DemoMode() {
                           ? "border-red-500/50 shadow-red-500/10 shadow-lg"
                           : isActive
                           ? "border-emerald-500/30"
-                          : "border-slate-700/50"
+                          : "border-border/50"
                       }`}
                     >
                       <CardHeader className="pb-2 pt-3 px-4">
@@ -343,7 +343,7 @@ export default function DemoMode() {
                           </div>
                         )}
 
-                        <div className="mt-2 pt-2 border-t border-slate-700/50">
+                        <div className="mt-2 pt-2 border-t border-border/50">
                           <Link href={`/bpan/${battery.bpan}`}>
                             <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
                               View detail <ExternalLink className="w-3 h-3" />
@@ -363,8 +363,8 @@ export default function DemoMode() {
             <h2 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider mb-3">
               Live Anomaly Feed
             </h2>
-            <Card className="bg-background/60 border-slate-700/50 h-[calc(100vh-320px)] overflow-hidden flex flex-col">
-              <CardHeader className="pb-2 pt-3 px-4 border-b border-slate-700/50">
+            <Card className="bg-background/60 border-border/50 h-[calc(100vh-320px)] overflow-hidden flex flex-col">
+              <CardHeader className="pb-2 pt-3 px-4 border-b border-border/50">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                   <CardTitle className="text-sm text-foreground/90">Anomaly Events</CardTitle>

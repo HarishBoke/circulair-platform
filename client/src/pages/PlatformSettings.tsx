@@ -385,7 +385,7 @@ export default function PlatformSettings() {
         <Button
           onClick={handleSave}
           disabled={saveMutation.isPending}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white h-9 px-5 text-sm"
+          className="bg-emerald-600 hover:bg-emerald-500 text-foreground h-9 px-5 text-sm"
         >
           <Save className="h-4 w-4 mr-2" />
           {saveMutation.isPending ? "Saving…" : "Save Settings"}

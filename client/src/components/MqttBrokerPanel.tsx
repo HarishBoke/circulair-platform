@@ -59,7 +59,7 @@ export default function MqttBrokerPanel() {
 
   if (isLoading) {
     return (
-      <Card className="border-white/10 bg-white/5">
+      <Card className="border-border bg-muted/50">
         <CardContent className="pt-6 pb-6 flex items-center justify-center gap-2 text-muted-foreground">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span className="text-sm">Loading MQTT status...</span>
@@ -74,7 +74,7 @@ export default function MqttBrokerPanel() {
   return (
     <div className="space-y-4">
       {/* Status Header Card */}
-      <Card className={`border ${isConnected ? "border-emerald-500/30 bg-emerald-500/5" : hasUrl ? "border-amber-500/30 bg-amber-500/5" : "border-white/10 bg-white/5"}`}>
+      <Card className={`border ${isConnected ? "border-emerald-500/30 bg-emerald-500/5" : hasUrl ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/50"}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -98,7 +98,7 @@ export default function MqttBrokerPanel() {
                 </Badge>
               )}
               {!isConnected && !hasUrl && (
-                <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30 text-xs">
+                <Badge className="bg-slate-500/20 text-muted-foreground border-slate-500/30 text-xs">
                   Not Configured
                 </Badge>
               )}
@@ -111,24 +111,24 @@ export default function MqttBrokerPanel() {
         <CardContent className="space-y-4">
           {/* Metrics row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-xs text-muted-foreground mb-1">Broker URL</p>
               <p className="text-xs font-mono text-foreground truncate" title={status?.brokerUrl || "—"}>
                 {status?.brokerUrl || <span className="text-muted-foreground">Not set</span>}
               </p>
             </div>
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-xs text-muted-foreground mb-1">Messages Received</p>
               <p className="text-sm font-bold text-foreground">{status?.messagesReceived?.toLocaleString() ?? 0}</p>
             </div>
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-xs text-muted-foreground mb-1">Rate (last 60s)</p>
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 text-primary" />
                 <p className="text-sm font-bold text-foreground">{status?.messagesPerMinute ?? 0} msg/min</p>
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-xs text-muted-foreground mb-1">Last Message</p>
               <p className="text-xs font-mono text-foreground">
                 {status?.lastMessageAt
@@ -159,7 +159,7 @@ export default function MqttBrokerPanel() {
               <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Recent Errors
               </p>
-              <div className="rounded-lg bg-[#0d1117] border border-white/10 p-3 max-h-32 overflow-y-auto">
+              <div className="rounded-lg bg-[#0d1117] border border-border p-3 max-h-32 overflow-y-auto">
                 {status!.errors.slice(-5).map((e, i) => (
                   <p key={i} className="text-xs font-mono text-amber-400/80 leading-relaxed">{e}</p>
                 ))}
@@ -185,7 +185,7 @@ export default function MqttBrokerPanel() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowForm(!showForm)}
-                  className="border-white/10"
+                  className="border-border"
                 >
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Reconnect / Change Broker
@@ -208,7 +208,7 @@ export default function MqttBrokerPanel() {
                 variant="outline"
                 onClick={() => connectMutation.mutate({})}
                 disabled={connectMutation.isPending}
-                className="border-white/10"
+                className="border-border"
               >
                 <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${connectMutation.isPending ? "animate-spin" : ""}`} />
                 Retry Connection
@@ -235,12 +235,12 @@ export default function MqttBrokerPanel() {
                   value={form.brokerUrl}
                   onChange={(e) => setForm({ ...form, brokerUrl: e.target.value })}
                   placeholder="mqtt://broker.hivemq.com:1883  or  mqtts://broker:8883"
-                  className="bg-white/5 border-white/10 font-mono text-sm"
+                  className="bg-muted/50 border-border font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Use <code className="bg-white/10 px-1 rounded">mqtt://</code> for plain TCP,{" "}
-                  <code className="bg-white/10 px-1 rounded">mqtts://</code> for TLS.
-                  Free public brokers: <code className="bg-white/10 px-1 rounded">mqtt://broker.hivemq.com:1883</code>
+                  Use <code className="bg-muted px-1 rounded">mqtt://</code> for plain TCP,{" "}
+                  <code className="bg-muted px-1 rounded">mqtts://</code> for TLS.
+                  Free public brokers: <code className="bg-muted px-1 rounded">mqtt://broker.hivemq.com:1883</code>
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -249,7 +249,7 @@ export default function MqttBrokerPanel() {
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
                   placeholder="device_user"
-                  className="bg-white/5 border-white/10 text-sm"
+                  className="bg-muted/50 border-border text-sm"
                 />
               </div>
               <div className="space-y-1.5">
@@ -260,7 +260,7 @@ export default function MqttBrokerPanel() {
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="••••••••"
-                    className="bg-white/5 border-white/10 text-sm pr-9"
+                    className="bg-muted/50 border-border text-sm pr-9"
                   />
                   <button
                     type="button"
@@ -277,11 +277,11 @@ export default function MqttBrokerPanel() {
                   value={form.topicPrefix}
                   onChange={(e) => setForm({ ...form, topicPrefix: e.target.value })}
                   placeholder="circulair/telemetry"
-                  className="bg-white/5 border-white/10 font-mono text-sm"
+                  className="bg-muted/50 border-border font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Platform subscribes to <code className="bg-white/10 px-1 rounded">{form.topicPrefix || "circulair/telemetry"}/+</code> (wildcard for all BPANs).
-                  Devices publish to <code className="bg-white/10 px-1 rounded">{form.topicPrefix || "circulair/telemetry"}/{"<BPAN>"}</code>.
+                  Platform subscribes to <code className="bg-muted px-1 rounded">{form.topicPrefix || "circulair/telemetry"}/+</code> (wildcard for all BPANs).
+                  Devices publish to <code className="bg-muted px-1 rounded">{form.topicPrefix || "circulair/telemetry"}/{"<BPAN>"}</code>.
                 </p>
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function MqttBrokerPanel() {
 
       {/* Test Publish */}
       {isConnected && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="border-border bg-muted/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Send className="w-4 h-4 text-primary" />
@@ -324,7 +324,7 @@ export default function MqttBrokerPanel() {
                   onChange={(e) => setTestBpan(e.target.value)}
                   maxLength={21}
                   placeholder="21-character BPAN"
-                  className="bg-white/5 border-white/10 font-mono text-sm"
+                  className="bg-muted/50 border-border font-mono text-sm"
                 />
               </div>
               <Button
@@ -350,7 +350,7 @@ export default function MqttBrokerPanel() {
 
       {/* Quick start guide when not connected */}
       {!isConnected && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="border-border bg-muted/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Quick Start — Free Public Broker</CardTitle>
           </CardHeader>
@@ -358,7 +358,7 @@ export default function MqttBrokerPanel() {
             <p className="text-xs text-muted-foreground">
               To test without your own broker, use the free HiveMQ public broker. No account needed.
             </p>
-            <div className="rounded-lg bg-[#0d1117] border border-white/10 p-3 text-xs font-mono text-green-400 space-y-1">
+            <div className="rounded-lg bg-[#0d1117] border border-border p-3 text-xs font-mono text-green-400 space-y-1">
               <p>Broker URL: <span className="text-white">mqtt://broker.hivemq.com:1883</span></p>
               <p>Username: <span className="text-muted-foreground">(leave empty)</span></p>
               <p>Password: <span className="text-muted-foreground">(leave empty)</span></p>
@@ -371,7 +371,7 @@ export default function MqttBrokerPanel() {
                 setShowForm(true);
               }}
               variant="outline"
-              className="border-white/10 text-xs"
+              className="border-border text-xs"
             >
               <Wifi className="w-3.5 h-3.5 mr-1.5" />
               Use HiveMQ Public Broker
