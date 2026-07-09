@@ -19,7 +19,7 @@ import QueryResultChart from "@/components/QueryResultChart";
 import {
   Search, Sparkles, ChevronDown, ChevronUp, Clock, X,
   Battery, Activity, AlertTriangle, ShoppingCart, BarChart2,
-  Loader2, Download, RotateCcw, Keyboard,
+  Loader2, Download, RotateCcw, Keyboard, ArrowRight,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -127,6 +127,55 @@ function formatHeader(key: string): string {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+/**
+ * FollowUpSuggestions
+ * Renders 3-4 clickable follow-up query chips below the AI answer.
+ * Each chip is a button that re-runs the search with the suggested query.
+ * Chips stagger-fade in using CSS transition-delay.
+ */
+function FollowUpSuggestions({
+  suggestions,
+  onSelect,
+}: {
+  suggestions: string[];
+  onSelect: (q: string) => void;
+}) {
+  if (suggestions.length === 0) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-primary/15" aria-label="Follow-up query suggestions">
+      <div className="flex items-center gap-1.5 mb-2">
+        <ArrowRight className="w-3 h-3 text-primary/70" aria-hidden="true" />
+        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+          Explore further
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {suggestions.map((suggestion, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(suggestion)}
+            className="
+              inline-flex items-center gap-1.5 px-3 py-1.5
+              bg-muted/20 hover:bg-primary/10
+              border border-border hover:border-primary/40
+              rounded-full text-xs text-muted-foreground hover:text-foreground
+              transition-all duration-200
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+              cursor-pointer
+            "
+            style={{ animationDelay: `${i * 80}ms` }}
+            aria-label={`Follow-up query: ${suggestion}`}
+          >
+            <Sparkles className="w-3 h-3 text-primary/60 shrink-0" aria-hidden="true" />
+            <span className="leading-snug text-left">{suggestion}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResultTable({
   results,
   intent,
@@ -518,12 +567,18 @@ export default function NaturalLanguageSearch() {
               {/* AI answer + data */}
               {result && showResults && (
                 <div className="px-4 pb-4 space-y-3" aria-live="polite">
-                  {/* LLM answer */}
+                  {/* LLM answer + follow-up suggestions */}
                   <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-start gap-2">
                       <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" aria-hidden="true" />
                       <p className="text-sm text-foreground/90 leading-relaxed">{result.answer}</p>
                     </div>
+                    {result.followUpSuggestions && (result.followUpSuggestions as string[]).length > 0 && (
+                      <FollowUpSuggestions
+                        suggestions={result.followUpSuggestions as string[]}
+                        onSelect={handleSubmit}
+                      />
+                    )}
                   </div>
 
                   {/* Active filters */}

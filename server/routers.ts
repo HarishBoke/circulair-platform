@@ -1356,20 +1356,67 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
           ? JSON.stringify(summaryStats, null, 2)
           : JSON.stringify(results.slice(0, 5), null, 2);
 
-        const answerResponse = await invokeLLM({
-          messages: [
-            {
-              role: "system",
-              content: `You are a battery analytics assistant for the Circul-AI-r platform.\nGiven a user question and relevant data, provide a concise, insightful answer in 2-4 sentences.\nFocus on key numbers, trends, or anomalies. Be specific. Do not repeat the raw data verbatim.`,
+        // Step 3: Run answer + follow-up suggestions in parallel to minimise latency
+        const [answerResponse, followUpResponse] = await Promise.all([
+          invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: `You are a battery analytics assistant for the Circul-AI-r platform.\nGiven a user question and relevant data, provide a concise, insightful answer in 2-4 sentences.\nFocus on key numbers, trends, or anomalies. Be specific. Do not repeat the raw data verbatim.`,
+              },
+              {
+                role: "user",
+                content: `Question: ${input.query}\n\nData (first 5 rows of ${totalCount} total):\n${dataContext}`,
+              },
+            ],
+          }),
+          invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: `You are a battery analytics assistant for the Circul-AI-r platform.\nYour task is to generate exactly 3 short, specific follow-up query suggestions that would help the user explore their battery data further.\nBase suggestions on the current query intent, active filters, result count, and data patterns.\n\nRules:\n- Each suggestion must be a complete natural language question (10-15 words max)\n- Suggestions must be meaningfully different from the original query and from each other\n- Focus on drill-down, comparison, or anomaly detection angles\n- Use specific values from the data when possible (e.g. chemistry names, SOH thresholds, alert types)\n- Do NOT include numbering, bullets, or prefixes\n\nRespond ONLY with valid JSON: { "suggestions": ["...", "...", "..."] }`,
+              },
+              {
+                role: "user",
+                content: `Original query: "${input.query}"\nIntent: ${intent}\nActive filters: ${JSON.stringify(filters)}\nTotal matching records: ${totalCount}\nSample data (first 3 rows):\n${JSON.stringify(results.slice(0, 3), null, 2)}`,
+              },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "follow_up_suggestions",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    suggestions: {
+                      type: "array",
+                      items: { type: "string" },
+                    },
+                  },
+                  required: ["suggestions"],
+                  additionalProperties: false,
+                },
+              },
             },
-            {
-              role: "user",
-              content: `Question: ${input.query}\n\nData (first 5 rows of ${totalCount} total):\n${dataContext}`,
-            },
-          ],
-        });
+          }),
+        ]);
 
         const answer = answerResponse.choices?.[0]?.message?.content ?? explanation;
+
+        // Parse follow-up suggestions — fail gracefully if LLM returns invalid JSON
+        let followUpSuggestions: string[] = [];
+        try {
+          const raw = followUpResponse.choices?.[0]?.message?.content ?? "{}";
+          const parsed = JSON.parse(raw) as { suggestions?: unknown };
+          if (Array.isArray(parsed.suggestions)) {
+            followUpSuggestions = (parsed.suggestions as unknown[])
+              .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+              .slice(0, 4);
+          }
+        } catch {
+          // Silently ignore — UI will simply not show follow-up chips
+        }
 
         return {
           intent,
@@ -1380,6 +1427,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
           totalCount,
           summaryStats,
           filters,
+          followUpSuggestions,
         };
       }),
   }),

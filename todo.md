@@ -1259,3 +1259,16 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Custom Tooltip and PieTooltip components matching platform card style
 - [x] queryResultChart.test.ts — 23 new tests covering all 6 intents + edge cases + bin assignment + color assignment
 - [x] TypeScript: 0 errors, 490 tests passing (31 test files)
+
+## Phase NL-Search-FollowUp: Contextual follow-up query suggestions in AI answer panel [COMPLETE]
+- [x] analytics.nlQuery tRPC response now includes followUpSuggestions: string[] (3-4 LLM-generated)
+- [x] Parallel Promise.all — answer + suggestions LLM calls run concurrently to minimise latency
+- [x] LLM prompt generates suggestions based on: intent, active filters, totalCount, sample data rows
+- [x] Structured JSON schema output (json_schema response_format) ensures reliable parsing
+- [x] Graceful degradation — if LLM returns invalid JSON, followUpSuggestions silently falls back to []
+- [x] FollowUpSuggestions sub-component — pill chips with Sparkles icon, stagger animation-delay per chip
+- [x] Rendered inside the AI answer card, below the answer text, separated by a subtle border
+- [x] Clicking a chip calls handleSubmit() — re-runs the query, adds to history, updates search bar
+- [x] Keyboard accessible: buttons with focus-visible ring-2 ring-primary/40
+- [x] followUpSuggestions.test.ts — 15 new tests covering parsing, capping, graceful degradation, type safety
+- [x] TypeScript: 0 errors, 504 tests passing (32 test files); 1 pre-existing flaky test in gatewayDocs.test.ts (unrelated to this feature)
