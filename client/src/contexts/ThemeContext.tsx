@@ -52,8 +52,8 @@ export function ThemeProvider({
         const nextTheme: Theme = theme === "light" ? "dark" : "light";
 
         // Use the View Transition API for a smooth circular ripple if available
-        const vt = (document as any).startViewTransition;
-        if (vt && event) {
+        const supportsVT = typeof (document as any).startViewTransition === "function";
+        if (supportsVT && event) {
           // Capture click position for the radial clip-path origin
           const x = event.clientX;
           const y = event.clientY;
@@ -62,7 +62,8 @@ export function ThemeProvider({
             Math.max(y, window.innerHeight - y)
           );
 
-          const transition = vt(() => {
+          // Bind to document to avoid "Illegal invocation" error
+          const transition = (document as any).startViewTransition.call(document, () => {
             applyTheme(nextTheme, switchable);
             setTheme(nextTheme);
           });
