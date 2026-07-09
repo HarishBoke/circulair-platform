@@ -237,16 +237,49 @@
   }
   :focus:not(:focus-visible) { outline: none; }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  /* ── Custom Scrollbar — theme-aware ─────────────────────────────────────
+   * Light mode: soft grey track, muted thumb, primary on hover
+   * Dark  mode: near-black track, zinc thumb, primary on hover
+   * Uses CSS variables so it switches automatically with the .dark class.
+   * ──────────────────────────────────────────────────────────────────────── */
+
+  /* Scrollbar dimensions */
+  ::-webkit-scrollbar               { width: 6px; height: 6px; }
+
+  /* Track — subtle inset groove */
+  ::-webkit-scrollbar-track         { background: transparent; border-radius: 999px; }
+  ::-webkit-scrollbar-track:hover   { background: oklch(from var(--muted) l c h / 0.5); }
+
+  /* Corner between horizontal + vertical bars */
+  ::-webkit-scrollbar-corner        { background: transparent; }
+
+  /* Thumb — pill shape, uses border trick for padding effect */
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+    background-clip: padding-box;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background-color: oklch(from var(--muted-foreground) l c h / 0.35);
+    min-height: 36px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--primary);
-    opacity: 0.5;
+    background-color: oklch(from var(--primary) l c h / 0.7);
+    border-color: transparent;
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: var(--primary);
+  }
+
+  /* Firefox — uses scrollbar-color with two values: thumb track */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color:
+      oklch(from var(--muted-foreground) l c h / 0.35)
+      transparent;
+  }
+  *:hover {
+    scrollbar-color:
+      oklch(from var(--primary) l c h / 0.6)
+      transparent;
   }
 }
 
