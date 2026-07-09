@@ -10,7 +10,7 @@ import {
   Battery, Brain, Shield, ShoppingCart, BarChart3, ArrowRight,
   CheckCircle2, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
-  Factory, Recycle, Server, Landmark, CircuitBoard, Play,
+  Factory, Recycle, Server, Landmark, Play,
   Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -143,17 +143,6 @@ const COMPLIANCE_FRAMEWORKS = [
   { name: "Extended Producer Responsibility", region: "India", code: "EPR Mandate", status: "Full Compliance" },
   { name: "MIIT Battery Traceability", region: "China", code: "GB/T 34014", status: "Adapter Ready" },
   { name: "Carbon Footprint Declaration", region: "EU", code: "Art. 7 EU BR", status: "Full Compliance" },
-];
-
-const TECH_STACK = [
-  { name: "React 19", category: "Frontend" },
-  { name: "TypeScript", category: "Language" },
-  { name: "tRPC v11", category: "API Layer" },
-  { name: "TiDB", category: "Database" },
-  { name: "MQTT v5", category: "IoT Protocol" },
-  { name: "WebSocket", category: "Real-Time" },
-  { name: "Drizzle ORM", category: "Data Layer" },
-  { name: "Tailwind CSS 4", category: "Styling" },
 ];
 
 /* ─── COMPONENT ────────────────────────────────────────────────────────────── */
@@ -516,50 +505,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── TECHNOLOGY ─────────────────────────────────────────────────────── */}
-      <section id="technology" className="relative z-10 bg-card/20 border-y border-border/40 py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-primary/8 border border-primary/15 rounded-full px-4 py-2 mb-5">
-                <CircuitBoard className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Technology Stack</span>
-              </div>
-              <h2 className="text-3xl lg:text-[2.5rem] font-extrabold mb-5 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                Enterprise-Grade Architecture
-              </h2>
-              <p className="text-muted-foreground text-base leading-relaxed mb-8">
-                Built on a modern, type-safe stack designed for reliability, performance,
-                and developer experience. Every layer is optimized for battery lifecycle
-                data at scale.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { icon: FileCheck, text: "ISO 27001 & SOC 2 compliance-ready with full audit logging" },
-                  { icon: Shield, text: "End-to-end encryption with role-based access control" },
-                  { icon: Activity, text: "99.9% uptime SLA with automated failover and monitoring" },
-                ].map((item) => (
-                  <div key={item.text} className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <item.icon className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <span className="text-[14px] text-foreground/80 leading-relaxed">{item.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {TECH_STACK.map((tech) => (
-                <div key={tech.name} className="bg-card/60 border border-border/50 rounded-xl p-5 hover:border-primary/20 transition-all duration-300 group">
-                  <div className="text-[10px] font-semibold text-primary/60 uppercase tracking-wider mb-1.5" style={{ fontFamily: "var(--font-mono)" }}>{tech.category}</div>
-                  <div className="text-[15px] font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>{tech.name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ─── CTA ────────────────────────────────────────────────────────────── */}
       <section className="relative z-10 py-28">
