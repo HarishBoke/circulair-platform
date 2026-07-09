@@ -1,13 +1,12 @@
 /**
- * Owner Notifications — ZeptoMail email implementation
+ * Owner Notifications — ZeptoMail REST API implementation (direct fetch, no SDK)
  *
- * Primary: ZeptoMail email to OWNER_EMAIL (ZEPTOMAIL_TOKEN required)
+ * Primary: ZeptoMail REST API to OWNER_EMAIL (ZEPTOMAIL_TOKEN required)
  * Fallback: Manus Forge SendNotification webhook (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
  *           — used automatically when deployed on Manus hosting without ZeptoMail token
  */
 
 import { TRPCError } from "@trpc/server";
-import { SendMailClient } from "zeptomail";
 import { ENV } from "./env";
 
 export type NotificationPayload = {
@@ -17,6 +16,7 @@ export type NotificationPayload = {
 
 const TITLE_MAX_LENGTH = 1200;
 const CONTENT_MAX_LENGTH = 20000;
+const ZEPTO_API_URL = "https://api.zeptomail.in/v1.1/email";
 
 function validatePayload(input: NotificationPayload): NotificationPayload {
   if (!input.title?.trim()) {
@@ -36,7 +36,7 @@ function validatePayload(input: NotificationPayload): NotificationPayload {
   return { title, content };
 }
 
-// ── ZeptoMail email implementation ────────────────────────────────────────────
+// ── ZeptoMail REST API implementation ─────────────────────────────────────────
 
 async function notifyViaZeptoMail(payload: NotificationPayload): Promise<boolean> {
   const ownerEmail = ENV.ownerEmail || ENV.fromEmail;
@@ -45,27 +45,44 @@ async function notifyViaZeptoMail(payload: NotificationPayload): Promise<boolean
     return false;
   }
   try {
-    const client = new SendMailClient({
-      url: "api.zeptomail.com/",
-      token: ENV.zeptomailToken,
-    });
-    await client.sendMail({
-      from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
-      to: [{ email_address: { address: ownerEmail, name: ENV.ownerName || "Platform Owner" } }],
-      subject: `[Platform Alert] ${payload.title}`,
-      htmlbody: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #10b981; margin-bottom: 8px;">${payload.title}</h2>
-          <div style="background: #f9fafb; border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">
-            ${payload.content.replace(/\n/g, "<br>")}
+    const response = await fetch(ZEPTO_API_URL, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        // Token already contains the full "Zoho-enczapikey ..." prefix — pass as-is
+        "Authorization": ENV.zeptomailToken,
+      },
+      body: JSON.stringify({
+        from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
+        to: [{ email_address: { address: ownerEmail, name: ENV.ownerName || "Platform Owner" } }],
+        subject: `[Platform Alert] ${payload.title}`,
+        htmlbody: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #10b981; margin-bottom: 8px;">${payload.title}</h2>
+            <div style="background: #f9fafb; border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">
+              ${payload.content.replace(/\n/g, "<br>")}
+            </div>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">
+              Sent by Circul-AI-r Platform notification system
+            </p>
           </div>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">
-            Sent by Circul-AI-r Platform notification system
-          </p>
-        </div>
-      `,
-      textbody: `${payload.title}\n\n${payload.content}`,
+        `,
+        textbody: `${payload.title}\n\n${payload.content}`,
+      }),
     });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errMsg = (data as any)?.error?.details?.[0]?.message
+        ?? (data as any)?.error?.message
+        ?? `HTTP ${response.status}`;
+      console.warn(`[Notification] ZeptoMail API error: ${errMsg}`);
+      return false;
+    }
+
+    console.log(`[Notification] ZeptoMail email sent to ${ownerEmail} (request_id: ${(data as any)?.request_id ?? ""})`);
     return true;
   } catch (err) {
     console.warn("[Notification] ZeptoMail exception:", err);

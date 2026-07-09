@@ -1,7 +1,8 @@
 /**
  * email.ts
  *
- * Transactional email helpers powered by ZeptoMail.
+ * Transactional email helpers powered by ZeptoMail REST API (direct fetch).
+ * Uses ZEPTOMAIL_TOKEN as-is in the Authorization header — no SDK wrapping.
  * All functions are server-side only — never import this from client code.
  *
  * Exports:
@@ -9,18 +10,46 @@
  *   sendDeveloperOnboardingEmail(params)        → Promise<{ success: boolean; messageId?: string }>
  *   validateEmailConfig()                       → boolean
  */
-import { SendMailClient } from "zeptomail";
 import { ENV } from "./_core/env";
 
-// ─── ZeptoMail client (lazy-initialised so tests can mock ENV) ────────────────
-function getZeptoClient(): SendMailClient {
+const ZEPTO_API_URL = "https://api.zeptomail.in/v1.1/email";
+
+// ─── Core send helper ─────────────────────────────────────────────────────────
+interface ZeptoMailPayload {
+  from: { address: string; name: string };
+  to: { email_address: { address: string; name: string } }[];
+  reply_to?: { address: string; name: string }[];
+  subject: string;
+  htmlbody?: string;
+  textbody?: string;
+}
+
+async function sendViaZeptoAPI(payload: ZeptoMailPayload): Promise<{ request_id?: string }> {
   if (!ENV.zeptomailToken) {
     throw new Error("ZEPTOMAIL_TOKEN is not configured");
   }
-  return new SendMailClient({
-    url: "api.zeptomail.com/",
-    token: ENV.zeptomailToken,
+  const response = await fetch(ZEPTO_API_URL, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      // Token already contains the full "Zoho-enczapikey ..." prefix — pass as-is
+      "Authorization": ENV.zeptomailToken,
+    },
+    body: JSON.stringify(payload),
   });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const errCode = (data as any)?.error?.details?.[0]?.code ?? response.status;
+    const errMsg = (data as any)?.error?.details?.[0]?.message
+      ?? (data as any)?.error?.message
+      ?? `HTTP ${response.status}`;
+    throw new Error(`ZeptoMail API error [${errCode}]: ${errMsg}`);
+  }
+
+  return data as { request_id?: string };
 }
 
 // ─── Config validation ────────────────────────────────────────────────────────
@@ -135,8 +164,7 @@ export async function sendPasswordResetEmail(
   expiryMinutes = 15
 ): Promise<SendPasswordResetEmailResult> {
   try {
-    const client = getZeptoClient();
-    const response = await client.sendMail({
+    const response = await sendViaZeptoAPI({
       from: { address: ENV.fromEmail, name: "Circul-AI-r" },
       to: [{ email_address: { address: to, name: name ?? to } }],
       reply_to: [{ address: ENV.fromEmail, name: "Circul-AI-r" }],
@@ -144,7 +172,7 @@ export async function sendPasswordResetEmail(
       htmlbody: buildPasswordResetHtml(resetUrl, name ?? "", expiryMinutes),
       textbody: buildPasswordResetText(resetUrl, name ?? "", expiryMinutes),
     });
-    const requestId = (response as any)?.request_id ?? "";
+    const requestId = response?.request_id ?? "";
     console.log(`[ZeptoMail] Password reset email sent to ${to} (request_id: ${requestId})`);
     return { success: true, messageId: requestId };
   } catch (err) {
@@ -205,7 +233,7 @@ const data = await res.json();`;
     .btn-outline { background:transparent; border:1px solid #22c55e; color:#22c55e !important; }
     .footer { padding:20px 40px 28px; border-top:1px solid #1a3a1a; }
     .footer p { font-size:12px; color:#166534; margin:0 0 6px; }
-    .footer a { color:#22c55e; text-decoration:none; }
+    .footer a { color:#22c55e; text-decoration: none; }
     .badge-row { display:flex; gap:16px; margin-top:16px; }
     .badge { font-size:9px; color:#166534; letter-spacing:2px; text-transform:uppercase; font-family:'Courier New',monospace; }
   </style>
@@ -281,8 +309,7 @@ export async function sendDeveloperOnboardingEmail(
   params: DeveloperOnboardingEmailParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const client = getZeptoClient();
-    const response = await client.sendMail({
+    const response = await sendViaZeptoAPI({
       from: { address: ENV.fromEmail, name: "Circul-AI-r Developers" },
       to: [{ email_address: { address: params.to, name: params.name || params.to } }],
       reply_to: [{ address: ENV.fromEmail, name: "Circul-AI-r Developers" }],
@@ -290,7 +317,7 @@ export async function sendDeveloperOnboardingEmail(
       htmlbody: buildDeveloperOnboardingHtml(params),
       textbody: buildDeveloperOnboardingText(params),
     });
-    const requestId = (response as any)?.request_id ?? "";
+    const requestId = response?.request_id ?? "";
     console.log(`[ZeptoMail] Developer onboarding email sent to ${params.to} (request_id: ${requestId})`);
     return { success: true, messageId: requestId };
   } catch (err) {
