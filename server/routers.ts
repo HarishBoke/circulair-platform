@@ -3791,10 +3791,46 @@ Rules:
           status: "new",
           ipAddress: ip,
         });
-        // Notify platform owner
+        // Send enquiry email directly to harish@setoo.co via Resend
+        try {
+          const { Resend } = await import("resend");
+          const { ENV } = await import("./_core/env");
+          if (ENV.resendApiKey) {
+            const resend = new Resend(ENV.resendApiKey);
+            await resend.emails.send({
+              from: `Circul-AI-r Platform <${ENV.resendFromEmail}>`,
+              to: ["harish@setoo.co"],
+              replyTo: input.email,
+              subject: `New Enquiry from circulair.energy — ${input.name}${input.company ? ` (${input.company})` : ""}`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #0a0a0a; color: #e5e7eb;">
+                  <div style="border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 24px;">
+                    <h2 style="color: #10b981; margin: 0 0 4px;">New Enquiry — circulair.energy</h2>
+                    <p style="color: #6b7280; font-size: 13px; margin: 0;">Submitted via the contact form at <a href="https://circulair.energy/" style="color: #10b981;">https://circulair.energy/</a></p>
+                  </div>
+                  <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
+                    <tr><td style="padding: 8px 0; color: #9ca3af; width: 100px;">Name</td><td style="padding: 8px 0; color: #f3f4f6; font-weight: 600;">${input.name}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${input.email}" style="color: #10b981;">${input.email}</a></td></tr>
+                    ${input.company ? `<tr><td style="padding: 8px 0; color: #9ca3af;">Company</td><td style="padding: 8px 0; color: #f3f4f6;">${input.company}</td></tr>` : ""}
+                    ${input.role ? `<tr><td style="padding: 8px 0; color: #9ca3af;">Role</td><td style="padding: 8px 0; color: #f3f4f6;">${input.role}</td></tr>` : ""}
+                  </table>
+                  <div style="background: #111827; border-left: 3px solid #10b981; border-radius: 4px; padding: 16px; font-size: 14px; line-height: 1.7; color: #d1d5db; white-space: pre-wrap;">${input.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                  <p style="color: #4b5563; font-size: 12px; margin-top: 20px; border-top: 1px solid #1f2937; padding-top: 16px;">
+                    This enquiry was submitted via the contact form at <a href="https://circulair.energy/" style="color: #6b7280;">https://circulair.energy/</a>.
+                    Reply directly to this email to respond to ${input.name}.
+                  </p>
+                </div>
+              `,
+              text: `New Enquiry from circulair.energy\n\nName: ${input.name}\nEmail: ${input.email}${input.company ? `\nCompany: ${input.company}` : ""}${input.role ? `\nRole: ${input.role}` : ""}\n\nMessage:\n${input.message}\n\n---\nSubmitted via https://circulair.energy/`,
+            });
+          }
+        } catch (e) {
+          console.error("[contact] Resend email to harish@setoo.co failed:", e);
+        }
+        // Also notify platform owner via the standard notification channel as backup
         const { notifyOwner } = await import("./_core/notification");
         notifyOwner({
-          title: `New Contact Inquiry from ${input.name}`,
+          title: `New Enquiry from circulair.energy — ${input.name}`,
           content: `**From:** ${input.name} <${input.email}>\n**Company:** ${input.company ?? "—"}\n**Role:** ${input.role ?? "—"}\n\n${input.message}`,
         }).catch(e => console.error("[contact] notifyOwner failed:", e));
         return { success: true };

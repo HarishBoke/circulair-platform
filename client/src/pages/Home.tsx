@@ -246,7 +246,6 @@ export default function Home() {
           <a href="#capabilities" className="hover:text-foreground transition-colors duration-200">Capabilities</a>
           <a href="#stakeholders" className="hover:text-foreground transition-colors duration-200">Stakeholders</a>
           <a href="#compliance" className="hover:text-foreground transition-colors duration-200">Compliance</a>
-          <a href="#technology" className="hover:text-foreground transition-colors duration-200">Technology</a>
         </nav>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5">
