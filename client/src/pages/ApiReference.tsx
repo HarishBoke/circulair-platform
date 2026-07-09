@@ -574,196 +574,215 @@ export default function ApiReference() {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-emerald-500/10 shrink-0" aria-hidden="true">
-          <BookOpen className="w-6 h-6 text-emerald-400" />
+    <div className="max-w-6xl mx-auto py-2">
+      {/* ── Page header ──────────────────────────────────────────────────────── */}
+      <div className="flex items-start gap-3 border-b border-border/40 pb-5 mb-6">
+        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shrink-0" aria-hidden="true">
+          <BookOpen className="w-5 h-5 text-emerald-400" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">API Reference</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground">API Reference</h1>
+            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">v1.0</Badge>
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Full REST API documentation for the Circul-AI-r Battery Intelligence Platform
+            REST API for the Circul-AI-r Battery Intelligence Platform
+            {" · "}<span className="font-mono text-xs text-emerald-400/80">{BASE_URL}</span>
           </p>
         </div>
-        <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 shrink-0">
-          v1.0
-        </Badge>
       </div>
 
-      {/* Base URL + Auth */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-border/50 bg-card/50">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Globe className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Base URL</span>
+      {/* ── Two-column layout ─────────────────────────────────────────────── */}
+      <div className="flex gap-6">
+        {/* Sticky sidebar */}
+        <aside className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
+          <div className="sticky top-4 space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">Categories</p>
+            {["All", ...CATEGORIES].map((cat) => {
+              const Icon = cat !== "All" ? (CATEGORY_ICONS[cat] || BookOpen) : BookOpen;
+              const count = cat === "All" ? ENDPOINTS.length : ENDPOINTS.filter(e => e.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  aria-pressed={activeCategory === cat}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left ${
+                    activeCategory === cat
+                      ? "bg-emerald-500/15 text-emerald-400 font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span className="flex-1 truncate">{cat}</span>
+                  <span className="text-[10px] text-muted-foreground/60">{count}</span>
+                </button>
+              );
+            })}
+            <div className="h-px bg-border/30 my-2" />
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">Resources</p>
+            <a href="/developer-portal" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              Developer Portal
+            </a>
+            <button
+              onClick={() => window.open("/api/v1/docs", "_blank")}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors text-left"
+            >
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+              Swagger UI
+            </button>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Auth + Rate limit info bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card className="border-border/50 bg-card/50">
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Authentication</span>
+                </div>
+                <code className="text-xs font-mono text-foreground">Authorization: Bearer cai_…</code>
+                <p className="text-[11px] text-muted-foreground mt-1">Issue keys in <a href="/developer-portal" className="text-emerald-400 underline underline-offset-2">Developer Portal</a></p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                  <span className="text-[11px] font-semibold text-amber-400/80 uppercase tracking-wide">Rate Limits</span>
+                </div>
+                <p className="text-xs text-amber-300/90">100 req/min per key · HTTP 429 on breach</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Increase in Developer Portal</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Search + mobile category filter */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Label htmlFor={searchId} className="sr-only">Search endpoints</Label>
+              <Input
+                id={searchId}
+                placeholder="Search endpoints, paths, or scopes…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9"
+                aria-label="Search API endpoints"
+              />
             </div>
-            <code className="text-sm font-mono text-foreground">{BASE_URL}</code>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-card/50">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Lock className="w-4 h-4 text-amber-400" aria-hidden="true" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Authentication</span>
-            </div>
-            <code className="text-sm font-mono text-foreground">Authorization: Bearer cai_…</code>
-            <p className="text-xs text-muted-foreground mt-1">Issue keys in <a href="/developer-portal" className="text-emerald-400 underline underline-offset-2">Developer Portal</a></p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Rate Limits */}
-      <Card className="border-amber-500/20 bg-amber-500/5">
-        <CardContent className="pt-3 pb-3">
-          <p className="text-xs text-amber-300">
-            <strong>Rate limits:</strong> Default 100 req/min per API key. Exceeding the limit returns HTTP 429. Increase limits in the Developer Portal when creating or editing a key.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Search + Category Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 space-y-1">
-          <Label htmlFor={searchId} className="sr-only">Search endpoints</Label>
-          <Input
-            id={searchId}
-            placeholder="Search endpoints, paths, or scopes…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9"
-            aria-label="Search API endpoints"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap" role="group" aria-label="Filter by category">
-          {["All", ...CATEGORIES].map((cat) => {
-            const Icon = cat !== "All" ? (CATEGORY_ICONS[cat] || BookOpen) : BookOpen;
-            return (
-              <Button
-                key={cat}
-                variant={activeCategory === cat ? "default" : "outline"}
-                size="sm"
-                className={`h-9 text-xs ${activeCategory === cat ? "bg-emerald-600 hover:bg-emerald-700 text-foreground" : ""}`}
-                onClick={() => setActiveCategory(cat)}
-                aria-pressed={activeCategory === cat}
-              >
-                <Icon className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-                {cat}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Endpoint list */}
-      <div aria-live="polite" aria-atomic="false">
-        <p className="sr-only">{filtered.length} endpoint{filtered.length !== 1 ? "s" : ""} shown</p>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <BookOpen className="w-8 h-8 mx-auto mb-3 opacity-30" aria-hidden="true" />
-          <p className="text-sm">No endpoints match your search.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {CATEGORIES.filter((cat) => activeCategory === "All" || cat === activeCategory).map((cat) => {
-            const catEndpoints = filtered.filter((ep) => ep.category === cat);
-            if (catEndpoints.length === 0) return null;
-            const CatIcon = CATEGORY_ICONS[cat] || BookOpen;
-            return (
-              <section key={cat} aria-labelledby={`cat-${cat.replace(/\s+/g, "-")}`}>
-                <div className="flex items-center gap-2 mb-3 mt-4">
-                  <CatIcon className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                  <h2
-                    id={`cat-${cat.replace(/\s+/g, "-")}`}
-                    className="text-sm font-semibold text-muted-foreground uppercase tracking-wider"
+            <div className="flex gap-2 flex-wrap lg:hidden" role="group" aria-label="Filter by category">
+              {["All", ...CATEGORIES].map((cat) => {
+                const Icon = cat !== "All" ? (CATEGORY_ICONS[cat] || BookOpen) : BookOpen;
+                return (
+                  <Button
+                    key={cat}
+                    variant={activeCategory === cat ? "default" : "outline"}
+                    size="sm"
+                    className={`h-8 text-xs ${activeCategory === cat ? "bg-emerald-600 hover:bg-emerald-700 text-foreground" : ""}`}
+                    onClick={() => setActiveCategory(cat)}
+                    aria-pressed={activeCategory === cat}
                   >
+                    <Icon className="w-3 h-3 mr-1" aria-hidden="true" />
                     {cat}
-                  </h2>
-                  <div className="flex-1 h-px bg-border/30" aria-hidden="true" />
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Endpoint list */}
+          <div aria-live="polite" aria-atomic="false">
+            <p className="sr-only">{filtered.length} endpoint{filtered.length !== 1 ? "s" : ""} shown</p>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <BookOpen className="w-8 h-8 mx-auto mb-3 opacity-30" aria-hidden="true" />
+              <p className="text-sm">No endpoints match your search.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {CATEGORIES.filter((cat) => activeCategory === "All" || cat === activeCategory).map((cat) => {
+                const catEndpoints = filtered.filter((ep) => ep.category === cat);
+                if (catEndpoints.length === 0) return null;
+                const CatIcon = CATEGORY_ICONS[cat] || BookOpen;
+                return (
+                  <section key={cat} aria-labelledby={`cat-${cat.replace(/\s+/g, "-")}`}>
+                    <div className="flex items-center gap-2 mb-3 mt-4">
+                      <CatIcon className="w-4 h-4 text-emerald-400/60" aria-hidden="true" />
+                      <h2
+                        id={`cat-${cat.replace(/\s+/g, "-")}`}
+                        className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
+                        {cat}
+                      </h2>
+                      <div className="flex-1 h-px bg-border/30" aria-hidden="true" />
+                      <span className="text-[10px] text-muted-foreground/50">{catEndpoints.length} endpoint{catEndpoints.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {catEndpoints.map((ep) => (
+                        <EndpointCard key={ep.id} ep={ep} />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Swagger UI + OpenAPI downloads */}
+          <Card className="border-emerald-500/20 bg-emerald-500/5">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Interactive Swagger UI
+              </p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">REST API v1</p>
+                    <p className="text-xs text-muted-foreground">Bearer token auth — batteries, telemetry, warranty, marketplace, compliance</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0" onClick={() => window.open("/api/v1/docs", "_blank")}>
+                    Open Swagger UI
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  {catEndpoints.map((ep) => (
-                    <EndpointCard key={ep.id} ep={ep} />
-                  ))}
+                <div className="h-px bg-border/50" />
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      tRPC API — Full Platform
+                      <Badge className="ml-2 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">130+ endpoints</Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground">Session cookie auth — all platform features across 37 routers</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0" onClick={() => window.open("/api/trpc/docs", "_blank")}>
+                    Open Swagger UI
+                  </Button>
                 </div>
-              </section>
-            );
-          })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 bg-card/50">
+            <CardContent className="pt-4 pb-3">
+              <p className="text-sm font-medium text-foreground mb-2">Download OpenAPI Specs</p>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" onClick={() => window.open("/api/v1/openapi.json", "_blank")}>
+                  REST API openapi.json
+                </Button>
+                <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" onClick={() => window.open("/api/trpc/openapi.json", "_blank")}>
+                  tRPC API openapi.json
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Import into Postman, Insomnia, or use to generate client SDKs</p>
+            </CardContent>
+          </Card>
         </div>
-      )}
-
-      {/* Interactive Swagger UI */}
-      <Card className="border-emerald-500/20 bg-emerald-500/5">
-        <CardContent className="pt-4 pb-4">
-          <p className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Interactive API Documentation (Swagger UI)
-          </p>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">REST API v1</p>
-                <p className="text-xs text-muted-foreground">Bearer token auth — batteries, telemetry, warranty, marketplace, compliance</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0"
-                onClick={() => window.open("/api/v1/docs", "_blank")}
-              >
-                Open Swagger UI
-              </Button>
-            </div>
-            <div className="h-px bg-border/50" />
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  tRPC API — Full Platform
-                  <Badge className="ml-2 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">130+ endpoints</Badge>
-                </p>
-                <p className="text-xs text-muted-foreground">Session cookie auth — all platform features across 37 routers</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0"
-                onClick={() => window.open("/api/trpc/docs", "_blank")}
-              >
-                Open Swagger UI
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* OpenAPI download */}
-      <Card className="border-border/50 bg-card/50">
-        <CardContent className="pt-4 pb-3">
-          <p className="text-sm font-medium text-foreground mb-2">Download OpenAPI Specs</p>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-              onClick={() => window.open("/api/v1/openapi.json", "_blank")}
-            >
-              REST API openapi.json
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-              onClick={() => window.open("/api/trpc/openapi.json", "_blank")}
-            >
-              tRPC API openapi.json
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">Import into Postman, Insomnia, or use to generate client SDKs</p>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

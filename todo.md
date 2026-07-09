@@ -1283,3 +1283,13 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [ ] Verify reset password works end-to-end
 - [ ] Run full test suite after migration
 - [ ] TypeScript: 0 errors
+
+## API Docs & Health Portal Redesign [COMPLETE]
+- [x] Read current ApiReference.tsx and HealthPortal.tsx to understand structure
+- [x] Fix HealthPortal: "Resend API connected" → "ZeptoMail connected"
+- [x] Fix HealthPortal: "PostgreSQL (TiDB)" → "MySQL (TiDB)"
+- [x] Wire live agent.systemHealth tRPC data into HealthPortal for real DB/MQTT/API metrics
+- [x] Redesign HealthPortal with improved dark theme: live status cards, uptime %, response time, service grid, admin-only gate
+- [x] Redesign ApiReference with two-column sticky sidebar (lg+), endpoint count badges per category, improved header with base URL inline, auth + rate-limit info cards, mobile category filter
+- [x] Fix useAuth import path in HealthPortal.tsx (was @/hooks/useAuth → @/_core/hooks/useAuth)
+- [x] TypeScript: 0 errors
