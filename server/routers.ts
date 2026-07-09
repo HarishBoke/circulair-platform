@@ -3716,5 +3716,41 @@ Rules:
         return { success: true };
       }),
   }),
+
+  // ─── CONTACT FORM ──────────────────────────────────────────────────────────
+  contact: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(2, "Name must be at least 2 characters").max(255),
+        email: z.string().email("Please enter a valid email address"),
+        company: z.string().max(255).optional(),
+        role: z.string().max(100).optional(),
+        message: z.string().min(10, "Message must be at least 10 characters").max(5000),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { contactInquiries } = await import("../drizzle/schema");
+        const ip = (ctx.req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+          ctx.req.socket?.remoteAddress ||
+          null;
+        await db.insert(contactInquiries).values({
+          name: input.name,
+          email: input.email,
+          company: input.company ?? null,
+          role: input.role ?? null,
+          message: input.message,
+          status: "new",
+          ipAddress: ip,
+        });
+        // Notify platform owner
+        const { notifyOwner } = await import("./_core/notification");
+        notifyOwner({
+          title: `New Contact Inquiry from ${input.name}`,
+          content: `**From:** ${input.name} <${input.email}>\n**Company:** ${input.company ?? "—"}\n**Role:** ${input.role ?? "—"}\n\n${input.message}`,
+        }).catch(e => console.error("[contact] notifyOwner failed:", e));
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

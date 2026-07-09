@@ -1112,3 +1112,18 @@ export const sdkMeta = pgTable("sdk_meta", {
 
 export type SdkMeta = typeof sdkMeta.$inferSelect;
 export type InsertSdkMeta = typeof sdkMeta.$inferInsert;
+
+// ─── CONTACT INQUIRIES ────────────────────────────────────────────────────────
+export const contactInquiries = pgTable("contact_inquiries", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  role: varchar("role", { length: 100 }),
+  message: text("message").notNull(),
+  status: varchar("status", { length: 32 }).default("new").notNull(), // new | read | replied
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ContactInquiry = typeof contactInquiries.$inferSelect;
+export type InsertContactInquiry = typeof contactInquiries.$inferInsert;

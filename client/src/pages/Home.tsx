@@ -11,9 +11,14 @@ import {
   CheckCircle2, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, Play,
-  Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon
+  Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon,
+  Mail, Send, CheckCircle
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { trpc } from "@/lib/trpc";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 /* ─── ANIMATED COUNTER ─────────────────────────────────────────────────────── */
 function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2000 }: {
@@ -190,6 +195,30 @@ export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeStakeholder, setActiveStakeholder] = useState(0);
+
+  // Contact form state
+  const [contactForm, setContactForm] = useState({ name: "", email: "", company: "", role: "", message: "" });
+  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const contactMutation = trpc.contact.submit.useMutation({
+    onSuccess: () => setContactSubmitted(true),
+    onError: (err) => setContactErrors({ submit: err.message }),
+  });
+
+  function validateContact() {
+    const errs: Record<string, string> = {};
+    if (!contactForm.name || contactForm.name.length < 2) errs.name = "Name must be at least 2 characters";
+    if (!contactForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactForm.email)) errs.email = "Please enter a valid email address";
+    if (!contactForm.message || contactForm.message.length < 10) errs.message = "Message must be at least 10 characters";
+    setContactErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function handleContactSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validateContact()) return;
+    contactMutation.mutate(contactForm);
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -506,37 +535,164 @@ export default function Home() {
       </section>
 
 
-      {/* ─── CTA ────────────────────────────────────────────────────────────── */}
+      {/* ─── CTA + CONTACT FORM ─────────────────────────────────────────────── */}
       <section className="relative z-10 py-28">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-chart-2/5 rounded-3xl blur-3xl" />
-            <div className="relative bg-card/40 border border-border/40 rounded-3xl p-12 lg:p-16 backdrop-blur-xl">
-              <div className="inline-flex items-center gap-2 bg-primary/8 border border-primary/15 rounded-full px-4 py-2 mb-6">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Get Started Today</span>
-              </div>
-              <h2 className="text-3xl lg:text-[2.75rem] font-extrabold mb-5 tracking-tight leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-                Ready to Transform Your<br />
-                <span className="text-primary">Battery Value Chain?</span>
-              </h2>
-              <p className="text-muted-foreground text-base leading-relaxed max-w-xl mx-auto mb-10">
-                Join the platform that is defining the standard for battery circular economy.
-                From cell manufacturing to material recovery - every stage, every stakeholder, one platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  size="lg"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-10 h-13 text-[15px] rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
-                  onClick={() => window.location.href = "/login"}
-                >
-                  Start Free <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <Link href="/wiki">
-                  <Button size="lg" variant="outline" className="border-border/60 hover:border-primary/40 hover:bg-primary/5 px-10 h-13 text-[15px] rounded-xl">
-                    Read Documentation <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
+            <div className="relative bg-card/40 border border-border/40 rounded-3xl p-10 lg:p-14 backdrop-blur-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+
+                {/* Left: headline + buttons */}
+                <div className="flex flex-col justify-center">
+                  <div className="inline-flex items-center gap-2 bg-primary/8 border border-primary/15 rounded-full px-4 py-2 mb-6 w-fit">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Get Started Today</span>
+                  </div>
+                  <h2 className="text-3xl lg:text-[2.6rem] font-extrabold mb-5 tracking-tight leading-tight" style={{ fontFamily: "var(--font-display)" }}>
+                    Ready to Transform Your<br />
+                    <span className="text-primary">Battery Value Chain?</span>
+                  </h2>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-8">
+                    Join the platform that is defining the standard for battery circular economy.
+                    From cell manufacturing to material recovery — every stage, every stakeholder, one platform.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      size="lg"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-12 text-[15px] rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+                      onClick={() => window.location.href = "/login"}
+                    >
+                      Start Free <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                    <Link href="/wiki">
+                      <Button size="lg" variant="outline" className="border-border/60 hover:border-primary/40 hover:bg-primary/5 px-8 h-12 text-[15px] rounded-xl">
+                        Read Documentation <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="mt-8 flex flex-col gap-2.5">
+                    {[
+                      "No credit card required to start",
+                      "EU Battery Regulation compliant from day one",
+                      "MQTT + REST API included",
+                    ].map((point) => (
+                      <div key={point} className="flex items-center gap-2.5 text-[13px] text-muted-foreground">
+                        <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                        {point}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right: contact form */}
+                <div className="bg-background/60 border border-border/50 rounded-2xl p-7 backdrop-blur-sm">
+                  {contactSubmitted ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                        <CheckCircle className="w-7 h-7 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-bold">Message Received!</h3>
+                      <p className="text-muted-foreground text-sm max-w-xs">
+                        Thank you for reaching out. Our team will get back to you within 1 business day.
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => { setContactSubmitted(false); setContactForm({ name: "", email: "", company: "", role: "", message: "" }); }}>
+                        Send another message
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleContactSubmit} className="space-y-4">
+                      <div className="flex items-center gap-2.5 mb-5">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold">Get in Touch</h3>
+                          <p className="text-[12px] text-muted-foreground">We typically respond within 1 business day</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="contact-name" className="text-[12px] font-semibold">Full Name <span className="text-destructive">*</span></Label>
+                          <Input
+                            id="contact-name"
+                            placeholder="Jane Smith"
+                            value={contactForm.name}
+                            onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
+                            className={`h-9 text-sm ${contactErrors.name ? "border-destructive" : ""}`}
+                          />
+                          {contactErrors.name && <p className="text-[11px] text-destructive">{contactErrors.name}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="contact-email" className="text-[12px] font-semibold">Work Email <span className="text-destructive">*</span></Label>
+                          <Input
+                            id="contact-email"
+                            type="email"
+                            placeholder="jane@company.com"
+                            value={contactForm.email}
+                            onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                            className={`h-9 text-sm ${contactErrors.email ? "border-destructive" : ""}`}
+                          />
+                          {contactErrors.email && <p className="text-[11px] text-destructive">{contactErrors.email}</p>}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="contact-company" className="text-[12px] font-semibold">Company</Label>
+                          <Input
+                            id="contact-company"
+                            placeholder="Acme Energy Co."
+                            value={contactForm.company}
+                            onChange={e => setContactForm(f => ({ ...f, company: e.target.value }))}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="contact-role" className="text-[12px] font-semibold">Your Role</Label>
+                          <Input
+                            id="contact-role"
+                            placeholder="CTO, Compliance Officer…"
+                            value={contactForm.role}
+                            onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="contact-message" className="text-[12px] font-semibold">Message <span className="text-destructive">*</span></Label>
+                        <Textarea
+                          id="contact-message"
+                          placeholder="Tell us about your use case, fleet size, or any questions you have…"
+                          rows={4}
+                          value={contactForm.message}
+                          onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))}
+                          className={`text-sm resize-none ${contactErrors.message ? "border-destructive" : ""}`}
+                        />
+                        {contactErrors.message && <p className="text-[11px] text-destructive">{contactErrors.message}</p>}
+                      </div>
+
+                      {contactErrors.submit && (
+                        <p className="text-[12px] text-destructive bg-destructive/10 rounded-lg px-3 py-2">{contactErrors.submit}</p>
+                      )}
+
+                      <Button
+                        type="submit"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold h-10 rounded-xl"
+                        disabled={contactMutation.isPending}
+                      >
+                        {contactMutation.isPending ? (
+                          <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Sending…</span>
+                        ) : (
+                          <span className="flex items-center gap-2"><Send className="w-4 h-4" />Send Message</span>
+                        )}
+                      </Button>
+                    </form>
+                  )}
+                </div>
+
               </div>
             </div>
           </div>
