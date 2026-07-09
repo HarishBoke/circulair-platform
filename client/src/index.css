@@ -165,11 +165,13 @@
   * { @apply border-border; }
 
   /* color-scheme switches with theme */
-  html            { color-scheme: light; height: 100%; overflow: hidden; }
+  html            { color-scheme: light; }
   html.dark       { color-scheme: dark; }
 
-  /* Prevent body scroll — all scrolling happens inside the app shell's <main> */
-  body            { height: 100%; overflow: hidden; }
+  /* Body scrolls normally for public pages (Home, Login, etc.).
+   * The dashboard shell (PlatformLayout) uses h-screen + overflow-hidden on its
+   * own wrapper so the inner <main> handles scrolling independently. */
+  body            { min-height: 100dvh; }
 
   /* ── Smooth theme transition ──────────────────────────────────────────────
    * Applied to every element so background, text, border, and shadow colors
