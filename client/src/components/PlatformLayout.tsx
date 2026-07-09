@@ -14,7 +14,7 @@ import {
   Settings, Menu, Search, Database, Users, Globe,
   ArrowRight, Lock, Cpu, ShieldCheck, Upload, BookOpen, Rocket,
   GitBranch, Leaf, Network, Code2, Zap, TrendingUp, Bot,
-  ListChecks, Package, Settings2, Radio, AlertTriangle, HeartPulse, Sun, Moon, UserCircle
+  ListChecks, Package, Settings2, Radio, AlertTriangle, HeartPulse, Sun, Moon, UserCircle, Terminal
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -79,6 +79,7 @@ function useNavSections(isAdmin: boolean) {
       label: "DEVELOPER",
       sectionKey: "DEVELOPER",
       items: [
+        { icon: Terminal, label: "Developer Hub",    href: "/developer-hub" },
         { icon: Rocket,   label: "Getting Started",  href: "/getting-started" },
         { icon: BookOpen, label: "API Reference",    href: "/api-reference" },
         { icon: Network,  label: "MCP Server",       href: "/mcp-server" },

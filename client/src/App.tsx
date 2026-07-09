@@ -66,6 +66,7 @@ import ApiReference from "./pages/ApiReference";
 import McpServer from "./pages/McpServer";
 import HealthPortal from "./pages/HealthPortal";
 import UserProfile from "./pages/UserProfile";
+import DeveloperHub from "./pages/DeveloperHub";
 
 function Router() {
   return (
@@ -131,6 +132,7 @@ function Router() {
       <Route path="/predictive-procurement" component={() => <PlatformLayout><PredictiveProcurement /></PlatformLayout>} />
       <Route path="/solid-state" component={() => <PlatformLayout><SolidStateBattery /></PlatformLayout>} />
       {/* Developer & API pages */}
+      <Route path="/developer-hub" component={() => <PlatformLayout><DeveloperHub /></PlatformLayout>} />
       <Route path="/api-reference" component={() => <PlatformLayout><ApiReference /></PlatformLayout>} />
       <Route path="/mcp-server" component={() => <PlatformLayout><McpServer /></PlatformLayout>} />
       {/* Health Portal */}

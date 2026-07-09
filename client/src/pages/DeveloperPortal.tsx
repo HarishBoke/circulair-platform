@@ -386,29 +386,35 @@ export default function DeveloperPortal() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Page heading */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-orange-500/10" aria-hidden="true">
-          <Code2 className="w-6 h-6 text-orange-400" />
+      <div className="flex items-start gap-4 pb-2 border-b border-border/40">
+        <div className="p-2.5 rounded-xl bg-[#00c589]/10 border border-[#00c589]/20" aria-hidden="true">
+          <Key className="w-6 h-6 text-[#00c589]" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Developer Portal</h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="text-2xl font-bold tracking-tight">Developer Portal</h1>
+            <Badge variant="outline" className="border-[#00c589]/30 text-[#00c589] bg-[#00c589]/10 text-[10px] font-mono">
+              v3.0
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Manage API keys, permissions, and rate limits for programmatic access
+            Manage API keys, scopes, rate limits, and webhooks for programmatic access to the Circul-AI-r platform.
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className="ml-auto border-orange-500/30 text-orange-400 bg-orange-500/10"
+        <a
+          href="/developer-hub"
+          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[#00c589] hover:text-[#00d99a] transition-colors border border-[#00c589]/30 rounded-lg px-3 py-1.5 bg-[#00c589]/5 hover:bg-[#00c589]/10"
         >
-          v3.0
-        </Badge>
+          <BookOpen className="w-3.5 h-3.5" />
+          Developer Hub
+        </a>
       </div>
 
       {/* Base URL Banner */}
-      <Card className="border-orange-500/20 bg-orange-500/5">
+      <Card className="border-[#00c589]/20 bg-[#00c589]/5">
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center gap-3">
-            <Globe className="w-4 h-4 text-orange-400 flex-shrink-0" aria-hidden="true" />
+            <Globe className="w-4 h-4 text-[#00c589] flex-shrink-0" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Base API URL</p>
               <p className="text-sm font-mono text-foreground truncate">

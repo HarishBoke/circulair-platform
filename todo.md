@@ -1328,3 +1328,13 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Covers: current state, 6 design principles, 11 new write scopes, scope-to-endpoint mapping, rate-limit tiers, 6 implementation phases, backward compatibility, WA integration key requirements, testing strategy
 - [x] Add KeyRound icon to lucide-react import and ICON_MAP in CirculWiki.tsx
 - [x] TypeScript: 0 errors, 517 tests passing (1 pre-existing flaky batterySimulator test)
+
+## Developer Documentation Redesign [COMPLETE]
+- [x] Create DeveloperHub.tsx — dedicated landing page with quick-start guides, resource cards, auth methods, scope table, rate limits, webhook explainer
+- [x] Redesign Swagger UI HTML in apiGateway.ts — branded DM Sans/DM Mono fonts, dark-green theme, sticky header with nav tabs, info banner, full Swagger UI CSS overrides (both REST and tRPC pages)
+- [x] Add shared swaggerNavStyles constant to eliminate duplication between both Swagger HTML templates
+- [x] Update DeveloperPortal header to green brand aesthetic (Key icon, #00c589 accent, Developer Hub back-link, updated description)
+- [x] Update DeveloperPortal Base URL Banner to green brand colours
+- [x] Add Terminal icon + Developer Hub nav item to PlatformLayout DEVELOPER sidebar section
+- [x] Add /developer-hub route and DeveloperHub import to App.tsx
+- [x] TypeScript: 0 errors, 518 tests passing

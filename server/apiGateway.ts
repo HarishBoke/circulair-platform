@@ -381,32 +381,232 @@ const openApiSpec = {
   ],
 };
 
+// ─── SHARED SWAGGER NAV STYLES ───────────────────────────────────────────────
+const swaggerNavStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: #07100a; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; color: #e8f5ee; }
+
+  /* ── TOP BAR ── */
+  .dev-header {
+    background: #0a1a0f;
+    border-bottom: 1px solid #1a3a28;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .dev-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 32px;
+    text-decoration: none;
+  }
+  .dev-brand-dot {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #00c589, #00a070);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #07100a;
+  }
+  .dev-brand-name {
+    font-size: 15px; font-weight: 700; color: #e8f5ee;
+    letter-spacing: -0.02em;
+  }
+  .dev-brand-name span { color: #00c589; }
+  .dev-nav-tabs {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    gap: 0;
+    flex: 1;
+  }
+  .dev-tab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 16px;
+    font-size: 13px; font-weight: 500;
+    color: #6b9e7e;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .dev-tab:hover { color: #b8e8cc; }
+  .dev-tab.active { color: #00c589; border-bottom-color: #00c589; }
+  .dev-tab .tab-badge {
+    background: #00c58920;
+    color: #00c589;
+    border: 1px solid #00c58940;
+    font-size: 10px; font-weight: 600;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+  .dev-tab .tab-icon { font-size: 14px; opacity: 0.7; }
+  .dev-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin-left: auto;
+  }
+  .dev-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    font-size: 12px; font-weight: 500;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s;
+    font-family: 'DM Mono', monospace;
+  }
+  .dev-btn-outline {
+    color: #6b9e7e;
+    border: 1px solid #1a3a28;
+    background: transparent;
+  }
+  .dev-btn-outline:hover { background: #1a3a28; color: #b8e8cc; }
+  .dev-btn-primary {
+    background: #00c589;
+    color: #07100a;
+    border: 1px solid #00c589;
+    font-weight: 600;
+  }
+  .dev-btn-primary:hover { background: #00d99a; }
+
+  /* ── INFO BANNER ── */
+  .dev-info-banner {
+    background: #0d1f17;
+    border-bottom: 1px solid #1a3a28;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .dev-info-tag {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #6b9e7e;
+    font-family: 'DM Mono', monospace;
+  }
+  .dev-info-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: #00c589; }
+  .dev-info-tag .dot.amber { background: #f59e0b; }
+  .dev-info-tag strong { color: #b8e8cc; }
+  .dev-info-sep { color: #1a3a28; }
+
+  /* ── SWAGGER UI OVERRIDES ── */
+  .swagger-ui { font-family: 'DM Sans', sans-serif !important; }
+  .swagger-ui .topbar { display: none !important; }
+  .swagger-ui .info { padding: 20px 0 10px; }
+  .swagger-ui .info .title { color: #e8f5ee !important; font-family: 'DM Sans', sans-serif !important; font-size: 24px !important; }
+  .swagger-ui .info p, .swagger-ui .info li { color: #9cbfac !important; }
+  .swagger-ui .info a { color: #00c589 !important; }
+  .swagger-ui .scheme-container { background: #0a1a0f !important; border: 1px solid #1a3a28 !important; padding: 12px 20px !important; border-radius: 8px !important; }
+  .swagger-ui .opblock-tag { color: #b8e8cc !important; font-family: 'DM Sans', sans-serif !important; font-size: 16px !important; border-bottom: 1px solid #1a3a28 !important; }
+  .swagger-ui .opblock { border: 1px solid #1a3a28 !important; border-radius: 8px !important; margin-bottom: 8px !important; overflow: hidden; }
+  .swagger-ui .opblock.opblock-get .opblock-summary-method { background: #1a4a6e !important; }
+  .swagger-ui .opblock.opblock-post .opblock-summary-method { background: #1a4a2e !important; }
+  .swagger-ui .opblock.opblock-put .opblock-summary-method { background: #4a3a1a !important; }
+  .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: #4a1a1a !important; }
+  .swagger-ui .opblock-summary-method { font-family: 'DM Mono', monospace !important; font-size: 12px !important; min-width: 70px !important; padding: 6px 10px !important; border-radius: 4px !important; }
+  .swagger-ui .opblock-summary-path { color: #e8f5ee !important; font-family: 'DM Mono', monospace !important; font-size: 14px !important; }
+  .swagger-ui .opblock-summary-description { color: #9cbfac !important; }
+  .swagger-ui .opblock-body { background: #0a1a0f !important; }
+  .swagger-ui .opblock-section-header { background: #0d1f17 !important; border-bottom: 1px solid #1a3a28 !important; }
+  .swagger-ui .opblock-section-header label { color: #b8e8cc !important; }
+  .swagger-ui table thead tr td, .swagger-ui table thead tr th { color: #9cbfac !important; border-bottom: 1px solid #1a3a28 !important; font-family: 'DM Mono', monospace !important; font-size: 12px !important; }
+  .swagger-ui .parameter__name { color: #e8f5ee !important; font-family: 'DM Mono', monospace !important; }
+  .swagger-ui .parameter__type { color: #00c589 !important; font-family: 'DM Mono', monospace !important; }
+  .swagger-ui .parameter__in { color: #f59e0b !important; font-family: 'DM Mono', monospace !important; }
+  .swagger-ui .response-col_status { color: #00c589 !important; font-family: 'DM Mono', monospace !important; }
+  .swagger-ui .response-col_description { color: #9cbfac !important; }
+  .swagger-ui .model-title { color: #b8e8cc !important; }
+  .swagger-ui .model { color: #9cbfac !important; }
+  .swagger-ui .prop-type { color: #00c589 !important; font-family: 'DM Mono', monospace !important; }
+  .swagger-ui .prop-format { color: #f59e0b !important; }
+  .swagger-ui textarea, .swagger-ui input[type=text], .swagger-ui input[type=password], .swagger-ui input[type=email], .swagger-ui input[type=file], .swagger-ui input[type=search] {
+    background: #0d1f17 !important; color: #e8f5ee !important; border: 1px solid #1a3a28 !important; border-radius: 6px !important; font-family: 'DM Mono', monospace !important;
+  }
+  .swagger-ui .btn { border-radius: 6px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important; }
+  .swagger-ui .btn.execute { background: #00c589 !important; color: #07100a !important; border-color: #00c589 !important; }
+  .swagger-ui .btn.execute:hover { background: #00d99a !important; }
+  .swagger-ui .btn.cancel { background: transparent !important; color: #e8f5ee !important; border-color: #1a3a28 !important; }
+  .swagger-ui .btn.authorize { background: #00c58920 !important; color: #00c589 !important; border-color: #00c58940 !important; }
+  .swagger-ui .btn.authorize svg { fill: #00c589 !important; }
+  .swagger-ui .auth-wrapper { background: #0a1a0f !important; border: 1px solid #1a3a28 !important; border-radius: 8px !important; }
+  .swagger-ui .dialog-ux .modal-ux { background: #0d1f17 !important; border: 1px solid #1a3a28 !important; border-radius: 12px !important; }
+  .swagger-ui .dialog-ux .modal-ux-header { background: #0a1a0f !important; border-bottom: 1px solid #1a3a28 !important; }
+  .swagger-ui .dialog-ux .modal-ux-header h3 { color: #e8f5ee !important; }
+  .swagger-ui .highlight-code, .swagger-ui .microlight { background: #060d08 !important; border-radius: 6px !important; }
+  .swagger-ui .microlight span { color: #00c589 !important; }
+  .swagger-ui select { background: #0d1f17 !important; color: #e8f5ee !important; border: 1px solid #1a3a28 !important; border-radius: 6px !important; }
+  .swagger-ui .wrapper { padding: 0 24px !important; }
+  .swagger-ui section.models { background: #0a1a0f !important; border: 1px solid #1a3a28 !important; border-radius: 8px !important; }
+  .swagger-ui section.models h4 { color: #b8e8cc !important; }
+  .swagger-ui .model-box { background: #060d08 !important; border-radius: 6px !important; }
+  .swagger-ui .servers-title, .swagger-ui .schemes-title { color: #9cbfac !important; }
+  .swagger-ui .servers > label select { background: #0d1f17 !important; color: #e8f5ee !important; }
+  .swagger-ui .expand-methods svg, .swagger-ui .expand-operation svg { fill: #6b9e7e !important; }
+  .swagger-ui .arrow { fill: #6b9e7e !important; }
+  .swagger-ui .opblock-tag-section { margin-bottom: 16px !important; }
+  .swagger-ui .opblock .opblock-summary { background: #0d1f17 !important; }
+  .swagger-ui .opblock .opblock-summary:hover { background: #0f2318 !important; }
+  .swagger-ui .opblock.is-open .opblock-summary { border-bottom: 1px solid #1a3a28 !important; }
+  .swagger-ui .copy-to-clipboard { background: #1a3a28 !important; border-radius: 4px !important; }
+  .swagger-ui .copy-to-clipboard button { background: transparent !important; }
+  .swagger-ui .copy-to-clipboard button svg { fill: #6b9e7e !important; }
+  .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5 { color: #b8e8cc !important; }
+  .swagger-ui .response-control-media-type__accept-message { color: #9cbfac !important; }
+  .swagger-ui .tab li { color: #9cbfac !important; }
+  .swagger-ui .tab li.active { color: #00c589 !important; }
+  .swagger-ui .tab li.active::after { background: #00c589 !important; }
+  .swagger-ui .loading-container .loading::after { color: #00c589 !important; }
+`;
+
 // ─── SWAGGER UI HTML (REST Gateway) ─────────────────────────────────────────
 const swaggerHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Circul-AI-r REST API v1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REST API v1 — Circul-AI-r Developer Docs</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-  <style>
-    body { margin: 0; background: #0a0f0d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .swagger-ui .topbar { display: none; }
-    .swagger-ui { max-width: 1280px; margin: 0 auto; }
-    .api-nav { background: #0d1f17; border-bottom: 1px solid #1a3a28; padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
-    .api-nav a { color: #4ade80; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #1a3a28; }
-    .api-nav a:hover { background: #1a3a28; }
-    .api-nav .active { background: #166534; border-color: #4ade80; }
-    .api-nav .brand { color: #4ade80; font-weight: 700; font-size: 15px; margin-right: 8px; }
-  </style>
+  <style>${swaggerNavStyles}</style>
 </head>
 <body>
-  <div class="api-nav">
-    <span class="brand">Circul-AI-r API Docs</span>
-    <a href="/api/v1/docs" class="active">REST API v1 (Bearer Token)</a>
-    <a href="/api/trpc/docs">tRPC API (Session Cookie)</a>
-    <a href="/api/v1/openapi.json" target="_blank">REST OpenAPI JSON</a>
-    <a href="/api/trpc/openapi.json" target="_blank">tRPC OpenAPI JSON</a>
+  <!-- ── HEADER ── -->
+  <header class="dev-header">
+    <a href="/developer-hub" class="dev-brand">
+      <div class="dev-brand-dot">C</div>
+      <span class="dev-brand-name">Circul-<span>AI</span>-r</span>
+    </a>
+    <nav class="dev-nav-tabs">
+      <a href="/api/v1/docs" class="dev-tab active">
+        <span class="tab-icon">⚡</span> REST API v1
+        <span class="tab-badge">Bearer</span>
+      </a>
+      <a href="/api/trpc/docs" class="dev-tab">
+        <span class="tab-icon">⚙</span> tRPC Full Reference
+        <span class="tab-badge">188</span>
+      </a>
+    </nav>
+    <div class="dev-actions">
+      <a href="/api/v1/openapi.json" target="_blank" class="dev-btn dev-btn-outline">⬇ OpenAPI JSON</a>
+      <a href="/developer-portal" class="dev-btn dev-btn-primary">🔑 Get API Key</a>
+    </div>
+  </header>
+
+  <!-- ── INFO BANNER ── -->
+  <div class="dev-info-banner">
+    <div class="dev-info-tag"><div class="dot"></div><strong>REST API v1</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag">Base URL: <strong>https://circulair.energy/api/v1</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag">Auth: <strong>Authorization: Bearer &lt;API_KEY&gt;</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag"><div class="dot amber"></div>18 endpoints · OpenAPI 3.1</div>
   </div>
+
   <div id="swagger-ui"></div>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script>
@@ -417,10 +617,11 @@ const swaggerHtml = `<!DOCTYPE html>
       tryItOutEnabled: true,
       requestInterceptor: (req) => { req.headers['X-Requested-With'] = 'SwaggerUI'; return req; },
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-      layout: "BaseLayout",
+      layout: 'BaseLayout',
       defaultModelsExpandDepth: 2,
       defaultModelExpandDepth: 2,
       docExpansion: 'list',
+      syntaxHighlight: { activated: true, theme: 'monokai' },
     });
   </script>
 </body>
@@ -431,28 +632,45 @@ const trpcSwaggerHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Circul-AI-r tRPC API — Full Reference</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tRPC Full Reference — Circul-AI-r Developer Docs</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-  <style>
-    body { margin: 0; background: #0a0f0d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .swagger-ui .topbar { display: none; }
-    .swagger-ui { max-width: 1280px; margin: 0 auto; }
-    .api-nav { background: #0d1f17; border-bottom: 1px solid #1a3a28; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .api-nav a { color: #4ade80; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #1a3a28; }
-    .api-nav a:hover { background: #1a3a28; }
-    .api-nav .active { background: #166534; border-color: #4ade80; }
-    .api-nav .brand { color: #4ade80; font-weight: 700; font-size: 15px; margin-right: 8px; }
-    .api-nav .badge { background: #166534; color: #4ade80; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
-  </style>
+  <style>${swaggerNavStyles}</style>
 </head>
 <body>
-  <div class="api-nav">
-    <span class="brand">Circul-AI-r API Docs</span>
-    <a href="/api/v1/docs">REST API v1 (Bearer Token)</a>
-    <a href="/api/trpc/docs" class="active">tRPC API (Session Cookie) <span class="badge">130+ endpoints</span></a>
-    <a href="/api/v1/openapi.json" target="_blank">REST OpenAPI JSON</a>
-    <a href="/api/trpc/openapi.json" target="_blank">tRPC OpenAPI JSON</a>
+  <!-- ── HEADER ── -->
+  <header class="dev-header">
+    <a href="/developer-hub" class="dev-brand">
+      <div class="dev-brand-dot">C</div>
+      <span class="dev-brand-name">Circul-<span>AI</span>-r</span>
+    </a>
+    <nav class="dev-nav-tabs">
+      <a href="/api/v1/docs" class="dev-tab">
+        <span class="tab-icon">⚡</span> REST API v1
+        <span class="tab-badge">Bearer</span>
+      </a>
+      <a href="/api/trpc/docs" class="dev-tab active">
+        <span class="tab-icon">⚙</span> tRPC Full Reference
+        <span class="tab-badge">188</span>
+      </a>
+    </nav>
+    <div class="dev-actions">
+      <a href="/api/trpc/openapi.json" target="_blank" class="dev-btn dev-btn-outline">⬇ OpenAPI JSON</a>
+      <a href="/developer-portal" class="dev-btn dev-btn-primary">🔑 Get API Key</a>
+    </div>
+  </header>
+
+  <!-- ── INFO BANNER ── -->
+  <div class="dev-info-banner">
+    <div class="dev-info-tag"><div class="dot"></div><strong>tRPC API</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag">Base URL: <strong>https://circulair.energy/api/trpc</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag">Auth: <strong>Session Cookie (HttpOnly JWT)</strong></div>
+    <div class="dev-info-sep">|</div>
+    <div class="dev-info-tag"><div class="dot amber"></div>188 procedures · 30+ routers · OpenAPI 3.1</div>
   </div>
+
   <div id="swagger-ui"></div>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script>
@@ -462,11 +680,12 @@ const trpcSwaggerHtml = `<!DOCTYPE html>
       deepLinking: true,
       tryItOutEnabled: true,
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-      layout: "BaseLayout",
+      layout: 'BaseLayout',
       defaultModelsExpandDepth: 2,
       defaultModelExpandDepth: 2,
       docExpansion: 'list',
       withCredentials: true,
+      syntaxHighlight: { activated: true, theme: 'monokai' },
     });
   </script>
 </body>
