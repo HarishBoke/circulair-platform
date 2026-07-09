@@ -65,6 +65,7 @@ import SolidStateBattery from "./pages/SolidStateBattery";
 import ApiReference from "./pages/ApiReference";
 import McpServer from "./pages/McpServer";
 import HealthPortal from "./pages/HealthPortal";
+import UserProfile from "./pages/UserProfile";
 
 function Router() {
   return (
@@ -135,6 +136,7 @@ function Router() {
       {/* Health Portal */}
       <Route path="/health" component={() => <PlatformLayout><HealthPortal /></PlatformLayout>} />
       {/* Public legal pages */}
+      <Route path="/profile" component={() => <PlatformLayout><UserProfile /></PlatformLayout>} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       {/* Public passport pages — no auth, no layout shell */}

@@ -14,7 +14,7 @@ import {
   Settings, Menu, Search, Database, Users, Globe,
   ArrowRight, Lock, Cpu, ShieldCheck, Upload, BookOpen, Rocket,
   GitBranch, Leaf, Network, Code2, Zap, TrendingUp, Bot,
-  ListChecks, Package, Settings2, Radio, AlertTriangle, HeartPulse, Sun, Moon
+  ListChecks, Package, Settings2, Radio, AlertTriangle, HeartPulse, Sun, Moon, UserCircle
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -462,17 +462,21 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       {/* User footer */}
       <div className="border-t border-sidebar-border p-3 space-y-2">
         {(!collapsed || isMobile) && (
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-sidebar-accent/60">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-sidebar-accent/60 hover:bg-sidebar-accent transition-colors cursor-pointer group"
+          >
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-chart-2 to-chart-3 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
               {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold truncate text-foreground">{user?.name ?? "User"}</div>
+              <div className="text-xs font-semibold truncate text-foreground group-hover:text-primary transition-colors">{user?.name ?? "User"}</div>
               <div className="font-mono text-[9px] text-muted-foreground truncate">
                 {ROLE_LABELS[platformRole] ?? platformRole}
               </div>
             </div>
-          </div>
+            <UserCircle className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+          </Link>
         )}
         {(!collapsed || isMobile) && (
           <div className="px-1">

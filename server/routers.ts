@@ -28,6 +28,7 @@ import {
   getListingById, listUserListings, updateListing, withdrawListing, listUserBatteries,
   createAlertRule, listAlertRules, getAlertRuleById, updateAlertRule, deleteAlertRule,
   toggleAlertRule, getActiveRulesForBpan, evaluateAlertRules,
+  updateUserProfile, getUserById,
 } from "./db";
 import { shouldCreateAlert, recordAlert } from "./alertCooldown";
 import { batchGetCarbonClasses } from "./db-regulatory";
@@ -3925,6 +3926,95 @@ Rules:
         }).catch(e => console.error("[contact] notifyOwner failed:", e));
         return { success: true };
       }),
+  }),
+
+  // ─── USER PROFILE ─────────────────────────────────────────────────────────────
+  profile: router({
+    /** Get full profile for the current user */
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        organization: user.organization,
+        platformRole: user.platformRole,
+        role: user.role,
+        loginMethod: user.loginMethod,
+        createdAt: user.createdAt,
+        lastSignedIn: user.lastSignedIn,
+      };
+    }),
+
+    /** Update display name and organization */
+    update: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(200).optional(),
+        organization: z.string().max(255).optional().nullable(),
+        platformRole: z.enum(["oem", "manufacturer", "recycler", "bess_developer", "service_provider", "government", "admin_viewer"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserProfile(ctx.user.id, {
+          name: input.name,
+          organization: input.organization,
+          platformRole: input.platformRole,
+        });
+        // Refresh the auth.me cache by returning updated user
+        const updated = await getUserById(ctx.user.id);
+        if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+        return {
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          organization: updated.organization,
+          platformRole: updated.platformRole,
+          role: updated.role,
+        };
+      }),
+
+    /** Change password (requires current password verification) */
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import("bcryptjs");
+        const user = await getUserById(ctx.user.id);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!user.passwordHash) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Password change is not available for this account type" });
+        }
+        const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Current password is incorrect" });
+        }
+        const newHash = await bcrypt.hash(input.newPassword, 12);
+        const { updateUserPassword } = await import("./db");
+        await updateUserPassword(ctx.user.id, newHash);
+        return { success: true };
+      }),
+
+    /** Get activity stats for the current user */
+    activityStats: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { batteries: 0, listings: 0, alerts: 0, documents: 0 };
+      const { batteries, marketplaceListings, alerts, documents } = await import("../drizzle/schema");
+      const { eq, count } = await import("drizzle-orm");
+      const [[batteryCount], [listingCount], [alertCount], [docCount]] = await Promise.all([
+        db.select({ c: count() }).from(batteries),
+        db.select({ c: count() }).from(marketplaceListings).where(eq(marketplaceListings.sellerId, ctx.user.id)),
+        db.select({ c: count() }).from(alerts).where(eq(alerts.userId, ctx.user.id)),
+        db.select({ c: count() }).from(documents).where(eq(documents.uploadedById, ctx.user.id)),
+      ]);
+      return {
+        batteries: Number(batteryCount?.c ?? 0),
+        listings: Number(listingCount?.c ?? 0),
+        alerts: Number(alertCount?.c ?? 0),
+        documents: Number(docCount?.c ?? 0),
+      };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

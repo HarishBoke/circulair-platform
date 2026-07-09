@@ -1302,3 +1302,22 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] server/zeptomail.test.ts — updated to mock global fetch; all 4 tests pass
 - [x] Live test confirmed: contact form sends branded email to harish@setoo.co (request_id logged)
 - [x] TypeScript: 0 errors, 509 tests passing (32 test files); 1 pre-existing flaky test in batterySimulator.test.ts (random LFP voltage range)
+
+## User Profile Dashboard [COMPLETE]
+
+- [x] Add `updateUserProfile` and `getUserById` DB helpers in server/db.ts
+- [x] Add `profile.get` tRPC procedure (returns full profile for logged-in user)
+- [x] Add `profile.update` tRPC procedure (name, organisation, platformRole)
+- [x] Add `profile.changePassword` tRPC procedure (bcrypt verify + update)
+- [x] Add `profile.activityStats` tRPC procedure (battery/listing/alert/doc counts)
+- [x] Create UserProfile page at client/src/pages/UserProfile.tsx
+- [x] Profile hero card with avatar initials, role badges, member-since date
+- [x] Activity overview stats (4 stat cards: batteries, listings, alerts, documents)
+- [x] Account details section with read-only view and inline edit form
+- [x] Platform role selector with 7 role options
+- [x] Security section: password change form with strength indicator and validation
+- [x] Password change disabled gracefully for non-email auth accounts
+- [x] Register route /profile in App.tsx
+- [x] Add clickable profile link in PlatformLayout sidebar user footer
+- [x] Write profile.test.ts with 8 tests (all passing)
+- [x] 518 tests passing, 0 TypeScript errors

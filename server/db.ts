@@ -849,6 +849,29 @@ export async function updateUserPassword(userId: number, passwordHash: string): 
     .where(eq(users.id, userId));
 }
 
+// ─── USER PROFILE HELPERS ───────────────────────────────────────────────────
+
+export async function updateUserProfile(userId: number, data: {
+  name?: string | null;
+  organization?: string | null;
+  platformRole?: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.organization !== undefined) updateData.organization = data.organization;
+  if (data.platformRole !== undefined) updateData.platformRole = data.platformRole;
+  await db.update(users).set(updateData as any).where(eq(users.id, userId));
+}
+
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 // ─── MARKETPLACE OFFER HELPERS ────────────────────────────────────────────────
 
 export async function createMarketplaceOffer(data: InsertMarketplaceOffer) {
