@@ -3817,25 +3817,91 @@ Rules:
                 to: [{ email_address: { address: "harish@setoo.co", name: "Harish" } }],
                 reply_to: [{ address: input.email, name: input.name }],
                 subject: `New Enquiry from circulair.energy — ${input.name}${input.company ? ` (${input.company})` : ""}`,
-                htmlbody: `
-                  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #0a0a0a; color: #e5e7eb;">
-                    <div style="border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 24px;">
-                      <h2 style="color: #10b981; margin: 0 0 4px;">New Enquiry — circulair.energy</h2>
-                      <p style="color: #6b7280; font-size: 13px; margin: 0;">Submitted via the contact form at <a href="https://circulair.energy/" style="color: #10b981;">https://circulair.energy/</a></p>
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
-                      <tr><td style="padding: 8px 0; color: #9ca3af; width: 100px;">Name</td><td style="padding: 8px 0; color: #f3f4f6; font-weight: 600;">${input.name}</td></tr>
-                      <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${input.email}" style="color: #10b981;">${input.email}</a></td></tr>
-                      ${input.company ? `<tr><td style="padding: 8px 0; color: #9ca3af;">Company</td><td style="padding: 8px 0; color: #f3f4f6;">${input.company}</td></tr>` : ""}
-                      ${input.role ? `<tr><td style="padding: 8px 0; color: #9ca3af;">Role</td><td style="padding: 8px 0; color: #f3f4f6;">${input.role}</td></tr>` : ""}
-                    </table>
-                    <div style="background: #111827; border-left: 3px solid #10b981; border-radius: 4px; padding: 16px; font-size: 14px; line-height: 1.7; color: #d1d5db; white-space: pre-wrap;">${input.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-                    <p style="color: #4b5563; font-size: 12px; margin-top: 20px; border-top: 1px solid #1f2937; padding-top: 16px;">
-                      This enquiry was submitted via the contact form at <a href="https://circulair.energy/" style="color: #6b7280;">https://circulair.energy/</a>.
-                      Reply directly to this email to respond to ${input.name}.
-                    </p>
-                  </div>
-                `,
+                htmlbody: (() => {
+                  const LOGO = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTc4IiBoZWlnaHQ9IjE3OCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBmaWxsPSJub25lIj4KCiA8Zz4KICA8dGl0bGU+TGF5ZXIgMTwvdGl0bGU+CiAgPHBhdGggaWQ9InN2Z18xIiBmaWxsPSIjMDBjNTg5IiBkPSJtMTIwLjUsMTIxLjVjLTguNTcyLDguNTcxIC0xOSwxMi43MTQgLTMyLjAwMDEsMTIuNzE0Yy0xMywwIC0yMy40Mjg2LC00LjE0MyAtMzIuMDAwMSwtMTIuNzE0Yy01Ljc4NTcsLTUuNzg2IC05LjM1NzEsLTEzIC0xMS4yODU3LC0yMWwtNDQuNzE0MjIsMGMyLjIxNDI4LDIxLjIxNCAxMC40OTk5MiwzOC42NDMgMjQuODU3MTIsNTIuNDI5YzE3LjM1NzEsMTYuNTcxIDM4LjM1NzEsMjQuODU3IDYzLjE0MjksMjQuODU3YzI0Ljc4NjEsMCA0NS41MDAxLC04LjI4NiA2Mi45MjgxLC0yNC44NTdjMTQuNjQzLC0xMy43ODYgMjIuOTI5LC0zMS40MjkgMjUuMDcyLC01Mi40MjlsLTQ0LjcxNCwwYy0xLjkyOSw4IC01LjUsMTUuMTQzIC0xMS4yODYsMjF6Ii8+CiAgPHBhdGggaWQ9InN2Z18yIiBmaWxsPSJ3aGl0ZSIgZD0ibTU2Ljc4NTYsNTYuNjQzYzguNTcxNCwtOC4yODU4IDE5LC0xMi43MTQzIDMxLjcxNDIsLTEyLjcxNDNjMTIuNzE0MiwwIDIzLjE0MzIsNC4xNDI4IDMxLjcxNDIsMTIuNzE0M2M3LjcxNCw3LjcxNDIgMTIuMTQzLDE3LjM1NzEgMTIuNzE0LDI4LjcxNDJsNDQuMTQzLDBjLTAuNTcxLC0yNC41NzE0IC05LjA3MSwtNDUgLTI1LjY0MywtNjAuNzE0MmMtMTcuMDcxLC0xNi4yODU3NiAtMzcuNzg1LC0yNC41NzE0NyAtNjIuOTI4MiwtMjQuNTcxNDdjLTI1LjE0MjgsMCAtNDYuMDcxNCw4LjI4NTcxIC02My4xNDI4LDI0LjU3MTQ3Yy0xNi4yODU3MywxNS43MTQyIC0yNC44NTcxMiwzNS44NTcxIC0yNS4zNTcxMiw2MC43MTQybDQ0LjE0MjgyLDBjMC41NzE1LC0xMS4yODU3IDQuNzE0MywtMjEgMTIuNzE0MywtMjguNzE0MmwtMC4wNzE0LDB6Ii8+CiA8L2c+Cjwvc3ZnPg==";
+                  const safeMsg = input.message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                  const year = new Date().getFullYear();
+                  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Enquiry — circulair.energy</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background-color: #07100a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wrapper { background-color: #07100a; padding: 32px 16px; }
+    .card { max-width: 600px; margin: 0 auto; background-color: #0d1f12; border: 1px solid #1c3d22; border-radius: 16px; overflow: hidden; }
+    .accent { height: 3px; background: linear-gradient(90deg, #00c589 0%, #22c55e 50%, #00c589 100%); }
+    .header { padding: 24px 36px; border-bottom: 1px solid #1c3d22; }
+    .logo-name { font-size: 17px; font-weight: 700; color: #f0fdf4; letter-spacing: -0.5px; }
+    .logo-name span { color: #00c589; }
+    .logo-tag { font-size: 8px; color: #4ade80; letter-spacing: 3px; text-transform: uppercase; font-family: 'Courier New', monospace; margin-top: 2px; }
+    .body { padding: 32px 36px; }
+    .badge { display: inline-block; font-size: 9px; color: #fbbf24; background: #1a1200; border: 1px solid #3d2e00; border-radius: 4px; padding: 2px 8px; letter-spacing: 2px; text-transform: uppercase; font-family: 'Courier New', monospace; margin-bottom: 14px; }
+    h2 { font-size: 20px; font-weight: 700; color: #f0fdf4; margin: 0 0 20px; line-height: 1.3; }
+    .detail-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .detail-table td { padding: 9px 0; border-bottom: 1px solid #1c3d22; font-size: 14px; vertical-align: top; }
+    .detail-table .label { color: #4ade80; width: 90px; font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; padding-right: 16px; }
+    .detail-table .value { color: #f0fdf4; font-weight: 500; }
+    .detail-table .value a { color: #00c589; text-decoration: none; }
+    .msg-label { font-size: 10px; color: #4ade80; letter-spacing: 2px; text-transform: uppercase; font-family: 'Courier New', monospace; margin: 20px 0 8px; }
+    .msg-box { background: #061209; border: 1px solid #1c3d22; border-left: 3px solid #00c589; border-radius: 8px; padding: 16px 20px; font-size: 14px; line-height: 1.75; color: #86efac; white-space: pre-wrap; word-break: break-word; }
+    .reply-hint { font-size: 13px; color: #4ade80; margin: 20px 0 0; padding: 14px 16px; background: #061209; border: 1px solid #1c3d22; border-radius: 8px; }
+    .footer { padding: 18px 36px 24px; border-top: 1px solid #1c3d22; }
+    .footer p { font-size: 11px; color: #1c5c35; margin: 0 0 4px; }
+    .footer a { color: #00c589; text-decoration: none; }
+    .fbadge { display: inline-block; font-size: 9px; color: #1c5c35; letter-spacing: 2px; text-transform: uppercase; font-family: 'Courier New', monospace; margin-right: 12px; }
+    @media only screen and (max-width: 600px) {
+      .header, .body, .footer { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="accent"></div>
+      <div class="header">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td valign="middle" style="padding-right:10px;">
+              <img src="${LOGO}" alt="Circul-AI-r" width="32" height="32" style="display:block;width:32px;height:32px;" />
+            </td>
+            <td valign="middle">
+              <div class="logo-name">Circul<span>-AI-</span>r</div>
+              <div class="logo-tag">Battery Intelligence Platform</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="body">
+        <div class="badge">New Enquiry</div>
+        <h2>Contact Form Submission</h2>
+        <table class="detail-table">
+          <tr><td class="label">Name</td><td class="value">${input.name}</td></tr>
+          <tr><td class="label">Email</td><td class="value"><a href="mailto:${input.email}">${input.email}</a></td></tr>
+          ${input.company ? `<tr><td class="label">Company</td><td class="value">${input.company}</td></tr>` : ""}
+          ${input.role ? `<tr><td class="label">Role</td><td class="value">${input.role}</td></tr>` : ""}
+        </table>
+        <div class="msg-label">Message</div>
+        <div class="msg-box">${safeMsg}</div>
+        <div class="reply-hint">&#8617; Reply directly to this email to respond to <strong>${input.name}</strong> at <a href="mailto:${input.email}">${input.email}</a>.</div>
+      </div>
+      <div class="footer">
+        <p>Submitted via the contact form at <a href="https://circulair.energy/">circulair.energy</a></p>
+        <div style="margin-top:12px;">
+          <span class="fbadge">Encrypted</span>
+          <span class="fbadge">ISO 27001</span>
+          <span class="fbadge">GDPR</span>
+          <span class="fbadge">EU Battery Reg</span>
+        </div>
+        <p style="margin-top:10px;">© ${year} Circul-AI-r</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+                })(),
                 textbody: `New Enquiry from circulair.energy\n\nName: ${input.name}\nEmail: ${input.email}${input.company ? `\nCompany: ${input.company}` : ""}${input.role ? `\nRole: ${input.role}` : ""}\n\nMessage:\n${input.message}\n\n---\nSubmitted via https://circulair.energy/`,
               }),
             });

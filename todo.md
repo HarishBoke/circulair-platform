@@ -1293,3 +1293,12 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Redesign ApiReference with two-column sticky sidebar (lg+), endpoint count badges per category, improved header with base URL inline, auth + rate-limit info cards, mobile category filter
 - [x] Fix useAuth import path in HealthPortal.tsx (was @/hooks/useAuth → @/_core/hooks/useAuth)
 - [x] TypeScript: 0 errors
+
+## Branded HTML Email Templates [COMPLETE]
+- [x] server/email.ts — fully rewritten with branded HTML wrapper, base64 logo, dark green theme (#07100a bg, #00c589 primary), styled templates for password reset and developer onboarding
+- [x] server/_core/notification.ts — fully rewritten with branded HTML template including logo header, accent bar, content box, footer with compliance badges
+- [x] server/routers.ts (contact form) — inline htmlbody replaced with new branded design: logo header, accent bar, contact detail table, message box with left border accent, reply hint, footer with compliance badges
+- [x] server/email.test.ts — updated to mock global fetch instead of ZeptoMail SDK (email.ts now uses direct REST API calls)
+- [x] server/zeptomail.test.ts — updated to mock global fetch; all 4 tests pass
+- [x] Live test confirmed: contact form sends branded email to harish@setoo.co (request_id logged)
+- [x] TypeScript: 0 errors, 509 tests passing (32 test files); 1 pre-existing flaky test in batterySimulator.test.ts (random LFP voltage range)
