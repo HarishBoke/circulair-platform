@@ -57,26 +57,27 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
-  const values: InsertUser = { openId: user.openId };
+
+  // Build the update set — only include fields that were explicitly provided
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod"] as const;
   textFields.forEach((field) => {
     const value = user[field];
     if (value === undefined) return;
-    const normalized = value ?? null;
-    values[field] = normalized;
-    updateSet[field] = normalized;
+    updateSet[field] = value ?? null;
   });
-  if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
-  if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
-  else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
-  if (!values.lastSignedIn) values.lastSignedIn = new Date();
+  if (user.lastSignedIn !== undefined) updateSet.lastSignedIn = user.lastSignedIn;
+  if (user.role !== undefined) updateSet.role = user.role;
+
+  // Build the insert values
+  const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date(), ...updateSet };
+  if (user.openId === ENV.ownerOpenId && !values.role) values.role = "admin";
+
+  // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-  // MySQL: use INSERT ... ON DUPLICATE KEY UPDATE via raw SQL for upsert
-  await db.insert(users).values(values).$returningId();
-  if (Object.keys(updateSet).length > 0) {
-    await db.update(users).set(updateSet as any).where(eq(users.openId, values.openId!));
-  }
+
+  // MySQL INSERT ... ON DUPLICATE KEY UPDATE — atomic upsert, no duplicate key errors
+  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet as any });
 }
 
 export async function getUserByOpenId(openId: string) {
