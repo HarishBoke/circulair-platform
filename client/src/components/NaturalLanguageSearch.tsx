@@ -7,6 +7,7 @@
  * - Suggestion chips + history dropdown (persisted in localStorage)
  * - Keyboard shortcut: Cmd/Ctrl+K focuses the search bar from anywhere
  * - CSV export of result tables
+ * - Auto-generated charts (bar/pie/hbar) via QueryResultChart
  * - Collapsible results panel
  * - WCAG 2.1 AA: aria-live, aria-label, role=status, focus management
  */
@@ -14,6 +15,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import QueryResultChart from "@/components/QueryResultChart";
 import {
   Search, Sparkles, ChevronDown, ChevronUp, Clock, X,
   Battery, Activity, AlertTriangle, ShoppingCart, BarChart2,
@@ -513,54 +515,61 @@ export default function NaturalLanguageSearch() {
             )}
           </div>
 
-          {/* AI answer + data */}
-          {result && showResults && (
-            <div className="px-4 pb-4 space-y-3" aria-live="polite">
-              {/* LLM answer */}
-              <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" aria-hidden="true" />
-                  <p className="text-sm text-foreground/90 leading-relaxed">{result.answer}</p>
-                </div>
-              </div>
+              {/* AI answer + data */}
+              {result && showResults && (
+                <div className="px-4 pb-4 space-y-3" aria-live="polite">
+                  {/* LLM answer */}
+                  <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" aria-hidden="true" />
+                      <p className="text-sm text-foreground/90 leading-relaxed">{result.answer}</p>
+                    </div>
+                  </div>
 
-              {/* Active filters */}
-              {Object.entries(result.filters).some(([k, v]) => v != null && k !== "limit") && (
-                <div className="flex flex-wrap gap-1.5" aria-label="Active query filters">
-                  {Object.entries(result.filters)
-                    .filter(([k, v]) => v != null && k !== "limit")
-                    .map(([k, v]) => (
-                      <Badge
-                        key={k}
-                        variant="outline"
-                        className="font-mono text-[10px] text-muted-foreground border-border"
-                      >
-                        {k}: <span className="text-foreground/70 ml-1">{String(v)}</span>
-                      </Badge>
-                    ))}
+                  {/* Active filters */}
+                  {Object.entries(result.filters).some(([k, v]) => v != null && k !== "limit") && (
+                    <div className="flex flex-wrap gap-1.5" aria-label="Active query filters">
+                      {Object.entries(result.filters)
+                        .filter(([k, v]) => v != null && k !== "limit")
+                        .map(([k, v]) => (
+                          <Badge
+                            key={k}
+                            variant="outline"
+                            className="font-mono text-[10px] text-muted-foreground border-border"
+                          >
+                            {k}: <span className="text-foreground/70 ml-1">{String(v)}</span>
+                          </Badge>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Auto-generated chart — rendered above the data table */}
+                  <QueryResultChart
+                    intent={result.intent}
+                    results={result.results as Record<string, unknown>[]}
+                    summaryStats={result.summaryStats as Record<string, unknown> | null}
+                  />
+
+                  {/* Results table or summary */}
+                  {result.summaryStats ? (
+                    <SummaryStats stats={result.summaryStats as Record<string, unknown>} />
+                  ) : result.results.length > 0 ? (
+                    <ResultTable
+                      results={result.results as Record<string, unknown>[]}
+                      intent={result.intent}
+                      onExport={handleExportCsv}
+                    />
+                  ) : (
+                    <div className="text-center py-8 space-y-2">
+                      <Search className="w-8 h-8 text-muted-foreground/40 mx-auto" aria-hidden="true" />
+                      <p className="text-sm text-muted-foreground">No matching records found for this query.</p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Try broadening your search — e.g. remove chemistry or SOH filters.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Results table or summary */}
-              {result.summaryStats ? (
-                <SummaryStats stats={result.summaryStats as Record<string, unknown>} />
-              ) : result.results.length > 0 ? (
-                <ResultTable
-                  results={result.results as Record<string, unknown>[]}
-                  intent={result.intent}
-                  onExport={handleExportCsv}
-                />
-              ) : (
-                <div className="text-center py-8 space-y-2">
-                  <Search className="w-8 h-8 text-muted-foreground/40 mx-auto" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">No matching records found for this query.</p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Try broadening your search — e.g. remove chemistry or SOH filters.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>

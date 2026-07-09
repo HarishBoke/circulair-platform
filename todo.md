@@ -1244,3 +1244,18 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Replaced text-white (page content) with text-foreground in all pages
 - [x] Retained intentional bg-black/50 overlays (modal backdrops, image overlays)
 - [x] TypeScript: 0 errors
+
+## Phase NL-Search-Charts: Auto-generate charts for NL query results [COMPLETE]
+- [x] recharts already installed (^2.15.2)
+- [x] QueryResultChart component — auto-selects bar/pie/hbar chart by intent + data shape
+- [x] batteries intent: bar chart of SOH distribution (5 bins) + pie chart of status breakdown
+- [x] telemetry intent: pie chart of anomaly breakdown + bar chart of temperature distribution
+- [x] alerts intent: pie chart of severity breakdown (critical/warning/info)
+- [x] soh intent: bar chart of predicted SOH distribution + pie chart of triage path breakdown
+- [x] marketplace intent: bar chart of listing price distribution (₹ buckets); fallback pie for listing type
+- [x] summary intent: horizontal bar chart across key platform metrics (batteries, transactions, EPR tokens)
+- [x] Chart renders above the data table, collapsible independently via chevron toggle
+- [x] Chart uses platform design tokens (dark bg, primary green accent, muted grid lines, monospace ticks)
+- [x] Custom Tooltip and PieTooltip components matching platform card style
+- [x] queryResultChart.test.ts — 23 new tests covering all 6 intents + edge cases + bin assignment + color assignment
+- [x] TypeScript: 0 errors, 490 tests passing (31 test files)
