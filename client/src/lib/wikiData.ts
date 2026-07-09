@@ -1512,6 +1512,160 @@ Each bulk import creates a job record with:
     readTimeMinutes: 3,
     icon: "Upload",
   },
+  {
+    id: "write-api-scope-strategy",
+    title: "Write API Key Scope Strategy",
+    category: "integration",
+    summary:
+      "Design strategy for defining and implementing write API key scopes — covering the eleven new scopes, enforcement middleware, rate-limit tiers, Developer Portal UI updates, and WhatsApp integration requirements.",
+    content: `## Overview
+
+The platform's API key system currently supports seven read-only scopes enforced at the MCP layer. This document defines the strategy for introducing write scopes that enable external systems — including WhatsApp workflow bots, n8n automations, and Make scenarios — to create and modify platform data through the REST API with properly scoped keys.
+
+## Current State
+
+| Scope ID | Label | Access Type | Enforced At |
+|---|---|---|---|
+| \`soh_predict\` | SOH Prediction | Read | MCP only |
+| \`bpan_validate\` | BPAN Validation | Read | MCP only |
+| \`compliance_report\` | Compliance Reports | Read | MCP only |
+| \`telemetry_read\` | Telemetry Read | Read + 1 write | MCP only |
+| \`marketplace_read\` | Marketplace Read | Read | MCP only |
+| \`carbon_report\` | Carbon Footprint | Read | MCP only |
+| \`digital_twin\` | Digital Twin | Read | MCP only |
+
+**Key gap:** The REST gateway (\`/api/v1\`) validates the API key but does not enforce per-endpoint scope checks — any valid key can call any REST endpoint regardless of its declared scopes.
+
+## Design Principles
+
+**Least Privilege by Default.** Write scopes are opt-in and never bundled with read scopes automatically.
+
+**Verb-Prefixed Naming.** All new scopes follow the \`resource:verb\` pattern (e.g. \`battery:write\`, \`warranty:write\`) to make intent unambiguous in logs, UI, and error messages.
+
+**Flat Scope Hierarchy.** No implicit inheritance — each scope is independently checked. \`battery:write\` does not imply \`telemetry:write\`.
+
+**Write Scopes Require Elevated Rate-Limit Tier.** Keys with any write scope are automatically assigned \`premium\` or \`enterprise\` tier at creation time.
+
+**Every Write Endpoint Logs to the Audit Trail.** Write endpoints log the resource ID and actor identity in the \`metadata\` field of the existing audit log.
+
+**Admin-Only Scopes Require Platform Role Check.** Scopes that affect other users' data additionally verify \`ctx.user.role === "admin"\` at the procedure level.
+
+## Eleven New Write Scopes
+
+| Scope ID | Label | What It Unlocks | Min Tier |
+|---|---|---|---|
+| \`battery:write\` | Battery Registry Write | Register batteries, update status, bulk import | Premium |
+| \`telemetry:write\` | Telemetry Ingest | Push telemetry readings via REST | Standard |
+| \`warranty:write\` | Warranty Write | Register warranty, submit and update claims | Premium |
+| \`marketplace:write\` | Marketplace Write | Create/update/withdraw listings, make offers | Premium |
+| \`alert:write\` | Alert Write | Create manual alerts, mark alerts read | Standard |
+| \`logistics:write\` | Logistics Write | Request pickups, update shipment status | Premium |
+| \`compliance:write\` | Compliance Write | Issue EPR tokens, submit yield verification | Enterprise |
+| \`document:write\` | Document Write | Upload documents, attach to batteries | Standard |
+| \`assistant:query\` | AI Assistant Query | POST natural-language queries to AI assistant | Standard |
+| \`webhook:manage\` | Webhook Management | Create, list, delete webhook subscriptions | Standard |
+| \`admin:user_write\` | Admin User Write | Update user roles (admin-only) | Enterprise |
+
+## Scope-to-Endpoint Mapping
+
+| Scope | New REST Endpoints | tRPC Procedures Wrapped |
+|---|---|---|
+| \`battery:write\` | \`POST /api/v1/batteries\` · \`PATCH /api/v1/batteries/:bpan/status\` | \`bpan.generate\` · \`bpan.updateStatus\` |
+| \`telemetry:write\` | \`POST /api/v1/batteries/:bpan/telemetry\` (existing, now scoped) | \`telemetry.ingest\` |
+| \`warranty:write\` | \`POST /api/v1/warranty\` · \`POST /api/v1/warranty/:id/claim\` | \`warranty.register\` · \`warranty.submitClaim\` |
+| \`marketplace:write\` | \`POST /api/v1/marketplace/listings\` · \`PATCH /api/v1/marketplace/listings/:id\` | \`marketplace.createListing\` · \`marketplace.update\` |
+| \`alert:write\` | \`POST /api/v1/alerts\` · \`PATCH /api/v1/alerts/:id/read\` | \`alerts.markRead\` |
+| \`logistics:write\` | \`POST /api/v1/logistics/pickup\` | \`logistics.requestPickup\` |
+| \`compliance:write\` | \`POST /api/v1/compliance/epr/tokens\` | \`epr.verifyYield\` |
+| \`document:write\` | \`POST /api/v1/documents\` | \`documents.upload\` |
+| \`assistant:query\` | \`POST /api/v1/assistant/query\` | \`assistant.chat\` |
+| \`webhook:manage\` | \`POST /api/v1/webhooks\` · \`GET /api/v1/webhooks\` · \`DELETE /api/v1/webhooks/:id\` | \`webhook.create\` · \`webhook.list\` · \`webhook.delete\` |
+| \`admin:user_write\` | \`PATCH /api/v1/admin/users/:id/role\` | \`admin.updateUserRole\` |
+
+## Rate-Limit Tiers
+
+| Tier | Requests/min | Max Burst | Write Ops/min |
+|---|---|---|---|
+| Standard | 100 | 20 | — |
+| Premium | 500 | 100 | 200 |
+| Enterprise | 2 000 | 500 | 1 000 |
+
+The tier is resolved automatically at key creation based on the most privileged scope selected — no manual tier selection is required.
+
+## Implementation Phases
+
+### Phase A — Core Infrastructure
+Extend \`ApiPermission\` union type in \`server/apiMarketplace.ts\` with all eleven new scope IDs. Add \`WRITE_PERMISSIONS\` set, \`MINIMUM_TIER\` map, and \`ADMIN_ONLY_SCOPES\` set as named constants.
+
+### Phase B — Scope Enforcement Middleware
+Add a \`requireScope(scope)\` middleware factory to \`server/apiGateway.ts\`. Apply it to all existing read endpoints (closing the current unguarded gap) and all new write endpoints. The middleware returns \`403 Forbidden\` with \`requiredScope\` and \`yourScopes\` in the response body, and logs a security event.
+
+\`\`\`typescript
+function requireScope(scope: ApiPermission) {
+  return (req, res, next) => {
+    const scopes = (req as any).apiKey?.scopes ?? [];
+    if (!scopes.includes(scope)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: \`This endpoint requires the '\${scope}' scope.\`,
+        yourScopes: scopes,
+      });
+    }
+    next();
+  };
+}
+\`\`\`
+
+### Phase C — Rate-Limit Tier Enforcement
+At key creation (\`developerApi.createKey\`), automatically resolve the tier from the selected scopes and apply the corresponding rate limit. No manual tier selection is exposed to users.
+
+### Phase D — Developer Portal UI
+Group permissions into **Read Access** and **Write Access** sections with a warning banner on write scopes. Auto-display the resolved tier. Colour-code scope badges: green for read, amber for write, red for admin.
+
+### Phase E — MCP Tool Extensions
+Add write tool definitions to \`TOOL_SCOPE_MAP\` in \`mcpServer.ts\` so AI agent workflows can invoke write operations through the MCP interface.
+
+### Phase F — Shared Scope Constants
+Extract the scope list to \`shared/apiScopes.ts\` as a single source of truth, eliminating the sync risk between \`apiMarketplace.ts\` and the Zod enum in \`routers.ts\`.
+
+## Backward Compatibility
+
+All seven existing scope IDs are preserved unchanged. Keys issued before this change continue to work exactly as before. The only behavioural change for existing keys is that REST endpoints will now enforce their declared scope — keys that previously called any endpoint without the correct scope will receive \`403 Forbidden\`. This is a security improvement, not a breaking change for correctly-scoped keys.
+
+A migration notice will be sent to all existing API key holders via the Developer Portal.
+
+## WhatsApp Integration Key Requirements
+
+For a WhatsApp workflow bot to manage all platform functionality, the API key issued to the WA integration should include:
+
+| Scope | Purpose in WA Workflow |
+|---|---|
+| \`bpan_validate\` | Look up battery by BPAN sent in WA message |
+| \`warranty:write\` | Register warranty when customer sends purchase proof |
+| \`telemetry_read\` | Reply with live battery health on customer query |
+| \`soh_predict\` | Reply with SOH prediction on demand |
+| \`alert:write\` | Create manual alert when field engineer reports issue via WA |
+| \`assistant:query\` | Route free-text WA messages to AI assistant for NL response |
+| \`webhook:manage\` | Register WA webhook URL to receive platform event pushes |
+
+This key should be **Premium tier** (500 req/min) with a 1-year expiry and stored as an environment secret, not in the platform's user-facing key list.
+
+## Testing Strategy
+
+| Test Type | Coverage |
+|---|---|
+| Unit — \`requireScope\` middleware | Returns 403 when scope missing; passes when scope present; logs security event on denial |
+| Unit — \`MINIMUM_TIER\` resolver | Correct tier selected for all scope combinations |
+| Unit — \`parsePermissions\` | New scope IDs parse correctly; unknown scopes are filtered |
+| Integration — \`createKey\` | Key with \`battery:write\` gets \`premium\` tier; key with \`admin:user_write\` gets \`enterprise\` tier |
+| Integration — REST endpoints | Each new endpoint returns 403 without scope, 201/200 with scope |
+| E2E — WA workflow | Full flow: generate key with \`warranty:write\` → \`POST /api/v1/warranty\` → record created |`,
+    tags: ["api", "scopes", "write", "whatsapp", "integration", "security", "rate-limiting", "developer"],
+    relatedArticles: ["api-reference", "developer-portal", "webhook-integration"],
+    lastUpdated: "2026-07-09",
+    readTimeMinutes: 8,
+    icon: "KeyRound",
+  },
 ];
 
 // ─── SEARCH FUNCTION ─────────────────────────────────────────────────────────

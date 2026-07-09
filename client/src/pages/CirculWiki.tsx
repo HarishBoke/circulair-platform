@@ -50,6 +50,7 @@ import {
   Bot,
   Wifi,
   Key,
+  KeyRound,
   Server,
   Lock,
   Database,
@@ -78,7 +79,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   LayoutDashboard, Zap, Shield, Plug, Boxes, Settings, Globe, Fingerprint,
   Layers, Users, Atom, TrendingDown, Brain, Activity, ShieldCheck, Award,
   Recycle, Leaf, Code, Bot, Wifi, Key, Server, Lock, Database, BadgeCheck,
-  Store, PlusCircle, Cpu, FileText, Upload,
+  Store, PlusCircle, Cpu, FileText, Upload, KeyRound,
 };
 
 function getIcon(name: string): React.ComponentType<{ className?: string; style?: React.CSSProperties }> {

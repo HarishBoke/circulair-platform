@@ -1321,3 +1321,10 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Add clickable profile link in PlatformLayout sidebar user footer
 - [x] Write profile.test.ts with 8 tests (all passing)
 - [x] 518 tests passing, 0 TypeScript errors
+
+## Write API Scope Strategy — Wiki Documentation [COMPLETE]
+- [x] Add "Write API Key Scope Strategy" article (id: write-api-scope-strategy) to WIKI_ARTICLES in client/src/lib/wikiData.ts
+- [x] Category: integration — appears in Integration & APIs section of CirculWiki
+- [x] Covers: current state, 6 design principles, 11 new write scopes, scope-to-endpoint mapping, rate-limit tiers, 6 implementation phases, backward compatibility, WA integration key requirements, testing strategy
+- [x] Add KeyRound icon to lucide-react import and ICON_MAP in CirculWiki.tsx
+- [x] TypeScript: 0 errors, 517 tests passing (1 pre-existing flaky batterySimulator test)
