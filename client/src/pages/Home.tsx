@@ -203,13 +203,16 @@ export default function Home() {
   const [activeStakeholder, setActiveStakeholder] = useState(0);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="bg-grid" />
       <div className="bg-glow1" />
       <div className="bg-glow2" />
 
       {/* ─── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="relative z-10 flex items-center justify-between px-6 lg:px-10 py-4 border-b border-border/50 bg-background/70 backdrop-blur-2xl sticky top-0">
+      {/* position:fixed is used instead of sticky because any ancestor with
+          overflow-x:hidden creates a new scroll container and breaks sticky.
+          A padding-top on the first section compensates for the fixed header height. */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-10 py-4 border-b border-border/50 bg-background/90 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <CirculairLogo size={30} />
           <div>
@@ -261,7 +264,8 @@ export default function Home() {
       </header>
 
       {/* ─── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-24 lg:pt-32 pb-24">
+      {/* pt-[68px] compensates for the fixed header so hero content is not hidden beneath it */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-[92px] lg:pt-[100px] pb-24">
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
           <div className="animate-fade-up">
             <div className="flex items-center gap-3 mb-8">
