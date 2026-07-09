@@ -12,8 +12,11 @@ import { desc, eq, sql, and, gte, lte, like, count } from "drizzle-orm";
 export async function logAgentAction(data: InsertAgentAction) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(agentActions).values(data).returning({ id: undefined as any });
-  return result;
+  await db.insert(agentActions).values(data);
+  const [found] = await db.select({ id: agentActions.id }).from(agentActions)
+    .where(eq(agentActions.action, data.action))
+    .orderBy(desc(agentActions.createdAt)).limit(1);
+  return { id: found?.id ?? 0 };
 }
 
 /* ─── QUERY ───────────────────────────────────────────────────────────────── */

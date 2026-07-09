@@ -31,25 +31,34 @@ function makeMockDb() {
   return new Proxy({}, dbHandler);
 }
 
-// Separate insert mock that supports .returning() for PostgreSQL
+// Insert mock for MySQL pattern: insert().values() resolves to void, select-after-insert returns the ID
 function makeMockDbWithInsert(insertResult: any[]) {
+  // MySQL insert resolves to void (no .returning())
   const insertChain = {
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn().mockResolvedValue(insertResult),
-    }),
+    values: vi.fn().mockResolvedValue(undefined),
+  };
+  // Track whether we've done the post-insert select yet
+  let _postInsertSelectDone = false;
+  const makeSelectChain = () => {
+    const chain: any = {};
+    const methods = ["from", "where", "orderBy", "limit", "offset"];
+    for (const m of methods) { chain[m] = vi.fn().mockReturnValue(chain); }
+    // First select after insert returns insertResult; subsequent selects return queryResult
+    chain.then = (res: (v: any) => void) => {
+      if (!_postInsertSelectDone) { _postInsertSelectDone = true; return res(insertResult); }
+      return res(queryResult);
+    };
+    return chain;
   };
   const handler: ProxyHandler<object> = {
     get(_target, prop) {
-      if (prop === "then") {
-        const val = queryResult;
-        return (res: (v: any) => void) => res(val);
-      }
+      if (prop === "then") { const val = queryResult; return (res: (v: any) => void) => res(val); }
       return (..._args: any[]) => new Proxy({}, handler);
     },
   };
   return {
     insert: vi.fn().mockReturnValue(insertChain),
-    select: vi.fn().mockImplementation(() => new Proxy({}, handler)),
+    select: vi.fn().mockImplementation(() => makeSelectChain()),
     update: vi.fn().mockImplementation(() => new Proxy({}, handler)),
     delete: vi.fn().mockImplementation(() => new Proxy({}, handler)),
   };

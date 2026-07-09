@@ -20,7 +20,7 @@ export async function submitFeedback(data: {
   userEmail?: string;
 }) {
   const db = await getDb();
-  const [result] = await db!.insert(wikiFeedback).values({
+  await db!.insert(wikiFeedback).values({
     articleId: data.articleId,
     articleTitle: data.articleTitle,
     type: data.type,
@@ -31,8 +31,11 @@ export async function submitFeedback(data: {
     userId: data.userId ?? null,
     userName: data.userName ?? null,
     userEmail: data.userEmail ?? null,
-  }).returning({ id: wikiFeedback.id });
-  return { id: result.id };
+  });
+  const [wfResult] = await db!.select({ id: wikiFeedback.id }).from(wikiFeedback)
+    .where(eq(wikiFeedback.articleId, data.articleId))
+    .orderBy(desc(wikiFeedback.createdAt)).limit(1);
+  return { id: wfResult?.id ?? 0 };
 }
 
 export async function listFeedback(opts: {

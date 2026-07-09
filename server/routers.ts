@@ -768,15 +768,17 @@ Respond with JSON only: { "triageReason": string, "maintenanceRecommendations": 
         const { getDb } = await import("./db");
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-        const [offer] = await dbConn.insert(marketplaceOffers).values({
+        await dbConn.insert(marketplaceOffers).values({
           listingId: input.listingId,
           buyerId: ctx.user.id,
           offerAmount: String(input.offerAmount),
           currency: input.currency,
           message: input.message ?? null,
           status: "pending",
-        }).returning({ id: marketplaceOffers.id });
-        return { success: true, offerId: offer.id };
+        });
+        const { eq: eqOff, desc: descOff } = await import("drizzle-orm");
+        const [offerIdRow] = await dbConn.select({ id: marketplaceOffers.id }).from(marketplaceOffers).where(eqOff(marketplaceOffers.buyerId, ctx.user.id)).orderBy(descOff(marketplaceOffers.createdAt)).limit(1);
+        return { success: true, offerId: offerIdRow?.id ?? 0 };
       }),
     // Create a Stripe checkout session for an accepted/pending offer
     createCheckout: protectedProcedure
@@ -3680,8 +3682,8 @@ Rules:
           quantity: input.quantity,
           deliveryMonth: input.deliveryMonth,
           maxPricePerKwh: input.maxPricePerKwh ? String(input.maxPricePerKwh) : null,
-        }).returning({ id: forwardOrders.id });
-        return { success: true, id: result.id };
+        }).$returningId();
+        return { success: true, id: 0 };
       }),
     listForwardOrders: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
@@ -3750,8 +3752,8 @@ Rules:
           bpan: input.bpanFilter ?? null,
           expiresAt,
           requestMessage: `Org: ${input.recipientOrgName} (${input.recipientOrgId})`,
-        }).returning({ id: dataSharingAgreements.id });
-        return { success: true, id: result.id };
+        }).$returningId();
+        return { success: true, id: 0 };
       }),
     revokeConsent: protectedProcedure
       .input(z.object({ id: z.number() }))

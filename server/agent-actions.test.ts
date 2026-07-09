@@ -6,11 +6,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mock the database module (factory must not reference outer vars) ────────
+// Counter lives outside the factory so it can be reset between tests
+let _agentSelectCallCount = 0;
+
 vi.mock("./db", () => {
   const mockInsert = vi.fn().mockReturnValue({
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn().mockResolvedValue([{ id: 1 }]),
-    }),
+    values: vi.fn().mockResolvedValue(undefined), // MySQL insert returns void
   });
 
   // Build a flexible mock chain that handles various query patterns
@@ -20,8 +21,11 @@ vi.mock("./db", () => {
     for (const m of methods) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
-    // Make chain itself thenable (resolves to array)
-    chain.then = (resolve: any) => resolve([{ count: 0 }]);
+    // First select per test returns { id: 1 } (post-insert lookup), rest return { count: 0 }
+    chain.then = (resolve: any) => {
+      _agentSelectCallCount++;
+      return resolve(_agentSelectCallCount === 1 ? [{ id: 1 }] : [{ count: 0 }]);
+    };
     return chain;
   };
 
@@ -46,6 +50,7 @@ import {
 describe("Agent Actions - Database Helpers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _agentSelectCallCount = 0; // reset per-test select counter
   });
 
   describe("logAgentAction", () => {

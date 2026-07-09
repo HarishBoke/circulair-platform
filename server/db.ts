@@ -1,6 +1,6 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -29,8 +29,21 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = postgres(process.env.DATABASE_URL, { ssl: 'require' });
-      _db = drizzle(client);
+      const rawUrl = process.env.DATABASE_URL;
+      // Parse mysql:// URL into mysql2 connection options
+      const url = new URL(rawUrl);
+      const pool = mysql.createPool({
+        host: url.hostname,
+        port: parseInt(url.port) || 3306,
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        database: url.pathname.slice(1).split('?')[0],
+        ssl: { rejectUnauthorized: false },
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+      });
+      _db = drizzle(pool) as any;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -59,7 +72,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
+  // MySQL: use INSERT ... ON DUPLICATE KEY UPDATE via raw SQL for upsert
+  await db.insert(users).values(values).$returningId();
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(users).set(updateSet as any).where(eq(users.openId, values.openId!));
+  }
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -634,7 +651,8 @@ export async function listConsentLogs(limit = 100) {
 export async function insertIotDevice(data: InsertIotDevice) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(iotDevices).values(data).returning({ id: iotDevices.id });
+  await db.insert(iotDevices).values(data);
+  const [result] = await db.select().from(iotDevices).where(eq(iotDevices.deviceId, data.deviceId)).limit(1);
   return result;
 }
 
@@ -872,8 +890,11 @@ export async function getOffersByBuyer(buyerId: number) {
 export async function createAlertRule(data: InsertAlertRule): Promise<AlertRule> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [inserted] = await db.insert(alertRules).values(data).returning();
-  return inserted;
+  await db.insert(alertRules).values(data);
+  const [inserted] = await db.select().from(alertRules)
+    .where(and(eq(alertRules.metric, data.metric), eq(alertRules.chemistry, data.chemistry ?? "")))
+    .orderBy(desc(alertRules.createdAt)).limit(1);
+  return inserted as AlertRule;
 }
 
 export async function listAlertRules(filters?: {

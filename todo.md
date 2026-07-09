@@ -1272,3 +1272,14 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Keyboard accessible: buttons with focus-visible ring-2 ring-primary/40
 - [x] followUpSuggestions.test.ts — 15 new tests covering parsing, capping, graceful degradation, type safety
 - [x] TypeScript: 0 errors, 504 tests passing (32 test files); 1 pre-existing flaky test in gatewayDocs.test.ts (unrelated to this feature)
+
+## CRITICAL: Fix DB Connection + Auth (Login/Register/Reset Password)
+- [ ] Switch server/db.ts from drizzle-orm/postgres-js to drizzle-orm/mysql2 to match TiDB MySQL DATABASE_URL
+- [ ] Switch drizzle/schema.ts from pgTable/pg-core imports to mysqlTable/mysql-core imports
+- [ ] Update drizzle.config.ts dialect from postgresql to mysql
+- [ ] Fix all pg-specific syntax in schema (serial→int autoincrement, numeric→decimal, etc.)
+- [ ] Verify login works end-to-end
+- [ ] Verify register/sign-up works end-to-end
+- [ ] Verify reset password works end-to-end
+- [ ] Run full test suite after migration
+- [ ] TypeScript: 0 errors
