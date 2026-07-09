@@ -19,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 /* ─── ANIMATED COUNTER ─────────────────────────────────────────────────────── */
 function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2000 }: {
@@ -141,6 +142,8 @@ const STAKEHOLDERS = [
   },
 ];
 
+const EMPTY_CONTACT_FORM = { name: "", email: "", company: "", role: "", message: "" };
+
 const COMPLIANCE_FRAMEWORKS = [
   { name: "EU Battery Regulation", region: "European Union", code: "EU 2023/1542", status: "Full Compliance" },
   { name: "Battery Waste Management Rules", region: "India", code: "BWMR 2022", status: "Full Compliance" },
@@ -197,12 +200,26 @@ export default function Home() {
   const [activeStakeholder, setActiveStakeholder] = useState(0);
 
   // Contact form state
-  const [contactForm, setContactForm] = useState({ name: "", email: "", company: "", role: "", message: "" });
+  const [contactForm, setContactForm] = useState(EMPTY_CONTACT_FORM);
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const contactMutation = trpc.contact.submit.useMutation({
-    onSuccess: () => setContactSubmitted(true),
-    onError: (err) => setContactErrors({ submit: err.message }),
+    onSuccess: () => {
+      setContactSubmitted(true);
+      setContactForm(EMPTY_CONTACT_FORM);
+      setContactErrors({});
+      toast.success("Message sent!", {
+        description: "Thanks for reaching out — we'll be in touch shortly.",
+        duration: 5000,
+      });
+    },
+    onError: (err) => {
+      setContactErrors({ submit: err.message });
+      toast.error("Failed to send message", {
+        description: err.message || "Please try again or email us directly.",
+        duration: 6000,
+      });
+    },
   });
 
   function validateContact() {
