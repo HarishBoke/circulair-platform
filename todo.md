@@ -500,6 +500,15 @@
 - [x] Fix broken logo display (created dark-bg version of SVG, white path → #000202 matching theme)
 - [x] Update contact email to business@setoo.co across all pages
 
+## Contact Form: CTA Section [COMPLETE]
+- [x] Add contact_inquiries table to drizzle schema (name, email, company, role, message, createdAt)
+- [x] Add tRPC contact.submit procedure with Zod validation and owner notification
+- [x] Build two-column CTA + contact form layout in Home.tsx (headline/buttons left, form right)
+- [x] Client-side validation (name ≥2 chars, valid email, message ≥10 chars)
+- [x] Loading spinner, success state with "Send another message" reset
+- [x] Trust-point bullets: no credit card, EU compliance, MQTT + REST API
+- [x] TypeScript: 0 errors, checkpoint saved (8eed6fac)
+
 ## Design: Remove AI-looking badge/pill labels
 - [ ] Audit all rounded pill badge labels (e.g. "MULTINATIONAL BATTERY LIFECYCLE PLATFORM")
 - [ ] Redesign to editorial/typographic treatment (no rounded pill, no globe icon, clean type)
@@ -1190,15 +1199,21 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Forms/interactions tests: pass
 - [x] Admin/settings tests: pass
 
-## Phase NL-Search: Natural Language Battery Query Search Bar [IN PROGRESS]
-- [ ] Read Analytics.tsx to understand current dashboard structure
-- [ ] Add analytics.nlQuery tRPC procedure — accepts plain English query, uses LLM to generate SQL-like filter, runs against battery/telemetry/alerts DB, returns structured results + explanation
-- [ ] Build NaturalLanguageSearch.tsx component — search bar with suggestions, loading state, result cards, query history
-- [ ] Wire NaturalLanguageSearch into Analytics.tsx at the top of the dashboard
-- [ ] Add suggested queries (e.g. "Show batteries below 80% SOH", "List thermal anomalies this week")
-- [ ] Write vitest tests for nlQuery procedure
-- [ ] TypeScript: 0 errors
-- [ ] Save checkpoint and deliver
+## Phase NL-Search: Natural Language Battery Query Search Bar [COMPLETE]
+- [x] Read Analytics.tsx to understand current dashboard structure
+- [x] analytics.nlQuery tRPC procedure — LLM intent classification + DB dispatch for batteries/telemetry/alerts/soh/marketplace/summary intents
+- [x] NaturalLanguageSearch.tsx component — search bar, suggestion chips, history dropdown, result table, summary stats, AI answer panel
+- [x] Wire NaturalLanguageSearch into Analytics.tsx at the top of the dashboard
+- [x] Suggested queries: 8 chips (batteries below 80% SOH, thermal anomalies, end-of-life, critical alerts, NMC fleet, platform summary, marketplace, SOH predictions)
+- [x] CSV export — download result table as .csv with proper quoting/escaping
+- [x] localStorage history — persists up to 8 queries across page refreshes (cai_nl_query_history key)
+- [x] Cmd/Ctrl+K global keyboard shortcut — focuses search bar from anywhere on Analytics page
+- [x] WCAG 2.1 AA — role=search, aria-live, aria-expanded, aria-label on all interactive elements, role=status on result count
+- [x] Improved empty state — search icon, helpful tip to broaden query
+- [x] Clear history button in suggestions dropdown
+- [x] nlQuery.test.ts — 19 tests covering all 6 intents + error handling + result structure
+- [x] nlQueryHelpers.test.ts — 28 new tests for CSV export, localStorage history, formatValue, formatHeader
+- [x] TypeScript: 0 errors, 467 tests passing (30 test files)
 
 ## Phase QA-Fixes: Fix Issues Found in QA Report
 - [x] Fix landing page counter animation — trigger on mount if element already in viewport, not just on scroll
