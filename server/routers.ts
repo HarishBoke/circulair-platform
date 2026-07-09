@@ -3776,21 +3776,28 @@ Rules:
         message: z.string().min(10, "Message must be at least 10 characters").max(5000),
       }))
       .mutation(async ({ input, ctx }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const { contactInquiries } = await import("../drizzle/schema");
         const ip = (ctx.req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
           ctx.req.socket?.remoteAddress ||
           null;
-        await db.insert(contactInquiries).values({
-          name: input.name,
-          email: input.email,
-          company: input.company ?? null,
-          role: input.role ?? null,
-          message: input.message,
-          status: "new",
-          ipAddress: ip,
-        });
+        // Persist to DB (best-effort — email notification is the primary delivery channel)
+        try {
+          const db = await getDb();
+          if (db) {
+            const { contactInquiries } = await import("../drizzle/schema");
+            await db.insert(contactInquiries).values({
+              name: input.name,
+              email: input.email,
+              company: input.company ?? null,
+              role: input.role ?? null,
+              message: input.message,
+              status: "new",
+              ipAddress: ip,
+            });
+          }
+        } catch (dbErr) {
+          // Log but do not fail the request — email notification ensures delivery
+          console.error("[contact] DB insert failed (non-fatal):", (dbErr as Error).message);
+        }
         // Send enquiry email directly to harish@setoo.co via Resend
         try {
           const { Resend } = await import("resend");
