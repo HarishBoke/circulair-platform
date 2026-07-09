@@ -1,13 +1,13 @@
 /**
- * Owner Notifications - Independent Resend email implementation
+ * Owner Notifications — ZeptoMail email implementation
  *
- * Primary: Resend email to OWNER_EMAIL (RESEND_API_KEY required)
+ * Primary: ZeptoMail email to OWNER_EMAIL (ZEPTOMAIL_TOKEN required)
  * Fallback: Manus Forge SendNotification webhook (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
- *           — used automatically when deployed on Manus hosting without Resend key
+ *           — used automatically when deployed on Manus hosting without ZeptoMail token
  */
 
 import { TRPCError } from "@trpc/server";
-import { Resend } from "resend";
+import { SendMailClient } from "zeptomail";
 import { ENV } from "./env";
 
 export type NotificationPayload = {
@@ -36,21 +36,24 @@ function validatePayload(input: NotificationPayload): NotificationPayload {
   return { title, content };
 }
 
-// ── Resend email implementation ───────────────────────────────────────────────
+// ── ZeptoMail email implementation ────────────────────────────────────────────
 
-async function notifyViaResend(payload: NotificationPayload): Promise<boolean> {
-  const resend = new Resend(ENV.resendApiKey);
-  const ownerEmail = ENV.ownerEmail || ENV.resendFromEmail;
+async function notifyViaZeptoMail(payload: NotificationPayload): Promise<boolean> {
+  const ownerEmail = ENV.ownerEmail || ENV.fromEmail;
   if (!ownerEmail) {
     console.warn("[Notification] OWNER_EMAIL not set — cannot send owner notification email");
     return false;
   }
   try {
-    const { error } = await resend.emails.send({
-      from: `Circul-AI-r Platform <${ENV.resendFromEmail}>`,
-      to: [ownerEmail],
+    const client = new SendMailClient({
+      url: "api.zeptomail.com/",
+      token: ENV.zeptomailToken,
+    });
+    await client.sendMail({
+      from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
+      to: [{ email_address: { address: ownerEmail, name: ENV.ownerName || "Platform Owner" } }],
       subject: `[Platform Alert] ${payload.title}`,
-      html: `
+      htmlbody: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #10b981; margin-bottom: 8px;">${payload.title}</h2>
           <div style="background: #f9fafb; border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">
@@ -61,15 +64,11 @@ async function notifyViaResend(payload: NotificationPayload): Promise<boolean> {
           </p>
         </div>
       `,
-      text: `${payload.title}\n\n${payload.content}`,
+      textbody: `${payload.title}\n\n${payload.content}`,
     });
-    if (error) {
-      console.warn("[Notification] Resend error:", error);
-      return false;
-    }
     return true;
   } catch (err) {
-    console.warn("[Notification] Resend exception:", err);
+    console.warn("[Notification] ZeptoMail exception:", err);
     return false;
   }
 }
@@ -111,15 +110,15 @@ async function notifyViaForge(payload: NotificationPayload): Promise<boolean> {
 export async function notifyOwner(payload: NotificationPayload): Promise<boolean> {
   const validated = validatePayload(payload);
 
-  // Prefer independent Resend email
-  if (ENV.resendApiKey) {
-    return notifyViaResend(validated);
+  // Prefer ZeptoMail when token is configured
+  if (ENV.zeptomailToken) {
+    return notifyViaZeptoMail(validated);
   }
   // Fallback to Manus Forge when on Manus hosting
   if (ENV.forgeApiUrl && ENV.forgeApiKey) {
     return notifyViaForge(validated);
   }
 
-  console.warn("[Notification] No notification transport configured (set RESEND_API_KEY or BUILT_IN_FORGE_API_KEY)");
+  console.warn("[Notification] No notification transport configured (set ZEPTOMAIL_TOKEN or BUILT_IN_FORGE_API_KEY)");
   return false;
 }

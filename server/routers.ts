@@ -3800,18 +3800,18 @@ Rules:
           // Log but do not fail the request — email notification ensures delivery
           console.error("[contact] DB insert failed (non-fatal):", (dbErr as Error).message);
         }
-        // Send enquiry email directly to harish@setoo.co via Resend
+        // Send enquiry email directly to harish@setoo.co via ZeptoMail
         try {
-          const { Resend } = await import("resend");
+          const { SendMailClient } = await import("zeptomail");
           const { ENV } = await import("./_core/env");
-          if (ENV.resendApiKey) {
-            const resend = new Resend(ENV.resendApiKey);
-            await resend.emails.send({
-              from: `Circul-AI-r Platform <${ENV.resendFromEmail}>`,
-              to: ["harish@setoo.co"],
-              replyTo: input.email,
+          if (ENV.zeptomailToken) {
+            const zeptoClient = new SendMailClient({ url: "api.zeptomail.com/", token: ENV.zeptomailToken });
+            await zeptoClient.sendMail({
+              from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
+              to: [{ email_address: { address: "harish@setoo.co", name: "Harish" } }],
+              reply_to: [{ address: input.email, name: input.name }],
               subject: `New Enquiry from circulair.energy — ${input.name}${input.company ? ` (${input.company})` : ""}`,
-              html: `
+              htmlbody: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #0a0a0a; color: #e5e7eb;">
                   <div style="border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 24px;">
                     <h2 style="color: #10b981; margin: 0 0 4px;">New Enquiry — circulair.energy</h2>
@@ -3830,11 +3830,11 @@ Rules:
                   </p>
                 </div>
               `,
-              text: `New Enquiry from circulair.energy\n\nName: ${input.name}\nEmail: ${input.email}${input.company ? `\nCompany: ${input.company}` : ""}${input.role ? `\nRole: ${input.role}` : ""}\n\nMessage:\n${input.message}\n\n---\nSubmitted via https://circulair.energy/`,
+              textbody: `New Enquiry from circulair.energy\n\nName: ${input.name}\nEmail: ${input.email}${input.company ? `\nCompany: ${input.company}` : ""}${input.role ? `\nRole: ${input.role}` : ""}\n\nMessage:\n${input.message}\n\n---\nSubmitted via https://circulair.energy/`,
             });
           }
         } catch (e) {
-          console.error("[contact] Resend email to harish@setoo.co failed:", e);
+          console.error("[contact] ZeptoMail email to harish@setoo.co failed:", e);
         }
         // Also notify platform owner via the standard notification channel as backup
         const { notifyOwner } = await import("./_core/notification");

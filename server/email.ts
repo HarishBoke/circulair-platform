@@ -1,27 +1,36 @@
 /**
  * email.ts
  *
- * Transactional email helpers powered by Resend.
+ * Transactional email helpers powered by ZeptoMail.
  * All functions are server-side only — never import this from client code.
  *
  * Exports:
  *   sendPasswordResetEmail(to, resetUrl, name?) → Promise<{ success: boolean; messageId?: string }>
- *   validateResendConfig() → boolean
+ *   sendDeveloperOnboardingEmail(params)        → Promise<{ success: boolean; messageId?: string }>
+ *   validateEmailConfig()                       → boolean
  */
-import { Resend } from "resend";
+import { SendMailClient } from "zeptomail";
 import { ENV } from "./_core/env";
 
-// ─── Resend client (lazy-initialised so tests can mock ENV) ──────────────────
-function getResendClient(): Resend {
-  if (!ENV.resendApiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
+// ─── ZeptoMail client (lazy-initialised so tests can mock ENV) ────────────────
+function getZeptoClient(): SendMailClient {
+  if (!ENV.zeptomailToken) {
+    throw new Error("ZEPTOMAIL_TOKEN is not configured");
   }
-  return new Resend(ENV.resendApiKey);
+  return new SendMailClient({
+    url: "api.zeptomail.com/",
+    token: ENV.zeptomailToken,
+  });
 }
 
 // ─── Config validation ────────────────────────────────────────────────────────
+export function validateEmailConfig(): boolean {
+  return Boolean(ENV.zeptomailToken && ENV.fromEmail);
+}
+
+/** @deprecated Use validateEmailConfig() */
 export function validateResendConfig(): boolean {
-  return Boolean(ENV.resendApiKey && ENV.resendFromEmail);
+  return validateEmailConfig();
 }
 
 // ─── HTML email template ──────────────────────────────────────────────────────
@@ -38,7 +47,6 @@ function buildPasswordResetHtml(resetUrl: string, name: string, expiryMinutes = 
     .wrapper { max-width: 600px; margin: 40px auto; background-color: #0f1a0f; border: 1px solid #1a3a1a; border-radius: 16px; overflow: hidden; }
     .accent-bar { height: 4px; background: linear-gradient(90deg, #22c55e 0%, #16a34a 50%, #22c55e 100%); }
     .header { padding: 32px 40px 24px; border-bottom: 1px solid #1a3a1a; }
-    .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 0; }
     .logo-text { font-size: 20px; font-weight: 700; color: #f0fdf4; letter-spacing: -0.5px; }
     .logo-text span { color: #22c55e; }
     .logo-sub { font-size: 9px; color: #4ade80; letter-spacing: 3px; text-transform: uppercase; font-family: 'Courier New', monospace; margin-top: 2px; }
@@ -46,17 +54,7 @@ function buildPasswordResetHtml(resetUrl: string, name: string, expiryMinutes = 
     h1 { font-size: 22px; font-weight: 700; color: #f0fdf4; margin: 0 0 12px; }
     p { font-size: 15px; line-height: 1.6; color: #86efac; margin: 0 0 20px; }
     .cta-wrapper { text-align: center; margin: 32px 0; }
-    .cta-button {
-      display: inline-block;
-      padding: 14px 36px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: #0a0f0a !important;
-      text-decoration: none;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.3px;
-    }
+    .cta-button { display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #0a0f0a !important; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; }
     .url-fallback { background: #0a1a0a; border: 1px solid #1a3a1a; border-radius: 8px; padding: 14px 16px; margin: 20px 0; word-break: break-all; }
     .url-fallback p { font-size: 12px; color: #4ade80; margin: 0 0 6px; }
     .url-fallback a { font-size: 12px; color: #22c55e; word-break: break-all; }
@@ -72,43 +70,26 @@ function buildPasswordResetHtml(resetUrl: string, name: string, expiryMinutes = 
 <body>
   <div class="wrapper">
     <div class="accent-bar"></div>
-
     <div class="header">
-      <div class="logo-row">
-        <div>
-          <div class="logo-text">Circul<span>-AI-</span>r</div>
-          <div class="logo-sub">Battery Intelligence Platform</div>
-        </div>
-      </div>
+      <div class="logo-text">Circul<span>-AI-</span>r</div>
+      <div class="logo-sub">Battery Intelligence Platform</div>
     </div>
-
     <div class="body">
       <h1>Reset your password</h1>
       <p>Hi ${displayName},</p>
-      <p>
-        We received a request to reset the password for your Circul-AI-r account.
-        Click the button below to choose a new password.
-      </p>
-
+      <p>We received a request to reset the password for your Circul-AI-r account. Click the button below to choose a new password.</p>
       <div class="cta-wrapper">
         <a href="${resetUrl}" class="cta-button">Reset Password</a>
       </div>
-
       <div class="warning-box">
-        <p>
-          ⚠ This link expires in <strong>${expiryMinutes} minutes</strong> and can only be used once.
-          If you didn't request a password reset, you can safely ignore this email — your password
-          will not change.
-        </p>
+        <p>⚠ This link expires in <strong>${expiryMinutes} minutes</strong> and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
       </div>
-
       <p>If the button above doesn't work, copy and paste this URL into your browser:</p>
       <div class="url-fallback">
         <p>Reset link</p>
         <a href="${resetUrl}">${resetUrl}</a>
       </div>
     </div>
-
     <div class="footer">
       <p>This email was sent by Circul-AI-r Battery Intelligence Platform.</p>
       <p>If you have questions, contact <a href="mailto:support@circulair.energy">support@circulair.energy</a></p>
@@ -154,25 +135,21 @@ export async function sendPasswordResetEmail(
   expiryMinutes = 15
 ): Promise<SendPasswordResetEmailResult> {
   try {
-    const resend = getResendClient();
-    const { data, error } = await resend.emails.send({
-      from: `Circul-AI-r <${ENV.resendFromEmail}>`,
-      to: [to],
+    const client = getZeptoClient();
+    const response = await client.sendMail({
+      from: { address: ENV.fromEmail, name: "Circul-AI-r" },
+      to: [{ email_address: { address: to, name: name ?? to } }],
+      reply_to: [{ address: ENV.fromEmail, name: "Circul-AI-r" }],
       subject: "Reset your Circul-AI-r password",
-      html: buildPasswordResetHtml(resetUrl, name ?? "", expiryMinutes),
-      text: buildPasswordResetText(resetUrl, name ?? "", expiryMinutes),
+      htmlbody: buildPasswordResetHtml(resetUrl, name ?? "", expiryMinutes),
+      textbody: buildPasswordResetText(resetUrl, name ?? "", expiryMinutes),
     });
-
-    if (error) {
-      console.error("[Resend] Failed to send password reset email:", error);
-      return { success: false, error: error.message };
-    }
-
-    console.log(`[Resend] Password reset email sent to ${to} (id: ${data?.id})`);
-    return { success: true, messageId: data?.id };
+    const requestId = (response as any)?.request_id ?? "";
+    console.log(`[ZeptoMail] Password reset email sent to ${to} (request_id: ${requestId})`);
+    return { success: true, messageId: requestId };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Resend] Exception sending password reset email:", message);
+    console.error("[ZeptoMail] Exception sending password reset email:", message);
     return { success: false, error: message };
   }
 }
@@ -243,23 +220,18 @@ const data = await res.json();`;
     <div class="body">
       <h1>Welcome to the API, ${name || "Developer"}!</h1>
       <p>Your API key <strong>"${keyName}"</strong> has been issued. This is the only time the full key will be shown — store it securely in your secrets manager.</p>
-
       <h2>Your API Key</h2>
       <div class="key-box">
         <div class="key-label">Bearer Token</div>
         <div class="key-value">${apiKey}</div>
       </div>
       <div class="warning">⚠ Never commit this key to source control. Rotate it immediately from the Developer Portal if it is ever exposed.</div>
-
       <h2>Granted Scopes</h2>
       <ul class="scope-list">${scopeList}</ul>
-
       <h2>Quickstart — REST API</h2>
       <div class="code-block">${jsSnippet}</div>
-
       <h2>Quickstart — MCP (Claude / Cursor)</h2>
       <div class="code-block">${curlSnippet}</div>
-
       <h2>Next Steps</h2>
       <p>
         <a href="${origin}/api-reference" class="btn">API Reference</a>
@@ -309,25 +281,21 @@ export async function sendDeveloperOnboardingEmail(
   params: DeveloperOnboardingEmailParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const resend = getResendClient();
-    const { data, error } = await resend.emails.send({
-      from: `Circul-AI-r Developers <${ENV.resendFromEmail}>`,
-      to: [params.to],
+    const client = getZeptoClient();
+    const response = await client.sendMail({
+      from: { address: ENV.fromEmail, name: "Circul-AI-r Developers" },
+      to: [{ email_address: { address: params.to, name: params.name || params.to } }],
+      reply_to: [{ address: ENV.fromEmail, name: "Circul-AI-r Developers" }],
       subject: `Your API key "${params.keyName}" is ready — Circul-AI-r Developer Platform`,
-      html: buildDeveloperOnboardingHtml(params),
-      text: buildDeveloperOnboardingText(params),
+      htmlbody: buildDeveloperOnboardingHtml(params),
+      textbody: buildDeveloperOnboardingText(params),
     });
-
-    if (error) {
-      console.error("[Resend] Failed to send developer onboarding email:", error);
-      return { success: false, error: error.message };
-    }
-
-    console.log(`[Resend] Developer onboarding email sent to ${params.to} (id: ${data?.id})`);
-    return { success: true, messageId: data?.id };
+    const requestId = (response as any)?.request_id ?? "";
+    console.log(`[ZeptoMail] Developer onboarding email sent to ${params.to} (request_id: ${requestId})`);
+    return { success: true, messageId: requestId };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Resend] Exception sending developer onboarding email:", message);
+    console.error("[ZeptoMail] Exception sending developer onboarding email:", message);
     return { success: false, error: message };
   }
 }

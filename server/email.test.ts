@@ -1,33 +1,37 @@
 /**
  * email.test.ts
  *
- * Tests for the Resend email helper (server/email.ts).
- * The Resend SDK is mocked so no real network calls are made.
+ * Tests for the ZeptoMail email helper (server/email.ts).
+ * The ZeptoMail SDK is mocked so no real network calls are made.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ─── Mock the Resend SDK ──────────────────────────────────────────────────────
-const mockSend = vi.fn();
-vi.mock("resend", () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: { send: mockSend },
+// ─── Mock the ZeptoMail SDK ───────────────────────────────────────────────────
+const mockSendMail = vi.fn();
+vi.mock("zeptomail", () => ({
+  SendMailClient: vi.fn().mockImplementation(() => ({
+    sendMail: mockSendMail,
   })),
 }));
 
-// ─── Mock ENV so RESEND_API_KEY is always present ─────────────────────────────
+// ─── Mock ENV so ZEPTOMAIL_TOKEN and FROM_EMAIL are always present ─────────────
 vi.mock("./_core/env", () => ({
   ENV: {
-    resendApiKey: "re_test_key_123",
+    zeptomailToken: "zepto_test_token_abc123",
+    fromEmail: "noreply@circulair.energy",
+    resendApiKey: "",
     resendFromEmail: "noreply@circulair.energy",
+    ownerEmail: "owner@circulair.energy",
+    ownerName: "Platform Owner",
   },
 }));
 
-import { sendPasswordResetEmail, validateResendConfig } from "./email";
+import { sendPasswordResetEmail, validateEmailConfig } from "./email";
 
-// ─── validateResendConfig ─────────────────────────────────────────────────────
-describe("validateResendConfig", () => {
-  it("returns true when both RESEND_API_KEY and RESEND_FROM_EMAIL are set", () => {
-    expect(validateResendConfig()).toBe(true);
+// ─── validateEmailConfig ──────────────────────────────────────────────────────
+describe("validateEmailConfig", () => {
+  it("returns true when both ZEPTOMAIL_TOKEN and FROM_EMAIL are set", () => {
+    expect(validateEmailConfig()).toBe(true);
   });
 });
 
@@ -37,8 +41,8 @@ describe("sendPasswordResetEmail", () => {
     vi.clearAllMocks();
   });
 
-  it("calls Resend with correct to, from, subject, html, and text fields", async () => {
-    mockSend.mockResolvedValue({ data: { id: "msg_abc123" }, error: null });
+  it("calls ZeptoMail with correct to, from, subject, htmlbody, and textbody fields", async () => {
+    mockSendMail.mockResolvedValue({ request_id: "req_abc123" });
 
     const result = await sendPasswordResetEmail(
       "user@example.com",
@@ -48,18 +52,18 @@ describe("sendPasswordResetEmail", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.messageId).toBe("msg_abc123");
+    expect(result.messageId).toBe("req_abc123");
 
-    const callArgs = mockSend.mock.calls[0][0];
-    expect(callArgs.to).toContain("user@example.com");
-    expect(callArgs.from).toContain("noreply@circulair.energy");
+    const callArgs = mockSendMail.mock.calls[0][0];
+    expect(callArgs.to[0].email_address.address).toBe("user@example.com");
+    expect(callArgs.from.address).toBe("noreply@circulair.energy");
     expect(callArgs.subject).toMatch(/reset.*password/i);
-    expect(callArgs.html).toContain("https://circulair.energy/reset-password?token=abc");
-    expect(callArgs.text).toContain("https://circulair.energy/reset-password?token=abc");
+    expect(callArgs.htmlbody).toContain("https://circulair.energy/reset-password?token=abc");
+    expect(callArgs.textbody).toContain("https://circulair.energy/reset-password?token=abc");
   });
 
   it("includes the user name in the email body", async () => {
-    mockSend.mockResolvedValue({ data: { id: "msg_xyz" }, error: null });
+    mockSendMail.mockResolvedValue({ request_id: "req_xyz" });
 
     await sendPasswordResetEmail(
       "bob@example.com",
@@ -68,13 +72,13 @@ describe("sendPasswordResetEmail", () => {
       15
     );
 
-    const callArgs = mockSend.mock.calls[0][0];
-    expect(callArgs.html).toContain("Bob");
-    expect(callArgs.text).toContain("Bob");
+    const callArgs = mockSendMail.mock.calls[0][0];
+    expect(callArgs.htmlbody).toContain("Bob");
+    expect(callArgs.textbody).toContain("Bob");
   });
 
   it("uses 'there' as fallback when name is empty", async () => {
-    mockSend.mockResolvedValue({ data: { id: "msg_noname" }, error: null });
+    mockSendMail.mockResolvedValue({ request_id: "req_noname" });
 
     await sendPasswordResetEmail(
       "anon@example.com",
@@ -83,29 +87,12 @@ describe("sendPasswordResetEmail", () => {
       15
     );
 
-    const callArgs = mockSend.mock.calls[0][0];
-    expect(callArgs.text).toContain("Hi there");
+    const callArgs = mockSendMail.mock.calls[0][0];
+    expect(callArgs.textbody).toContain("Hi there");
   });
 
-  it("returns success: false and error message when Resend returns an error", async () => {
-    mockSend.mockResolvedValue({
-      data: null,
-      error: { message: "Invalid API key", name: "validation_error" },
-    });
-
-    const result = await sendPasswordResetEmail(
-      "user@example.com",
-      "https://example.com/reset?token=fail",
-      "User",
-      15
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/invalid api key/i);
-  });
-
-  it("returns success: false when Resend throws an exception", async () => {
-    mockSend.mockRejectedValue(new Error("Network timeout"));
+  it("returns success: false when ZeptoMail throws an exception", async () => {
+    mockSendMail.mockRejectedValue(new Error("Network timeout"));
 
     const result = await sendPasswordResetEmail(
       "user@example.com",
@@ -119,7 +106,7 @@ describe("sendPasswordResetEmail", () => {
   });
 
   it("includes the expiry duration in the email body", async () => {
-    mockSend.mockResolvedValue({ data: { id: "msg_expiry" }, error: null });
+    mockSendMail.mockResolvedValue({ request_id: "req_expiry" });
 
     await sendPasswordResetEmail(
       "user@example.com",
@@ -128,13 +115,13 @@ describe("sendPasswordResetEmail", () => {
       30
     );
 
-    const callArgs = mockSend.mock.calls[0][0];
-    expect(callArgs.html).toContain("30");
-    expect(callArgs.text).toContain("30 minutes");
+    const callArgs = mockSendMail.mock.calls[0][0];
+    expect(callArgs.htmlbody).toContain("30");
+    expect(callArgs.textbody).toContain("30 minutes");
   });
 
   it("includes both HTML and plain-text versions", async () => {
-    mockSend.mockResolvedValue({ data: { id: "msg_both" }, error: null });
+    mockSendMail.mockResolvedValue({ request_id: "req_both" });
 
     await sendPasswordResetEmail(
       "user@example.com",
@@ -143,9 +130,9 @@ describe("sendPasswordResetEmail", () => {
       15
     );
 
-    const callArgs = mockSend.mock.calls[0][0];
-    expect(callArgs.html).toBeTruthy();
-    expect(callArgs.text).toBeTruthy();
-    expect(callArgs.html).not.toBe(callArgs.text);
+    const callArgs = mockSendMail.mock.calls[0][0];
+    expect(callArgs.htmlbody).toBeTruthy();
+    expect(callArgs.textbody).toBeTruthy();
+    expect(callArgs.htmlbody).not.toBe(callArgs.textbody);
   });
 });

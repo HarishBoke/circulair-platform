@@ -250,6 +250,9 @@ importers:
       wouter:
         specifier: ^3.3.5
         version: 3.7.1(patch_hash=4e16e6ff3fde7d6c1024d3e0c8605dc9eb6afb690d0d49958c2f449091813072)(react@19.2.1)
+      zeptomail:
+        specifier: ^8.0.1
+        version: 8.0.1
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -5818,6 +5821,10 @@ packages:
   zenscroll@4.0.2:
     resolution: {integrity: sha512-jEA1znR7b4C/NnaycInCU6h/d15ZzCd1jmsruqOKnZP6WXQSMH3W2GL+OXbkruslU4h+Tzuos0HdswzRUk/Vgg==}
 
+  zeptomail@8.0.1:
+    resolution: {integrity: sha512-NBvJMPmiX7MXPzwapgRYIaJ32uijNh6uVkbIK+P/qP8X/OCjEn0ngJ+oPBenjWKUWkunXUVdgITwizYspRe47w==}
+    engines: {node: '>=20'}
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
@@ -9793,6 +9800,7 @@ snapshots:
       style-data: 1.4.8
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   extract-zip@2.0.1:
     dependencies:
@@ -10136,6 +10144,7 @@ snapshots:
       remote-content: 4.0.1
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   html-pdf-node@1.0.8:
     dependencies:
@@ -10232,6 +10241,7 @@ snapshots:
       specificity: 0.4.1
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   inline-style-parser@0.2.4: {}
 
@@ -11556,10 +11566,11 @@ snapshots:
 
   remote-content@4.0.1:
     dependencies:
-      axios: 1.12.2
+      axios: 1.18.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   repeat-string@1.6.1: {}
 
@@ -12502,6 +12513,14 @@ snapshots:
       fd-slicer: 1.1.0
 
   zenscroll@4.0.2: {}
+
+  zeptomail@8.0.1:
+    dependencies:
+      axios: 1.18.1
+      node-fetch: 2.6.1
+    transitivePeerDependencies:
+      - debug
+      - supports-color
 
   zod@3.25.76: {}
 

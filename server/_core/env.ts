@@ -21,7 +21,11 @@ export const ENV = {
   // ── Google Maps ───────────────────────────────────────────────────────────────
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
 
-  // ── Email (Resend) ────────────────────────────────────────────────────────────
+  // ── Email (ZeptoMail) ─────────────────────────────────────────────────────────
+  zeptomailToken: process.env.ZEPTOMAIL_TOKEN ?? "",
+  fromEmail: process.env.FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? "noreply@circulair.energy",
+
+  // ── Email (Resend — kept for backward compat, no longer used) ────────────────
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@circulair.energy",
 
