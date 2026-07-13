@@ -248,37 +248,60 @@ export default function Home() {
       {/* position:fixed is used instead of sticky because any ancestor with
           overflow-x:hidden creates a new scroll container and breaks sticky.
           A padding-top on the first section compensates for the fixed header height. */}
+      {/* ─── MOBILE NAV DRAWER — rendered outside header so fixed positioning is viewport-relative ─── */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-[200] lg:hidden" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+          <nav className="absolute top-0 right-0 bottom-0 w-72 bg-background border-l border-border/60 flex flex-col shadow-2xl overflow-y-auto">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+              <div className="flex items-center gap-2.5">
+                <CirculairLogo size={24} />
+                <span className="text-[15px] font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Circul<span className="text-primary">-AI-</span>r</span>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Nav links */}
+            <div className="flex flex-col px-3 py-4 gap-0.5 flex-1">
+              {[
+                { href: '#capabilities', label: 'Capabilities' },
+                { href: '#stakeholders', label: 'Stakeholders' },
+                { href: '#compliance', label: 'Compliance' },
+                { href: '/how-it-works', label: 'How It Works' },
+                { href: '/faq', label: 'FAQ' },
+                { href: '/glossary', label: 'Glossary' },
+                { href: '/marketplace', label: 'Marketplace' },
+              ].map(item => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-foreground/70 hover:text-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+            {/* CTA at bottom */}
+            <div className="px-5 py-5 border-t border-border/40">
+              <Button
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl h-12 text-[15px]"
+                onClick={() => { setMobileNavOpen(false); window.location.href = '/login'; }}
+              >
+                Get Started <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </nav>
+        </div>
+      )}
+
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-10 py-4 border-b border-border/50 bg-background/90 backdrop-blur-2xl">
-        {/* Mobile nav drawer */}
-        {mobileNavOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
-            <nav className="absolute top-0 right-0 bottom-0 w-72 bg-background border-l border-border/50 flex flex-col p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2.5">
-                  <CirculairLogo size={26} />
-                  <span className="font-display text-base font-bold">Circul<span className="text-primary">-AI-</span>r</span>
-                </div>
-                <button onClick={() => setMobileNavOpen(false)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground" aria-label="Close menu">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex flex-col gap-1 flex-1">
-                {[{href:'#capabilities',label:'Capabilities'},{href:'#stakeholders',label:'Stakeholders'},{href:'#compliance',label:'Compliance'},{href:'/how-it-works',label:'How It Works'},{href:'/faq',label:'FAQ'}].map(item => (
-                  <a key={item.href} href={item.href} onClick={() => setMobileNavOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-              <div className="pt-6 border-t border-border/40">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl h-11" onClick={() => { setMobileNavOpen(false); window.location.href = '/login'; }}>
-                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </nav>
-          </div>
-        )}
         <div className="flex items-center gap-3">
           <CirculairLogo size={30} />
           <div>
