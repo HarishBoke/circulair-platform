@@ -182,7 +182,7 @@ async function main() {
       }).returning({ id: batteries.id });
       batteryIds.push({ id: result[0].id, bpan });
     } catch (e: any) {
-      // skip duplicates silently
+      if (batteryIds.length === 0) console.error(`  Battery insert error: ${e.message?.slice(0, 200)}`);
     }
   }
   console.log(`  ✓ ${batteryIds.length} batteries seeded`);
