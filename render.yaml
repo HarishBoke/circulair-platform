@@ -15,6 +15,9 @@ services:
       - key: PORT
         sync: false
       # ── Core ──────────────────────────────────────────────────────────────────
+      # IMPORTANT: DATABASE_URL must be a MySQL/TiDB URL (mysql://...)
+      # Render's built-in PostgreSQL is NOT compatible — use TiDB Cloud or PlanetScale
+      # Example: mysql://user:pass@host:4000/dbname?ssl-mode=VERIFY_IDENTITY
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
@@ -44,7 +47,12 @@ services:
         sync: false
       - key: VITE_GOOGLE_MAPS_API_KEY
         sync: false
-      # ── Email (Resend) ────────────────────────────────────────────────────────
+      # ── Email (ZeptoMail — primary) ───────────────────────────────────────────
+      - key: ZEPTOMAIL_TOKEN
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@circulair.energy
+      # ── Email (Resend — fallback) ─────────────────────────────────────────────
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL

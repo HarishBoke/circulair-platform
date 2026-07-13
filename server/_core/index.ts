@@ -70,6 +70,20 @@ async function startServer() {
   app.use("/api/v1", createApiGateway());
   // MCP Server (Model Context Protocol for AI agents)
   app.use("/api/mcp", createMcpRouter());
+  // Health check endpoint (used by Render and load balancers)
+  app.get("/api/health", async (_req, res) => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    const dbUrl = process.env.DATABASE_URL || "";
+    const dbType = dbUrl.startsWith("postgres") ? "postgresql" : dbUrl.startsWith("mysql") ? "mysql" : "unknown";
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      db: db ? "connected" : "disconnected",
+      dbType,
+      env: process.env.NODE_ENV || "development",
+    });
+  });
   // Swagger UI redirect
   app.get("/api/docs", (_req, res) => res.redirect("/api/v1/docs"));
   // tRPC OpenAPI JSON spec — served at /api/trpc/openapi.json
