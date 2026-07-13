@@ -156,10 +156,21 @@ function Router() {
   );
 }
 
+const GA_MEASUREMENT_ID = "G-1QF29Z3MFX";
+
+/** Fire a GA4 page_view event for SPA route changes */
+function trackPageView(path: string) {
+  if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+    (window as any).gtag("config", GA_MEASUREMENT_ID, {
+      page_path: path,
+    });
+  }
+}
+
 function App() {
   const [analyticsEnabled, setAnalyticsEnabled] = useState(hasAnalyticsConsent());
 
-  // Gate the Umami analytics script on consent
+  // Listen for cookie consent changes
   useEffect(() => {
     const handler = (e: Event) => {
       const level = (e as CustomEvent<{ level: ConsentLevel }>).detail.level;
@@ -169,26 +180,41 @@ function App() {
     return () => window.removeEventListener("cookieConsentChange", handler);
   }, []);
 
-  // Dynamically inject / remove the Umami analytics script based on consent
+  // Inject / remove the GA4 gtag.js script based on consent
   useEffect(() => {
-    const SCRIPT_ID = "umami-analytics";
+    const SCRIPT_ID = "ga4-analytics";
     const existing = document.getElementById(SCRIPT_ID);
     if (analyticsEnabled) {
       if (!existing) {
-        const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
-        const websiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
-        if (endpoint && websiteId) {
-          const script = document.createElement("script");
-          script.id = SCRIPT_ID;
-          script.defer = true;
-          script.src = `${endpoint}/umami`;
-          script.dataset.websiteId = websiteId;
-          document.head.appendChild(script);
-        }
+        // Loader script
+        const loaderScript = document.createElement("script");
+        loaderScript.id = SCRIPT_ID;
+        loaderScript.async = true;
+        loaderScript.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+        document.head.appendChild(loaderScript);
+        // Config script
+        const configScript = document.createElement("script");
+        configScript.id = `${SCRIPT_ID}-config`;
+        configScript.innerHTML = [
+          "window.dataLayer = window.dataLayer || [];",
+          "function gtag(){dataLayer.push(arguments);}",
+          "gtag('js', new Date());",
+          `gtag('config', '${GA_MEASUREMENT_ID}', { page_path: window.location.pathname, anonymize_ip: true });`,
+        ].join("\n");
+        document.head.appendChild(configScript);
       }
     } else {
-      existing?.remove();
+      document.getElementById(SCRIPT_ID)?.remove();
+      document.getElementById(`${SCRIPT_ID}-config`)?.remove();
     }
+  }, [analyticsEnabled]);
+
+  // Track SPA route changes via popstate / hashchange
+  useEffect(() => {
+    if (!analyticsEnabled) return;
+    const handleRouteChange = () => trackPageView(window.location.pathname + window.location.search);
+    window.addEventListener("popstate", handleRouteChange);
+    return () => window.removeEventListener("popstate", handleRouteChange);
   }, [analyticsEnabled]);
 
   return (
