@@ -42,8 +42,8 @@ export default function BlockchainAudit() {
   );
 
   const handleAnchor = () => {
-    if (!bpan.trim() || bpan.length !== 21) {
-      toast.error("Invalid BPAN", { description: "BPAN must be exactly 21 characters" });
+    if (!bpan.trim() || bpan.length !== 19) {
+      toast.error("Invalid BPAN", { description: "BPAN must be exactly 19 characters" });
       return;
     }
     anchorMutation.mutate({
@@ -105,7 +105,7 @@ export default function BlockchainAudit() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Battery BPAN</Label>
-              <Input placeholder="21-character BPAN" value={bpan} onChange={(e) => setBpan(e.target.value)} className="font-mono" maxLength={21} />
+              <Input placeholder="19-character BPAN" value={bpan} onChange={(e) => setBpan(e.target.value)} className="font-mono" maxLength={19} />
             </div>
             <div className="space-y-2">
               <Label>Event Type</Label>

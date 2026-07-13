@@ -78,13 +78,25 @@ const CAPACITY_MAP: Record<string, { kwh: number; label: string }> = {
   "C1": { kwh: 40.0, label: "40 kWh" }, "C2": { kwh: 50.0, label: "50 kWh" },
   "C3": { kwh: 60.0, label: "60 kWh" }, "C4": { kwh: 75.0, label: "75 kWh" },
   "C5": { kwh: 100.0, label: "100 kWh" },
+  // Single-digit capacity tier codes (used by seed-prod.ts format)
+  "1": { kwh: 10.0, label: "~10 kWh" }, "2": { kwh: 20.0, label: "~20 kWh" },
+  "3": { kwh: 30.0, label: "~30 kWh" }, "4": { kwh: 40.0, label: "~40 kWh" },
+  "5": { kwh: 50.0, label: "~50 kWh" }, "6": { kwh: 60.0, label: "~60 kWh" },
+  "7": { kwh: 70.0, label: "~70 kWh" }, "8": { kwh: 80.0, label: "~80 kWh" },
+  "9": { kwh: 90.0, label: "~90 kWh" },
 };
 const CHEMISTRY_MAP: Record<string, string> = {
   A: "LEAD_ACID", B: "LFP", C: "LCO", D: "LMO", E: "LFP", F: "NMC", G: "NCA",
+  // Seed-prod.ts chemistry codes
+  L: "LFP", N: "NMC", S: "Solid-State",
 };
 const VOLTAGE_MAP: Record<string, number> = {
   KK: 307, KL: 400, KM: 450, KN: 500, KO: 600, KP: 700, KQ: 800,
   LA: 48, LB: 60, LC: 72, LD: 96, LE: 120, LF: 144, LG: 192,
+  // Numeric voltage codes from seed-prod.ts (2-digit strings)
+  "04": 4, "05": 5, "06": 6, "07": 7, "08": 8, "09": 9,
+  "10": 10, "12": 12, "14": 14, "16": 16, "24": 24, "36": 36,
+  "48": 48, "60": 60, "72": 72, "96": 96,
 };
 const ORIGIN_MAP: Record<string, string> = {
   IN: "India", CN: "China", KR: "South Korea", JP: "Japan", US: "United States",
@@ -106,22 +118,23 @@ function generateBpan(params: {
 }
 
 function decodeBpan(bpan: string) {
-  if (bpan.length !== 21) return null;
+  if (bpan.length !== 19) return null;
+  // 19-char BPAN format: cc(2)+mfr(3)+cap(1)+chem(1)+volt(2)+orig(2)+ext(1)+yr(2)+mo(2)+dy(2)+fact(1)
   const countryCode = bpan.slice(0, 2);
   const manufacturerId = bpan.slice(2, 5);
-  const capacityCode = bpan.slice(5, 7);
-  const chemistryCode = bpan.slice(7, 8);
-  const voltageCode = bpan.slice(8, 10);
-  const cellOriginCode = bpan.slice(10, 12);
-  const extinguisherClass = bpan.slice(12, 13);
-  const yearCode = bpan.slice(13, 14);
-  const monthCode = bpan.slice(14, 15);
-  const dayCode = bpan.slice(15, 16);
-  const factoryCode = bpan.slice(16, 17);
-  const serialNumber = bpan.slice(17, 21);
-  const mfgYear = 2020 + parseInt(yearCode, 10);
-  const mfgMonth = MONTH_CODES.indexOf(monthCode) + 1;
-  const mfgDay = DAY_CODES.indexOf(dayCode) + 1;
+  const capacityCode = bpan.slice(5, 6);   // 1 char capacity tier
+  const chemistryCode = bpan.slice(6, 7);  // 1 char chemistry
+  const voltageCode = bpan.slice(7, 9);    // 2 char voltage
+  const cellOriginCode = bpan.slice(9, 11); // 2 char origin country
+  const extinguisherClass = bpan.slice(11, 12); // 1 char ext class
+  const yearCode = bpan.slice(12, 14);     // 2 char year (e.g. '22')
+  const monthCode = bpan.slice(14, 16);    // 2 char month (e.g. '10')
+  const dayCode = bpan.slice(16, 18);      // 2 char day (e.g. '12')
+  const factoryCode = bpan.slice(18, 19);  // 1 char factory
+  const serialNumber = "";                 // no serial in 19-char format
+  const mfgYear = 2000 + parseInt(yearCode, 10);
+  const mfgMonth = parseInt(monthCode, 10);
+  const mfgDay = parseInt(dayCode, 10);
   return {
     bpan, countryCode, manufacturerId, capacityCode, chemistryCode, voltageCode,
     cellOriginCode, extinguisherClass, yearCode, monthCode, dayCode, factoryCode, serialNumber,
@@ -133,7 +146,7 @@ function decodeBpan(bpan: string) {
     segments: {
       bmi: `${countryCode}${manufacturerId}`,
       bds: `${capacityCode}${chemistryCode}${voltageCode}${cellOriginCode}${extinguisherClass}`,
-      bi: `${yearCode}${monthCode}${dayCode}${factoryCode}${serialNumber}`,
+      bi: `${yearCode}${monthCode}${dayCode}${factoryCode}`,
     },
   };
 }
@@ -226,7 +239,7 @@ export const appRouter = router({
       }),
 
     decode: publicProcedure
-      .input(z.object({ bpan: z.string().min(21).max(21) }))
+      .input(z.object({ bpan: z.string().min(19).max(19) }))
       .query(async ({ input }) => {
         const decoded = decodeBpan(input.bpan);
         if (!decoded) throw new Error("Invalid BPAN format");
@@ -1550,7 +1563,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     }),
     /** Publish a test message to verify connectivity */
     testPublish: protectedProcedure
-      .input(z.object({ bpan: z.string().length(21) }))
+      .input(z.object({ bpan: z.string().length(19) }))
       .mutation(async ({ input }) => {
         const { publishTestMessage } = await import("./mqttSubscriber");
         await publishTestMessage(input.bpan);
@@ -1559,7 +1572,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     /** Publish a fully custom telemetry payload to the broker */
     publish: protectedProcedure
       .input(z.object({
-        bpan: z.string().length(21),
+        bpan: z.string().length(19),
         payload: z.object({
           bpan: z.string(),
           vPack: z.number(),
@@ -1582,7 +1595,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     /** Start continuous telemetry stream for testing */
     startStream: protectedProcedure
       .input(z.object({
-        bpans: z.array(z.string().length(21)),
+        bpans: z.array(z.string().length(19)),
         intervalMs: z.number().min(1000).max(60000).default(3000),
       }))
       .mutation(async ({ input }) => {
@@ -1652,7 +1665,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
   // PDF EXPORT ROUTER
   pdf: router({
     healthPassport: protectedProcedure
-      .input(z.object({ bpan: z.string().length(21) }))
+      .input(z.object({ bpan: z.string().length(19) }))
       .mutation(async ({ input, ctx }) => {
         const battery = await getBatteryByBpan(input.bpan);
         if (!battery) throw new Error("Battery not found");
@@ -1854,7 +1867,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }),
 
     batteryComplianceCert: protectedProcedure
-      .input(z.object({ bpan: z.string().length(21) }))
+      .input(z.object({ bpan: z.string().length(19) }))
       .mutation(async ({ input, ctx }) => {
         const battery = await getBatteryByBpan(input.bpan);
         if (!battery) throw new Error("Battery not found");
@@ -1936,7 +1949,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     upsertProfile: protectedProcedure
       .input(z.object({
         batteryId: z.number().int().positive(),
-        bpan: z.string().min(1).max(21),
+        bpan: z.string().min(1).max(19),
         jurisdiction: z.string().min(2).max(10),
         localId: z.string().max(128).optional(),
         status: z.enum(["compliant","non_compliant","pending","not_applicable","data_incomplete"]).default("pending"),
@@ -1968,7 +1981,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     declareCarbonFootprint: protectedProcedure
       .input(z.object({
         batteryId: z.number().int().positive(),
-        bpan: z.string().min(1).max(21),
+        bpan: z.string().min(1).max(19),
         totalKgCo2e: z.number().positive(),
         rawMaterialKgCo2e: z.number().optional(),
         productionKgCo2e: z.number().optional(),
@@ -2004,7 +2017,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }),
     /** Get latest carbon footprint declaration by BPAN */
     getCarbonFootprintByBpan: protectedProcedure
-      .input(z.object({ bpan: z.string().min(1).max(21) }))
+      .input(z.object({ bpan: z.string().min(1).max(19) }))
       .query(async ({ input }) => {
         const { getCarbonFootprintByBpan } = await import("./db-regulatory");
         return getCarbonFootprintByBpan(input.bpan);
@@ -2013,7 +2026,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     // ─── RECYCLED CONTENT ────────────────────────────────────────────────────
     declareRecycledContent: protectedProcedure
       .input(z.object({
-        bpan: z.string().min(1).max(21),
+        bpan: z.string().min(1).max(19),
         batteryId: z.number().int().positive(),
         cobaltPct: z.number().min(0).max(100).optional(),
         lithiumPct: z.number().min(0).max(100).optional(),
@@ -2039,7 +2052,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       }),
 
     getRecycledContentByBpan: protectedProcedure
-      .input(z.object({ bpan: z.string().min(1).max(21) }))
+      .input(z.object({ bpan: z.string().min(1).max(19) }))
       .query(async ({ input }) => {
         const { getRecycledContentByBpan } = await import("./db-regulatory");
         return getRecycledContentByBpan(input.bpan);
@@ -2350,7 +2363,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
     register: protectedProcedure
       .input(z.object({
         batteryId: z.number(),
-        bpan: z.string().length(21),
+        bpan: z.string().length(19),
         serialNumber: z.string().max(100).optional(),
         modelNumber: z.string().max(100).optional(),
         warrantyType: z.enum(["standard", "extended", "premium", "commercial"]).default("standard"),
@@ -2419,7 +2432,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
 
     /** Get warranty records for a specific BPAN */
     getByBpan: publicProcedure
-      .input(z.object({ bpan: z.string().length(21) }))
+      .input(z.object({ bpan: z.string().length(19) }))
       .query(({ input }) => getWarrantyByBpan(input.bpan)),
 
     /** Get a single warranty record by ID */
@@ -2466,7 +2479,7 @@ Be precise, data-driven, and reference specific BPAN fields, SOH values, and reg
       .input(z.object({
         warrantyId: z.number(),
         batteryId: z.number(),
-        bpan: z.string().length(21),
+        bpan: z.string().length(19),
         claimType: z.enum(["defect", "performance_degradation", "physical_damage", "thermal_event", "capacity_loss", "premature_failure", "other"]),
         description: z.string().min(10),
         sohAtClaim: z.number().optional(),
@@ -3148,7 +3161,7 @@ Rules:
         operator: z.enum(["gt", "lt", "gte", "lte", "eq"]),
         threshold: z.number(),
         severity: z.enum(["info", "warning", "critical"]).default("warning"),
-        bpan: z.string().length(21).optional(),
+        bpan: z.string().length(19).optional(),
         chemistry: z.enum(["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID"]).optional(),
         enabled: z.boolean().default(true),
       }))
@@ -3173,7 +3186,7 @@ Rules:
         operator: z.enum(["gt", "lt", "gte", "lte", "eq"]).optional(),
         threshold: z.number().optional(),
         severity: z.enum(["info", "warning", "critical"]).optional(),
-        bpan: z.string().length(21).nullable().optional(),
+        bpan: z.string().length(19).nullable().optional(),
         chemistry: z.enum(["LFP", "NMC", "NCA", "LCO", "LMO", "LEAD_ACID"]).nullable().optional(),
         enabled: z.boolean().optional(),
       }))
@@ -3251,7 +3264,7 @@ Rules:
   digitalTwin: router({
     generate: protectedProcedure
       .input(z.object({
-        bpan: z.string().min(21).max(21),
+        bpan: z.string().min(19).max(19),
         forecastHorizonDays: z.number().min(30).max(1825).default(365),
       }))
       .mutation(async ({ input }) => {
@@ -3322,7 +3335,7 @@ Rules:
   carbon: router({
     calculate: protectedProcedure
       .input(z.object({
-        bpan: z.string().min(21).max(21),
+        bpan: z.string().min(19).max(19),
         transportDistanceKm: z.number().optional(),
         gridRegion: z.string().optional(),
         ageYears: z.number().optional(),
@@ -3480,7 +3493,7 @@ Rules:
   triage: router({
     evaluate: protectedProcedure
       .input(z.object({
-        bpan: z.string().min(21).max(21),
+        bpan: z.string().min(19).max(19),
         marketDemandScore: z.number().min(0).max(1).optional(),
       }))
       .mutation(async ({ input }) => {
@@ -3507,7 +3520,7 @@ Rules:
     // Human-in-the-loop approval gate: records the operator's routing decision
     approve: protectedProcedure
       .input(z.object({
-        bpan: z.string().min(21).max(21),
+        bpan: z.string().min(19).max(19),
         approvedRoute: z.enum(["reuse", "repurpose", "repair", "recycle", "dispose"]),
         triageId: z.string(),
         notes: z.string().max(500).optional(),
@@ -3601,7 +3614,7 @@ Rules:
     bulkApprove: protectedProcedure
       .input(z.object({
         decisions: z.array(z.object({
-          bpan: z.string().min(21).max(21),
+          bpan: z.string().min(19).max(19),
           approvedRoute: z.enum(["reuse", "repurpose", "repair", "recycle", "dispose"]),
           triageId: z.string(),
           notes: z.string().max(500).optional(),

@@ -34,8 +34,8 @@ export default function CarbonAccounting() {
   });
 
   const handleCalculate = () => {
-    if (!bpan.trim() || bpan.length !== 21) {
-      toast.error("Invalid BPAN", { description: "BPAN must be exactly 21 characters" });
+    if (!bpan.trim() || bpan.length !== 19) {
+      toast.error("Invalid BPAN", { description: "BPAN must be exactly 19 characters" });
       return;
     }
     calcMutation.mutate({ bpan: bpan.trim(), gridRegion, transportDistanceKm: transportKm });
@@ -86,11 +86,11 @@ export default function CarbonAccounting() {
             <div className="space-y-2">
               <Label>Battery BPAN</Label>
               <Input
-                placeholder="21-character BPAN"
+                placeholder="19-character BPAN"
                 value={bpan}
                 onChange={(e) => setBpan(e.target.value)}
                 className="font-mono"
-                maxLength={21}
+                maxLength={19}
               />
             </div>
             <div className="space-y-2">

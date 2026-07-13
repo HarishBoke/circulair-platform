@@ -135,7 +135,7 @@ Circul-AI-r is built as a modular monolith with three API protocols:
     title: "BPAN — Battery Passport Aadhaar Number",
     category: "platform",
     summary:
-      "BPAN is the unique digital identity assigned to every battery, encoding its origin, chemistry, and capacity in a standardized 21-character format.",
+      "BPAN is the unique digital identity assigned to every battery, encoding its origin, chemistry, and capacity in a standardized 19-character format.",
     content: `## BPAN — Battery Passport Aadhaar Number
 
 The BPAN is the foundational identifier of the Circul-AI-r platform. Every registered battery receives a unique BPAN that encodes critical metadata and serves as the primary key for all lifecycle operations.

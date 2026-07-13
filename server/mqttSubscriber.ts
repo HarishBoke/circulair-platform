@@ -20,7 +20,7 @@
  *
  * Expected MQTT payload (JSON, published to  <prefix>/<BPAN>):
  * {
- *   "bpan":        "INHB30N40250627A000101",  // 21-char BPAN
+ *   "bpan":        "INHB30N40250627A000101",  // 19-char BPAN
  *   "vPack":       354.2,    // Pack voltage (V)
  *   "iPack":       -45.3,    // Pack current (A, negative = charging)
  *   "vMin":        3.51,     // Min cell voltage (V)  [optional]
@@ -132,7 +132,7 @@ function validatePayload(raw: unknown): MqttPayload | null {
   const p = raw as Record<string, unknown>;
 
   // bpan is required and must be 21 chars
-  if (typeof p.bpan !== "string" || p.bpan.length !== 21) return null;
+  if (typeof p.bpan !== "string" || p.bpan.length !== 19) return null;
 
   // At least one numeric sensor reading required
   const hasReading = ["vPack", "iPack", "tPack", "tMax", "sohEstimate"].some(

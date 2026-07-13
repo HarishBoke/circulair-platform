@@ -37,7 +37,7 @@ export default function AiSoh() {
   );
 
   const handleSearch = () => {
-    if (bpan.length !== 21) { toast.error("BPAN must be 21 characters"); return; }
+    if (bpan.length !== 19) { toast.error("BPAN must be 19 characters"); return; }
     setActiveBpan(bpan);
   };
 
@@ -75,11 +75,11 @@ export default function AiSoh() {
         <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Battery Analysis</div>
         <div className="flex gap-3">
           <Input
-            placeholder="Enter 21-character BPAN..."
+            placeholder="Enter 19-character BPAN..."
             value={bpan}
             onChange={(e) => setBpan(e.target.value.toUpperCase())}
             className="bg-secondary/30 border-border font-mono text-sm h-9 flex-1"
-            maxLength={21}
+            maxLength={19}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 h-9" onClick={handleSearch}>

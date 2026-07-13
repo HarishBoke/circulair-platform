@@ -175,7 +175,7 @@ export default function BpanRegister() {
           <div className="bg-secondary/50 rounded-xl p-4 mb-6">
             <div className="font-mono text-[10px] text-muted-foreground mb-2 uppercase tracking-widest">BPAN</div>
             <div className="font-mono text-xl font-bold text-primary tracking-widest">{generatedBpan}</div>
-            <div className="font-mono text-[9px] text-muted-foreground mt-1">21-character Battery Pack Aadhaar Number</div>
+            <div className="font-mono text-[9px] text-muted-foreground mt-1">19-character Battery Pack Aadhaar Number</div>
           </div>
 
           {/* Next steps */}

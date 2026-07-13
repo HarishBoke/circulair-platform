@@ -125,7 +125,7 @@ const mcpTools: McpTool[] = [
     inputSchema: {
       type: "object",
       properties: {
-        bpan: { type: "string", description: "Battery Passport Aadhaar Number (21 characters)" },
+        bpan: { type: "string", description: "Battery Passport Aadhaar Number (19 characters)" },
       },
       required: ["bpan"],
     },

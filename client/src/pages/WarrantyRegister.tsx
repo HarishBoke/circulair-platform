@@ -50,7 +50,7 @@ export default function WarrantyRegister() {
   // Lookup battery by BPAN
   const batteryQuery = trpc.bpan.get.useQuery(
     { bpan: form.bpan },
-    { enabled: form.bpan.length === 21 }
+    { enabled: form.bpan.length === 19 }
   );
 
   const mutation = trpc.warranty.register.useMutation({
@@ -203,14 +203,14 @@ export default function WarrantyRegister() {
                   <Input
                     value={form.bpan}
                     onChange={(e) => set("bpan", e.target.value.toUpperCase().slice(0, 21))}
-                    maxLength={21}
+                    maxLength={19}
                     className="bg-secondary/30 border-border font-mono text-sm h-10"
-                    placeholder="Enter 21-character BPAN"
+                    placeholder="Enter 19-character BPAN"
                   />
-                  {form.bpan.length === 21 && batteryQuery.isLoading && (
+                  {form.bpan.length === 19 && batteryQuery.isLoading && (
                     <p className="text-xs text-muted-foreground mt-1">Looking up battery...</p>
                   )}
-                  {form.bpan.length === 21 && batteryQuery.data && (
+                  {form.bpan.length === 19 && batteryQuery.data && (
                     <div className="mt-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
                       <p className="text-xs text-emerald-400 font-medium">Battery found!</p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -218,7 +218,7 @@ export default function WarrantyRegister() {
                       </p>
                     </div>
                   )}
-                  {form.bpan.length === 21 && batteryQuery.error && (
+                  {form.bpan.length === 19 && batteryQuery.error && (
                     <p className="text-xs text-destructive mt-1">Battery not found. Register it first.</p>
                   )}
                 </div>
@@ -238,7 +238,7 @@ export default function WarrantyRegister() {
             </div>
             <div className="flex justify-end">
               <Button type="button" onClick={() => {
-                if (form.bpan.length !== 21) { toast.error("Enter a valid 21-character BPAN"); return; }
+                if (form.bpan.length !== 19) { toast.error("Enter a valid 19-character BPAN"); return; }
                 if (!batteryQuery.data) { toast.error("Battery not found for this BPAN"); return; }
                 setStep(2);
               }} className="bg-primary text-primary-foreground">

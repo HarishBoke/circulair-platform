@@ -133,8 +133,8 @@ export default function Telemetry() {
   }));
 
   const handleMonitor = () => {
-    if (bpan.length !== 21) {
-      toast.error("BPAN must be exactly 21 characters");
+    if (bpan.length !== 19) {
+      toast.error("BPAN must be exactly 19 characters");
       return;
     }
     setActiveBpan(bpan.toUpperCase());
@@ -191,11 +191,11 @@ export default function Telemetry() {
         </div>
         <div className="flex gap-3 flex-wrap">
           <Input
-            placeholder="Enter 21-character BPAN to monitor live..."
+            placeholder="Enter 19-character BPAN to monitor live..."
             value={bpan}
             onChange={(e) => setBpan(e.target.value.toUpperCase())}
             className="bg-secondary/30 border-border font-mono text-sm h-9 flex-1 min-w-48"
-            maxLength={21}
+            maxLength={19}
             onKeyDown={(e) => e.key === "Enter" && handleMonitor()}
           />
           <Button

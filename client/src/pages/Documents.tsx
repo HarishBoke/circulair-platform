@@ -103,8 +103,8 @@ export default function Documents() {
                   value={uploadForm.bpan}
                   onChange={(e) => setUploadForm({ ...uploadForm, bpan: e.target.value.toUpperCase() })}
                   className="bg-secondary/30 border-border font-mono text-sm h-9"
-                  placeholder="21-character BPAN"
-                  maxLength={21}
+                  placeholder="19-character BPAN"
+                  maxLength={19}
                 />
               </div>
               <div>

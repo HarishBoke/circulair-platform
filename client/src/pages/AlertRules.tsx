@@ -577,8 +577,8 @@ export default function AlertRules() {
                   <Input
                     value={form.bpan}
                     onChange={(e) => setForm((f) => ({ ...f, bpan: e.target.value.toUpperCase() }))}
-                    placeholder="21-char BPAN"
-                    maxLength={21}
+                    placeholder="19-char BPAN"
+                    maxLength={19}
                     className="font-mono text-sm"
                   />
                 </div>

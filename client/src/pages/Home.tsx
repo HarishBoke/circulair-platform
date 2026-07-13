@@ -81,7 +81,7 @@ const LIFECYCLE_STEPS = [
 const CAPABILITIES = [
   {
     icon: Database, title: "Battery Identity & Registry",
-    desc: "Generate and manage 21-character Battery Pack Aadhaar Numbers (BPAN) with QR codes, NFC tags, and full lifecycle tracking from manufacturing through recycling.",
+    desc: "Generate and manage 19-character Battery Pack Aadhaar Numbers (BPAN) with QR codes, NFC tags, and full lifecycle tracking from manufacturing through recycling.",
     tag: "BPAN Registry"
   },
   {

@@ -322,14 +322,14 @@ export default function MqttBrokerPanel() {
                 <Input
                   value={testBpan}
                   onChange={(e) => setTestBpan(e.target.value)}
-                  maxLength={21}
-                  placeholder="21-character BPAN"
+                  maxLength={19}
+                  placeholder="19-character BPAN"
                   className="bg-muted/50 border-border font-mono text-sm"
                 />
               </div>
               <Button
                 onClick={() => testMutation.mutate({ bpan: testBpan })}
-                disabled={testBpan.length !== 21 || testMutation.isPending}
+                disabled={testBpan.length !== 19 || testMutation.isPending}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
               >
                 {testMutation.isPending

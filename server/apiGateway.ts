@@ -174,7 +174,7 @@ const openApiSpec = {
         type: "object",
         properties: {
           id: { type: "integer" },
-          bpan: { type: "string", description: "Battery Passport Aadhaar Number (21 chars)" },
+          bpan: { type: "string", description: "Battery Passport Aadhaar Number (19 chars)" },
           manufacturer: { type: "string" },
           chemistry: { type: "string", enum: ["NMC", "LFP", "NCA", "LCO", "LMO", "LMFP", "Na-ion", "Solid-state"] },
           capacityKwh: { type: "string" },

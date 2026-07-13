@@ -69,11 +69,11 @@ export default function ServiceHistory() {
               <div>
                 <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">BPAN</Label>
                 <Input
-                  placeholder="21-character BPAN"
+                  placeholder="19-character BPAN"
                   value={form.bpan}
                   onChange={(e) => setForm({ ...form, bpan: e.target.value.toUpperCase() })}
                   className="bg-secondary/30 border-border font-mono text-sm h-9"
-                  maxLength={21}
+                  maxLength={19}
                 />
               </div>
               <div>
@@ -159,7 +159,7 @@ export default function ServiceHistory() {
             value={bpanSearch}
             onChange={(e) => setBpanSearch(e.target.value.toUpperCase())}
             className="pl-9 bg-card border-border font-mono text-sm h-9"
-            maxLength={21}
+            maxLength={19}
           />
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-9" disabled={!bpanSearch}>

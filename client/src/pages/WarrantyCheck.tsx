@@ -57,7 +57,7 @@ export default function WarrantyCheck() {
   };
 
   const modes: { key: SearchMode; label: string; icon: any; placeholder: string }[] = [
-    { key: "bpan", label: "BPAN", icon: Battery, placeholder: "Enter 21-character BPAN" },
+    { key: "bpan", label: "BPAN", icon: Battery, placeholder: "Enter 19-character BPAN" },
     { key: "serial", label: "Serial No.", icon: Hash, placeholder: "Manufacturer serial number" },
     { key: "phone", label: "Phone", icon: Phone, placeholder: "+91 98765 43210" },
     { key: "email", label: "Email", icon: Mail, placeholder: "customer@email.com" },

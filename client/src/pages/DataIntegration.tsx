@@ -167,7 +167,7 @@ export default function DataIntegration() {
               <div className="space-y-2">
                 <Label>Topic Pattern</Label>
                 <Input value={mqttTopic} onChange={e=>setMqttTopic(e.target.value)} className="bg-muted/50 border-border font-mono text-sm"/>
-                <p className="text-xs text-muted-foreground">Replace <code className="bg-muted px-1 rounded">{"{BPAN}"}</code> with the 21-character Battery Pack Aadhaar Number.</p>
+                <p className="text-xs text-muted-foreground">Replace <code className="bg-muted px-1 rounded">{"{BPAN}"}</code> with the 19-character Battery Pack Aadhaar Number.</p>
               </div>
               <div className="space-y-2"><Label>MQTT Payload Schema (JSON)</Label>
                 <CodeBlock language="json" code={`{

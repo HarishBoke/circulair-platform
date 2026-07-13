@@ -96,7 +96,7 @@ export default function Login() {
 
           <div className="space-y-4">
             {[
-              { icon: Battery, title: "Battery Registry", desc: "21-character BPAN generation with QR codes and lifecycle tracking" },
+              { icon: Battery, title: "Battery Registry", desc: "19-character BPAN generation with QR codes and lifecycle tracking" },
               { icon: Brain, title: "AI SOH Prediction", desc: "CNN-LSTM models with less than 2% RMSE for health estimation" },
               { icon: Shield, title: "Regulatory Compliance", desc: "EU Battery Passport, India BWMR, China MIIT adapters" },
               { icon: ShoppingCart, title: "Second-Life Marketplace", desc: "Multi-currency marketplace with dynamic spot pricing" },
