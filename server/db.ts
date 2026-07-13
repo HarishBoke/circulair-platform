@@ -1,6 +1,6 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -24,24 +24,17 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: NodePgDatabase | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const rawUrl = process.env.DATABASE_URL;
-      // Parse mysql:// URL into mysql2 connection options
-      const url = new URL(rawUrl);
-      const pool = mysql.createPool({
-        host: url.hostname,
-        port: parseInt(url.port) || 3306,
-        user: decodeURIComponent(url.username),
-        password: decodeURIComponent(url.password),
-        database: url.pathname.slice(1).split('?')[0],
-        ssl: { rejectUnauthorized: false },
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
       });
       _db = drizzle(pool) as any;
     } catch (error) {
@@ -76,8 +69,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  // MySQL INSERT ... ON DUPLICATE KEY UPDATE — atomic upsert, no duplicate key errors
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet as any });
+  // PostgreSQL INSERT ... ON CONFLICT DO UPDATE — atomic upsert, no duplicate key errors
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet as any });
 }
 
 export async function getUserByOpenId(openId: string) {
