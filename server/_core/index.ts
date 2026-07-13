@@ -84,6 +84,33 @@ async function startServer() {
       env: process.env.NODE_ENV || "development",
     });
   });
+  // Admin bootstrap endpoint — promotes a user to admin role using a shared secret
+  // Usage: POST /api/admin/bootstrap-admin with { secret, email }
+  app.post("/api/admin/bootstrap-admin", express.json(), async (req, res) => {
+    const { secret, email } = req.body || {};
+    const bootstrapSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+    if (!bootstrapSecret || !secret || secret !== bootstrapSecret) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (!email) {
+      res.status(400).json({ error: "email required" });
+      return;
+    }
+    try {
+      const { getDb } = await import("../db");
+      const { users } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+      const result = await db.update(users).set({ role: "admin" }).where(eq(users.email, email)).returning({ id: users.id, email: users.email, role: users.role });
+      if (result.length === 0) { res.status(404).json({ error: "User not found" }); return; }
+      res.json({ success: true, user: result[0] });
+    } catch (err) {
+      console.error("[AdminBootstrap] Error:", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
   // Swagger UI redirect
   app.get("/api/docs", (_req, res) => res.redirect("/api/v1/docs"));
   // tRPC OpenAPI JSON spec — served at /api/trpc/openapi.json
