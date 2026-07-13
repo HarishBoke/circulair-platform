@@ -19,7 +19,8 @@
     "seed:prod": "tsx server/seed-prod.ts",
     "diag:prod": "tsx server/diag-prod.ts",
     "seed:pg": "node seed-pg.mjs",
-    "seed:supplement": "node seed-supplement.mjs"
+    "seed:supplement": "node seed-supplement.mjs",
+    "fix:passwords": "node fix-passwords.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.907.0",
