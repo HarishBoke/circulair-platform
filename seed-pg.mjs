@@ -131,27 +131,26 @@ async function seed() {
       const batteryId = batteryIds[i];
       const bpan = bpans[i];
       for (let j = 0; j < 30; j++) {
-        const soh = randFloat(60, 100, 2);
         try {
           await client.query(
             `INSERT INTO telemetry (
               bpan, "batteryId", "vPack", "iPack", "vMin", "vMax", "tPack", "tMax",
-              soh, soc, "cycleCount", "powerKw", "energyKwh", "isCharging",
-              "gpsLat", "gpsLon", "recordedAt", "createdAt"
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())`,
+              "cycleCount", "irPack", "sohEstimate", "dtcCodes",
+              "thermalAnomaly", "anomalyType", source, "recordedAt"
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
             [
               bpan, batteryId,
               randFloat(44, 52, 2), randFloat(-50, 50, 2), randFloat(3.1, 3.3, 3),
               randFloat(3.4, 3.6, 3), randFloat(20, 45, 2), randFloat(25, 55, 2),
-              soh, randFloat(10, 100, 2), randInt(0, 800),
-              randFloat(0, 50, 2), randFloat(0, 100, 2), Math.random() > 0.5,
-              randFloat(48.0, 52.0, 6), randFloat(8.0, 14.0, 6),
-              randDate(90)
+              randInt(0, 800), randFloat(0.5, 5.0, 3), randFloat(60, 100, 2),
+              JSON.stringify([]),
+              Math.random() > 0.9, Math.random() > 0.9 ? 'thermal_runaway_risk' : null,
+              'simulated', randDate(90)
             ]
           );
           telemetryCount++;
         } catch (e) {
-          // skip
+          if (j === 0 && i === 0) console.error('Telemetry error:', e.message);
         }
       }
     }
@@ -167,17 +166,18 @@ async function seed() {
       try {
         await client.query(
           `INSERT INTO "marketplace_listings" (
-            bpan, "batteryId", "sellerId", "listingType", condition,
-            "askingPriceEur", currency, title, description, location,
-            "isActive", "viewCount", "createdAt", "updatedAt"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())`,
+            bpan, "batteryId", "sellerId", "listingType",
+            "askingPriceInr", "sohAtListing", chemistry, description,
+            "conditionGrade", location, status, "createdAt", "updatedAt"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())`,
           [
-            bpan, batteryId, rand(userIds), rand(listingTypes), rand(conditions),
-            randFloat(500, 15000, 2), 'EUR',
-            `Battery ${bpan.substring(0, 8)} - ${rand(conditions)} condition`,
-            `High-quality battery pack available for second-life applications. SOH: ${randFloat(70, 95, 1)}%. Fully tested and certified.`,
-            rand(['Munich, DE', 'Paris, FR', 'Amsterdam, NL', 'Brussels, BE', 'Stockholm, SE']),
-            true, randInt(0, 250)
+            bpan, batteryId, rand(userIds), rand(listingTypes),
+            randFloat(50000, 1500000, 2), randFloat(70, 95, 2),
+            rand(['LFP', 'NMC', 'NCA', 'LTO']),
+            `High-quality battery pack available for second-life applications. Fully tested and certified.`,
+            rand(['A', 'B', 'C', 'D']),
+            rand(['Mumbai, IN', 'Delhi, IN', 'Pune, IN', 'Chennai, IN', 'Hyderabad, IN']),
+            'active'
           ]
         );
         listingCount++;
@@ -193,13 +193,13 @@ async function seed() {
       try {
         await client.query(
           `INSERT INTO "soh_predictions" (
-            "batteryId", bpan, "predictedSoh", "confidenceScore",
-            "predictedAt", "modelVersion", "createdAt"
-          ) VALUES ($1,$2,$3,$4,NOW(),$5,NOW())`,
+            "batteryId", bpan, "predictedSoh", confidence,
+            "rulCycles", "modelVersion", "predictedAt"
+          ) VALUES ($1,$2,$3,$4,$5,$6,NOW())`,
           [
             batteryIds[i], bpans[i],
             randFloat(60, 98, 2), randFloat(0.75, 0.99, 3),
-            'v2.1.0-circulair'
+            randInt(50, 500), 'v3.2.1'
           ]
         );
         sohCount++;
@@ -244,18 +244,21 @@ async function seed() {
       try {
         await client.query(
           `INSERT INTO logistics (
-            bpan, "batteryId", "fromLocation", "toLocation", carrier,
-            "trackingNumber", status, "estimatedDelivery", "shippedAt", "createdAt", "updatedAt"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())`,
+            "shipmentId", bpan, "batteryId", "requestedById",
+            "pickupAddress", "deliveryAddress",
+            "logisticsPartner", "driverName", "vehicleNumber",
+            "slaTier", status, "requestedAt", "estimatedDelivery"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12)`,
           [
-            bpans[idx], batteryIds[idx],
-            rand(['Munich, DE', 'Paris, FR', 'Amsterdam, NL']),
-            rand(['Brussels, BE', 'Stockholm, SE', 'Madrid, ES', 'Warsaw, PL']),
+            `SHP${String(randInt(100000, 999999))}`,
+            bpans[idx], batteryIds[idx], rand(userIds),
+            rand(['Mumbai, IN', 'Delhi, IN', 'Pune, IN']),
+            rand(['Hyderabad, IN', 'Chennai, IN', 'Bangalore, IN', 'Kolkata, IN']),
             rand(carriers),
-            `TRK${String(randInt(100000, 999999))}`,
+            `Driver ${randInt(100, 999)}`, `MH${randInt(10,99)}-${randInt(1000,9999)}`,
+            rand(['24h', '48h', '72h']),
             rand(logisticStatuses),
-            randDate(-30), // future date
-            randDate(60)
+            new Date(Date.now() + randInt(1, 30) * 86400000)
           ]
         );
         logisticsCount++;
@@ -272,15 +275,19 @@ async function seed() {
       try {
         await client.query(
           `INSERT INTO "epr_tokens" (
-            "issuedToId", jurisdiction, "tokenRef", "capacityKwh",
-            "issuedAt", "expiresAt", "isRedeemed", "createdAt"
-          ) VALUES ($1,$2,$3,$4,NOW(),$5,$6,NOW())`,
+            "tokenId", bpan, "batteryId", "recyclerId", "producerId",
+            "actualYieldKg", "theoreticalYieldKg", "yieldRatio",
+            "blackMassKg", "lithiumRecoveredKg", "cobaltRecoveredKg",
+            status, "createdAt"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
           [
-            rand(userIds), rand(jurisdictions),
-            `EPR-${rand(jurisdictions)}-${randInt(10000, 99999)}`,
-            randFloat(20, 120, 2),
-            new Date(Date.now() + 365 * 86400000), // 1 year from now
-            Math.random() > 0.7
+            `EPR-${rand(jurisdictions)}-${randInt(10000, 99999)}-${Date.now()}`,
+            bpans[i % bpans.length], batteryIds[i % batteryIds.length],
+            rand(userIds), rand(userIds),
+            randFloat(50, 200, 3), randFloat(60, 220, 3),
+            randFloat(0.7, 0.99, 4),
+            randFloat(20, 80, 3), randFloat(5, 20, 3), randFloat(3, 15, 3),
+            rand(['pending', 'verified', 'redeemed'])
           ]
         );
         eprCount++;
@@ -320,13 +327,16 @@ async function seed() {
     // ── Seed platform settings ───────────────────────────────────────────────
     try {
       await client.query(
-        `INSERT INTO "platform_settings" (key, value, "updatedAt")
-         VALUES ('platform_name', 'Circul-AI-r Battery Intelligence Platform', NOW()),
-                ('default_currency', 'EUR', NOW()),
-                ('supported_jurisdictions', 'EU,DE,FR,NL,BE,SE,PL,IN', NOW()),
-                ('soh_alert_threshold', '70', NOW()),
-                ('max_cycle_warning', '1000', NOW())
-         ON CONFLICT (key) DO NOTHING`
+        `INSERT INTO "platform_settings" (
+          "userId", locale, "displayCurrency", timezone,
+          "activeJurisdictions", "dataResidencyRegion",
+          "organisationName", "organisationCountry", "createdAt", "updatedAt"
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW(),NOW())`,
+        [
+          userIds[0], 'en-IN', 'INR', 'Asia/Kolkata',
+          JSON.stringify(['IN', 'EU', 'DE', 'FR']), 'in',
+          'Circul-AI-r Platform', 'IN'
+        ]
       );
       console.log('✅ Platform settings seeded');
     } catch (e) {
