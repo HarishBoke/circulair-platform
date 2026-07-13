@@ -37,14 +37,4 @@ export const ENV = {
   // ── Runtime ───────────────────────────────────────────────────────────────────
   isProduction: process.env.NODE_ENV === "production",
 
-  // ── Manus built-in forge (optional — used as fallback when independent keys absent) ──
-  // These are auto-injected by Manus hosting. When deploying independently,
-  // set the above independent keys instead.
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-
-  // ── Legacy Manus OAuth (kept for backward compat, not used in active auth) ────
-  appId: process.env.VITE_APP_ID ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
 };

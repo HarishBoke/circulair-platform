@@ -117,18 +117,8 @@ function getOpenAIClient(): OpenAI {
   if (ENV.openaiApiKey) {
     return new OpenAI({ apiKey: ENV.openaiApiKey });
   }
-  // Fallback: use Manus Forge proxy (OpenAI-compatible endpoint)
-  if (ENV.forgeApiUrl && ENV.forgeApiKey) {
-    const baseUrl = ENV.forgeApiUrl.endsWith("/")
-      ? `${ENV.forgeApiUrl}v1`
-      : `${ENV.forgeApiUrl}/v1`;
-    return new OpenAI({
-      apiKey: ENV.forgeApiKey,
-      baseURL: baseUrl,
-    });
-  }
   throw new Error(
-    "LLM not configured: set OPENAI_API_KEY (or BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY for Manus hosting)"
+    "LLM not configured: set OPENAI_API_KEY in your environment variables"
   );
 }
 

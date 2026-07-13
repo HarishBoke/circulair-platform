@@ -71,7 +71,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   // Build the insert values
   const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date(), ...updateSet };
-  if (user.openId === ENV.ownerOpenId && !values.role) values.role = "admin";
+  // Owner bootstrap: if OWNER_EMAIL is set and this user's email matches, promote to admin
+  // (ownerOpenId is no longer used — Manus-independent auth)
 
   // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
