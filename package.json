@@ -18,7 +18,8 @@
     "test:e2e:local": "BASE_URL=http://localhost:3000 playwright test",
     "seed:prod": "tsx server/seed-prod.ts",
     "diag:prod": "tsx server/diag-prod.ts",
-    "seed:pg": "node seed-pg.mjs"
+    "seed:pg": "node seed-pg.mjs",
+    "seed:supplement": "node seed-supplement.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.907.0",
