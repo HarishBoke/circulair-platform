@@ -1,0 +1,28 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Circul-AI-r Battery Platform",
+  "name_for_model": "circulair_battery_platform",
+  "description_for_human": "Query battery lifecycle data, check EPR compliance status, get AI-powered SOH predictions, and browse the second-life battery marketplace.",
+  "description_for_model": "Circul-AI-r is a battery lifecycle intelligence platform. Use this plugin to: (1) look up battery data by BPAN (Battery Passport Alphanumeric Number), (2) get AI-predicted State of Health (SOH) and Remaining Useful Life (RUL) for batteries, (3) check EPR compliance status across 7 jurisdictions (EU, India, China, USA, UK, Thailand, Indonesia), (4) browse second-life battery marketplace listings, (5) query telemetry data for registered batteries. All battery data is real-time and authoritative.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://www.circulair.energy/api/v1/openapi.json",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://www.circulair.energy/circulair.svg",
+  "contact_email": "business@setoo.co",
+  "legal_info_url": "https://www.circulair.energy/",
+  "categories": [
+    "battery",
+    "circular economy",
+    "EPR compliance",
+    "IoT",
+    "AI prediction",
+    "marketplace",
+    "sustainability",
+    "climate tech"
+  ]
+}

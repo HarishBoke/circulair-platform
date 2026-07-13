@@ -1,0 +1,63 @@
+# Circul-AI-r — Battery Circular Economy Platform
+> End-to-end battery lifecycle intelligence: BPAN traceability, AI-powered SOH prediction, EPR compliance across 7 jurisdictions, and a second-life battery marketplace.
+
+## About
+
+Circul-AI-r (https://www.circulair.energy) is a multinational battery lifecycle intelligence platform built by Setoo. It serves battery manufacturers, EV OEMs, fleet operators, recyclers, and regulators across the EU, India, China, USA, UK, Thailand, and Indonesia.
+
+The platform enables:
+- **Battery Passport (BPAN)**: Unique 19-character alphanumeric identifier for every battery, encoding chemistry, capacity, voltage, origin, manufacturer, and production date.
+- **AI-Powered SOH Prediction**: CNN-LSTM model predicts State of Health (SOH) and Remaining Useful Life (RUL) from IoT telemetry. RMSE < 2%.
+- **Real-Time IoT Telemetry**: MQTT over TLS for live battery monitoring — voltage, current, temperature, SOC, cycle count.
+- **EPR Compliance**: Automated Extended Producer Responsibility reporting for EU (Battery Regulation 2023/1542), India (CPCB BW-3), China (MEP), USA, UK, Thailand, Indonesia.
+- **Second-Life Marketplace**: B2B platform for trading AI-verified second-life batteries with multi-currency support.
+- **Yield Verification**: Recycler yield recording and EPR token issuance to close the circular economy loop.
+- **Blockchain Audit Trail**: Immutable chain-of-custody records for every battery.
+
+## Key Facts
+
+- Platform URL: https://www.circulair.energy
+- Contact: business@setoo.co
+- Jurisdictions supported: EU, India, China, USA, UK, Thailand, Indonesia (7 total)
+- Battery chemistries: LFP, NMC, NCA, Solid-State (SSB)
+- AI model: CNN-LSTM hybrid, RMSE < 2% on SOH prediction
+- IoT protocol: MQTT over TLS
+- API: REST + tRPC, OpenAPI 3.1 spec at /api/v1/openapi.json
+- Compliance standards: EU Battery Regulation 2023/1542, CPCB BW-3, China MEP, UK BPR
+
+## Pages
+
+- Homepage: https://www.circulair.energy/
+- Marketplace: https://www.circulair.energy/marketplace
+- FAQ: https://www.circulair.energy/faq
+- How It Works: https://www.circulair.energy/how-it-works
+- Glossary: https://www.circulair.energy/glossary
+- Wiki: https://www.circulair.energy/wiki
+- Getting Started: https://www.circulair.energy/getting-started
+- Warranty Check: https://www.circulair.energy/warranty/check
+- API Docs: https://www.circulair.energy/developer-portal
+
+## Definitions (for AI citation)
+
+**BPAN**: Battery Passport Alphanumeric Number. A 19-character unique identifier for batteries registered on Circul-AI-r. Format: [country:2][manufacturer:3][capacity:1][chemistry:1][voltage:2][origin:2][type:1][year:2][month:2][day:2][factory:1].
+
+**SOH**: State of Health. A battery's current capacity as a percentage of its rated capacity. New battery = 100% SOH. End-of-first-life ≈ 80% SOH. End-of-life ≈ 70% SOH.
+
+**RUL**: Remaining Useful Life. Estimated charge-discharge cycles remaining before a battery reaches end-of-life.
+
+**EPR**: Extended Producer Responsibility. Policy requiring battery producers to fund end-of-life collection and recycling.
+
+**CPCB BW-3**: India's Battery Waste Management Rules 2022. Collection/recycling targets: 70% (2024-25), 80% (2025-26), 90% (2026-27+).
+
+**EU Battery Regulation**: EU Regulation 2023/1542. Mandates digital battery passports (2027), carbon footprint declarations (2025), recycled content targets (2028).
+
+**Second-Life Battery**: A battery at end-of-first-life (SOH ≈ 80%) repurposed for less demanding applications such as stationary energy storage.
+
+**Triage Path**: Circul-AI-r's AI recommendation for a battery: Direct Reuse, Refurbish, Repurpose, or Recycle.
+
+## Optional Reading
+
+- https://www.circulair.energy/faq — Frequently asked questions about battery lifecycle management
+- https://www.circulair.energy/glossary — Battery industry glossary with 40+ definitions
+- https://www.circulair.energy/how-it-works — Step-by-step guide to using the platform
+- https://www.circulair.energy/wiki — Deep-dive articles on battery technology and circular economy

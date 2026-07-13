@@ -1338,3 +1338,47 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Add Terminal icon + Developer Hub nav item to PlatformLayout DEVELOPER sidebar section
 - [x] Add /developer-hub route and DeveloperHub import to App.tsx
 - [x] TypeScript: 0 errors, 518 tests passing
+
+## Phase 55: SEO / GEO / AEO — Market-Ready Optimisation
+
+### Technical SEO
+- [x] Enhanced index.html: og:image, twitter:image:alt, article:modified_time, geo meta tags, hreflang
+- [x] Expanded sitemap.xml: all public pages, FAQ, /faq, /how-it-works, /glossary, product pages
+- [x] Improved robots.txt: AI crawler rules (GPTBot, Claude-Web, PerplexityBot, Googlebot)
+- [x] Canonical tags on every public page via usePageTitle hook
+- [x] 404 page with canonical self-reference
+
+### Structured Data (JSON-LD)
+- [x] Organization + WebSite + SoftwareApplication schema in index.html
+- [x] FAQPage schema on /faq page (30+ Q&A pairs)
+- [x] HowTo schema on /how-it-works page (8 steps)
+- [x] BreadcrumbList on FAQ, Glossary, HowItWorks pages
+- [x] DefinedTermSet schema on /glossary page (40+ terms)
+
+### GEO (Generative Engine Optimisation)
+- [x] /llms.txt — plain-text platform summary for LLM crawlers (OpenAI, Anthropic, Perplexity)
+- [x] /.well-known/ai-plugin.json — ChatGPT plugin manifest
+- [x] /api/ai-context — machine-readable JSON endpoint with platform capabilities
+- [x] /api/openapi.json — OpenAPI 3.1 spec accessible to AI agents
+- [x] AI-citation-optimised copy in Home.tsx (entity-rich, factual, citable)
+- [x] /humans.txt — team and technology credits
+- [x] SEO router registered in server core index
+
+### AEO (Answer Engine Optimisation)
+- [x] Dedicated /faq page with 30+ Q&A pairs covering battery lifecycle, BPAN, SOH, EPR, compliance
+- [x] /how-it-works page with step-by-step HowTo schema
+- [x] Featured-snippet-optimised headings (What is BPAN? How does SOH prediction work?)
+- [x] Concise definition paragraphs for key terms (BPAN, SOH, EPR, RUL, Battery Passport)
+- [x] /glossary page with 40+ battery industry terms and DefinedTermSet schema
+
+### On-Page SEO
+- [x] Internal linking: Home → FAQ, How It Works, Glossary, Marketplace, Wiki
+- [x] FAQ, How It Works, Glossary added to top nav and footer
+- [x] OG image (1200×630) generated and deployed to CDN
+- [x] twitter:card upgraded to summary_large_image
+- [x] Routes registered in App.tsx (/faq, /glossary, /how-it-works)
+
+### Performance
+- [x] Font preloading in index.html (Google Fonts with preconnect)
+- [x] Cache-Control headers on sitemap.xml (24h)
+- [x] Cache-Control headers on AI context endpoints (1h)

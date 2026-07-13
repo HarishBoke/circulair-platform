@@ -263,6 +263,8 @@ export default function Home() {
           <a href="#capabilities" className="hover:text-foreground transition-colors duration-200">Capabilities</a>
           <a href="#stakeholders" className="hover:text-foreground transition-colors duration-200">Stakeholders</a>
           <a href="#compliance" className="hover:text-foreground transition-colors duration-200">Compliance</a>
+          <Link href="/how-it-works" className="hover:text-foreground transition-colors duration-200">How It Works</Link>
+          <Link href="/faq" className="hover:text-foreground transition-colors duration-200">FAQ</Link>
         </nav>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5">
@@ -744,10 +746,12 @@ export default function Home() {
             <div>
               <h4 className="text-[12px] font-bold text-foreground/70 uppercase tracking-wider mb-4" style={{ fontFamily: "var(--font-mono)" }}>Resources</h4>
               <div className="space-y-2.5">
+                <Link href="/faq" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+                <Link href="/how-it-works" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">How It Works</Link>
+                <Link href="/glossary" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">Glossary</Link>
                 <Link href="/wiki" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">CirculWiki</Link>
                 <Link href="/getting-started" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">Getting Started</Link>
                 <a href="/api/docs" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">API Docs</a>
-                <Link href="/compliance" className="block text-[13px] text-muted-foreground hover:text-foreground transition-colors">Compliance</Link>
               </div>
             </div>
 

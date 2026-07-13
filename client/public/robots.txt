@@ -1,19 +1,30 @@
-# Circul-AI-r Platform — Robots.txt
+# Circul-AI-r — Battery Circular Economy Platform
+# https://www.circulair.energy
+# Updated: 2026-07-13
 
+# ── All crawlers ────────────────────────────────────────────────
 User-agent: *
-# Allow public pages
+
+# Public marketing and content pages
 Allow: /
 Allow: /marketplace
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
 Allow: /getting-started
 Allow: /wiki
 Allow: /warranty/check
 Allow: /login
 Allow: /register
+Allow: /privacy
+Allow: /terms
+Allow: /developer-portal
+Allow: /api-reference
+Allow: /llms.txt
+Allow: /.well-known/
 
-# Block admin, internal tools, and test pages
+# Block authenticated app pages
 Disallow: /admin/
-Disallow: /mqtt-flow-tester
-Disallow: /data-integration
 Disallow: /dashboard
 Disallow: /batteries
 Disallow: /telemetry
@@ -24,12 +35,62 @@ Disallow: /yield-verification
 Disallow: /service-history
 Disallow: /analytics
 Disallow: /alerts
+Disallow: /alert-rules
 Disallow: /assistant
 Disallow: /documents
 Disallow: /settings/
 Disallow: /compliance
 Disallow: /warranty/register
 Disallow: /onboarding
+Disallow: /mqtt-flow-tester
+Disallow: /data-integration
+Disallow: /device-provisioning
+Disallow: /demo
+Disallow: /api/trpc/
 
-# Sitemap
+# ── AI / LLM crawlers — allow full public content ─────────────────────
+User-agent: GPTBot
+Allow: /
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
+Allow: /llms.txt
+Allow: /.well-known/
+Disallow: /api/trpc/
+Disallow: /admin/
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
+Allow: /llms.txt
+Disallow: /api/trpc/
+
+User-agent: Claude-Web
+Allow: /
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
+Allow: /llms.txt
+Disallow: /api/trpc/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
+Allow: /llms.txt
+Disallow: /api/trpc/
+
+User-agent: Googlebot
+Allow: /
+Allow: /faq
+Allow: /how-it-works
+Allow: /glossary
+Allow: /llms.txt
+Disallow: /api/trpc/
+Disallow: /admin/
+
+# ── Sitemaps ──────────────────────────────────────────────────
 Sitemap: https://www.circulair.energy/sitemap.xml

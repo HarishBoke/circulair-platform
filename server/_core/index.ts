@@ -13,6 +13,7 @@ import { startMqttSubscriber, stopMqttSubscriber } from "../mqttSubscriber";
 import { createApiGateway } from "../apiGateway";
 import { createMcpRouter } from "../mcpServer";
 import { createSitemapRouter } from "../sitemap";
+import { createSeoRouter } from "../seoRoutes";
 import { handleStripeWebhook } from "../stripe";
 import { openapiSpec as trpcOpenapiSpec } from "../openapi";
 
@@ -170,6 +171,8 @@ async function startServer() {
   });
   // Sitemap.xml for SEO
   app.use(createSitemapRouter());
+  // SEO/GEO/AEO routes (OpenAPI spec, AI context, etc.)
+  app.use(createSeoRouter());
   // tRPC API
   app.use(
     "/api/trpc",

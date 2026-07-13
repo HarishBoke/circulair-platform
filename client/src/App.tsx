@@ -41,6 +41,9 @@ import BulkOnboarding from "./pages/BulkOnboarding";
 import CirculWiki from "./pages/CirculWiki";
 import GettingStarted from "./pages/GettingStarted";
 import AdminFeedbackReview from "./pages/AdminFeedbackReview";
+import Faq from "./pages/Faq";
+import Glossary from "./pages/Glossary";
+import HowItWorks from "./pages/HowItWorks";
 import LaunchingSoon from "./pages/LaunchingSoon";
 import AlertRules from "./pages/AlertRules";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -137,6 +140,10 @@ function Router() {
       <Route path="/mcp-server" component={() => <PlatformLayout><McpServer /></PlatformLayout>} />
       {/* Health Portal */}
       <Route path="/health" component={() => <PlatformLayout><HealthPortal /></PlatformLayout>} />
+      {/* Public SEO/AEO pages — no auth required */}
+      <Route path="/faq" component={Faq} />
+      <Route path="/glossary" component={Glossary} />
+      <Route path="/how-it-works" component={HowItWorks} />
       {/* Public legal pages */}
       <Route path="/profile" component={() => <PlatformLayout><UserProfile /></PlatformLayout>} />
       <Route path="/privacy" component={Privacy} />

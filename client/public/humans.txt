@@ -1,0 +1,27 @@
+/* TEAM */
+Product: Circul-AI-r
+Company: Setoo
+Contact: business@setoo.co
+Location: India
+
+/* TECHNOLOGY */
+Backend: Node.js, Express, tRPC, Drizzle ORM
+Frontend: React 19, Tailwind CSS 4, Vite
+Database: MySQL / TiDB
+AI/ML: CNN-LSTM for SOH prediction
+IoT: MQTT over TLS
+Auth: Manus OAuth
+Hosting: Render (Autoscale)
+CDN: CloudFront
+
+/* STANDARDS */
+Battery Regulation: EU 2023/1542
+EPR India: CPCB BW-3 (Battery Waste Management Rules 2022)
+EPR China: MEP Battery Recycling Measures
+IoT Protocol: MQTT v3.1.1 / v5.0
+API: OpenAPI 3.1
+Schema: Schema.org JSON-LD
+Accessibility: WCAG 2.1 AA
+
+/* LAST UPDATE */
+2026/07/13
