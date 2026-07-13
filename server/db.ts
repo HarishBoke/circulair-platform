@@ -1,4 +1,4 @@
-import { eq, desc, and, like, or, sql, gte, lte, count, sum } from "drizzle-orm";
+import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "drizzle-orm";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import {
@@ -521,7 +521,7 @@ export async function getMonthlyBatteryActivity() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleString("en", { month: "short" }) });
   }
-  const since = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const since = new Date(now.getFullYear(), now.getMonth() - 11, 1);
   const [regRows, soldRows, recycledRows] = await Promise.all([
     db.select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, n: count() })
       .from(batteries).where(gte(batteries.createdAt, since)).groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`),
@@ -546,7 +546,7 @@ export async function getMonthlyBatteryActivity() {
 export async function getSohDistribution() {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select({ soh: batteries.currentSoh }).from(batteries).where(sql`currentSoh IS NOT NULL`);
+  const rows = await db.select({ soh: batteries.currentSoh }).from(batteries).where(isNotNull(batteries.currentSoh));
   const buckets: Record<string, number> = { "90-100%": 0, "80-90%": 0, "70-80%": 0, "60-70%": 0, "50-60%": 0, "<50%": 0 };
   rows.forEach(({ soh }) => {
     const v = parseFloat(soh as unknown as string);
@@ -574,7 +574,7 @@ export async function getSohTrend() {
   const rows = await db
     .select({ year: sql<number>`YEAR(createdAt)`, month: sql<number>`MONTH(createdAt)`, avg: sql<number>`AVG(CAST(currentSoh AS DECIMAL(5,2)))` })
     .from(batteries)
-    .where(and(gte(batteries.createdAt, since), sql`currentSoh IS NOT NULL`))
+    .where(and(gte(batteries.createdAt, since), isNotNull(batteries.currentSoh)))
     .groupBy(sql`YEAR(createdAt)`, sql`MONTH(createdAt)`);
   return months.map((m) => {
     const row = rows.find((r) => r.year === m.year && r.month === m.month);
