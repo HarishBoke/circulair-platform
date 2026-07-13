@@ -34,6 +34,15 @@ export const ENV = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
 
+  // ── Manus Platform (forge API — used when hosted on Manus) ─────────────────────
+  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+
+  // ── Manus OAuth (used when hosted on Manus) ───────────────────────────────────
+  appId: process.env.VITE_APP_ID ?? "",
+  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
+  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+
   // ── Runtime ───────────────────────────────────────────────────────────────────
   isProduction: process.env.NODE_ENV === "production",
 

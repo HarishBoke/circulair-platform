@@ -45,7 +45,7 @@ export function computeWarrantyStatus(
 // ─── WARRANTY CRUD ───────────────────────────────────────────────────────────
 export async function createWarrantyRecord(data: Omit<InsertWarrantyRecord, "id" | "createdAt" | "updatedAt">) {
   const db = (await getDb())!;
-  const [{ id: _insertedId }] = await db.insert(warrantyRecords).values(data).$returningId();
+  const [{ id: _insertedId }] = await db.insert(warrantyRecords).values(data).returning();
   const result = { id: _insertedId };
   return { id: result.id };
 }
@@ -185,7 +185,7 @@ export async function getWarrantyStats() {
 // ─── WARRANTY CLAIMS ─────────────────────────────────────────────────────────
 export async function createWarrantyClaim(data: Omit<InsertWarrantyClaim, "id" | "createdAt" | "updatedAt">) {
   const db = (await getDb())!;
-  const [{ id: _insertedId }] = await db.insert(warrantyClaims).values(data).$returningId();
+  const [{ id: _insertedId }] = await db.insert(warrantyClaims).values(data).returning();
   const result = { id: _insertedId };
   // Increment totalClaims on the warranty record
   await db.update(warrantyRecords)
@@ -223,7 +223,7 @@ export async function updateClaimStatus(
 // ─── BULK ONBOARDING ─────────────────────────────────────────────────────────
 export async function createBulkOnboardingJob(data: Omit<InsertBulkOnboardingJob, "id" | "createdAt" | "updatedAt">) {
   const db = (await getDb())!;
-  const [{ id: _insertedId }] = await db.insert(bulkOnboardingJobs).values(data).$returningId();
+  const [{ id: _insertedId }] = await db.insert(bulkOnboardingJobs).values(data).returning();
   const result = { id: _insertedId };
   return { id: result.id };
 }

@@ -15,32 +15,26 @@ services:
       - key: PORT
         sync: false
 
-      # ── Database ──────────────────────────────────────────────────────────────
-      # REQUIRED: Must be a MySQL/TiDB connection string (mysql://...)
-      # Render's built-in PostgreSQL is NOT compatible with this app.
-      # Recommended free options:
-      #   - TiDB Cloud Serverless (free tier): https://tidbcloud.com
-      #     Format: mysql://user:pass@host:4000/dbname?ssl-mode=VERIFY_IDENTITY
-      #   - PlanetScale (free tier): https://planetscale.com
-      #     Format: mysql://user:pass@host/dbname?ssl=true
+      # ── Database (Render PostgreSQL — created via Render Dashboard) ────────────
+      # Create a free PostgreSQL database in Render Dashboard → New → PostgreSQL
+      # Then link it here or paste the Internal Database URL below
+      # Format: postgresql://user:pass@host:5432/dbname
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: circulair-db
+          property: connectionString
 
       # ── Security ─────────────────────────────────────────────────────────────
-      # Auto-generated secure random secret for JWT session signing
       - key: JWT_SECRET
         generateValue: true
 
       # ── Platform Owner ────────────────────────────────────────────────────────
-      # Used for owner notifications and admin bootstrap
       - key: OWNER_EMAIL
         sync: false
       - key: OWNER_NAME
         value: Platform Owner
 
       # ── OpenAI (LLM + Image Generation + Voice Transcription) ─────────────────
-      # REQUIRED for AI features: battery SOH prediction, assistant chat, image gen
-      # Get your key at: https://platform.openai.com/api-keys
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
@@ -49,8 +43,6 @@ services:
         value: dall-e-3
 
       # ── AWS S3 (File Storage) ─────────────────────────────────────────────────
-      # REQUIRED for document uploads, EPR reports, battery images
-      # Create a free S3 bucket at: https://aws.amazon.com/s3/
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -61,32 +53,24 @@ services:
         sync: false
 
       # ── Google Maps ───────────────────────────────────────────────────────────
-      # REQUIRED for logistics tracking, battery location maps
-      # Get your key at: https://console.cloud.google.com/google/maps-apis
       - key: GOOGLE_MAPS_API_KEY
         sync: false
       - key: VITE_GOOGLE_MAPS_API_KEY
         sync: false
 
       # ── Email — ZeptoMail (Primary) ───────────────────────────────────────────
-      # REQUIRED for contact form emails, password reset, owner notifications
-      # Get your token at: https://www.zoho.com/zeptomail/
       - key: ZEPTOMAIL_TOKEN
         sync: false
       - key: FROM_EMAIL
         value: noreply@circulair.energy
 
       # ── Email — Resend (Optional fallback) ───────────────────────────────────
-      # Only needed if ZeptoMail is not configured
-      # Get your key at: https://resend.com
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
         value: noreply@circulair.energy
 
       # ── Stripe (Payments) ─────────────────────────────────────────────────────
-      # REQUIRED for marketplace transactions and subscription billing
-      # Get your keys at: https://dashboard.stripe.com/apikeys
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
@@ -95,8 +79,6 @@ services:
         sync: false
 
       # ── MQTT (Real-time Battery Telemetry) ────────────────────────────────────
-      # REQUIRED for live battery monitoring and IoT device connectivity
-      # Use any MQTT broker: HiveMQ Cloud (free), EMQX Cloud, Mosquitto
       - key: MQTT_BROKER_URL
         sync: false
       - key: MQTT_USERNAME
@@ -109,3 +91,10 @@ services:
       # ── App Identity ─────────────────────────────────────────────────────────
       - key: VITE_APP_TITLE
         value: Circul-AI-r Platform
+
+databases:
+  - name: circulair-db
+    databaseName: circulair
+    user: circulair
+    region: singapore
+    plan: free
