@@ -26,8 +26,13 @@ export default function AiSoh() {
     { enabled: !!activeBpan }
   );
 
+  const utils = trpc.useUtils();
   const predictMutation = trpc.ai.predictSoh.useMutation({
-    onSuccess: () => { toast.success("AI prediction completed!"); },
+    onSuccess: () => {
+      toast.success("AI prediction completed!");
+      utils.ai.predictionHistory.invalidate({ bpan: activeBpan });
+      utils.bpan.get.invalidate({ bpan: activeBpan });
+    },
     onError: (e) => toast.error(e.message),
   });
 
