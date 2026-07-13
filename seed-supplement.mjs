@@ -99,7 +99,7 @@ async function seed() {
           `INSERT INTO "marketplace_listings" (
             bpan, "batteryId", "sellerId", "listingType",
             "askingPriceInr", "sohAtListing", chemistry, description,
-            "conditionGrade", location, status, "createdAt", "updatedAt"
+            condition_grade, location, status, "createdAt", "updatedAt"
           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())`,
           [
             bpan, batteryId, rand(userIds), rand(listingTypes),
@@ -149,8 +149,8 @@ async function seed() {
         await client.query(
           `INSERT INTO alerts (
             "batteryId", bpan, type, severity, title, message,
-            "isRead", "isResolved", "createdAt", "updatedAt"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW(),NOW())`,
+            read, acknowledged, "createdAt"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
           [
             rand(batteryIds), rand(bpans),
             rand(alertTypes), rand(severities),
@@ -237,8 +237,8 @@ async function seed() {
         await client.query(
           `INSERT INTO documents (
             "batteryId", bpan, "uploadedById", type, name,
-            "fileUrl", "mimeType", "fileSizeBytes", "createdAt", "updatedAt"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW(),NOW())`,
+            "fileUrl", "mimeType", "fileSizeBytes", "createdAt"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
           [
             batteryIds[idx], bpans[idx], rand(userIds),
             rand(docTypes),
