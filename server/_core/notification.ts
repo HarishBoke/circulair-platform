@@ -159,52 +159,20 @@ async function notifyViaZeptoMail(payload: NotificationPayload): Promise<boolean
   }
 }
 
-// ── Manus Forge fallback ──────────────────────────────────────────────────────
-
-async function notifyViaForge(payload: NotificationPayload): Promise<boolean> {
-  const baseUrl = ENV.forgeApiUrl.endsWith("/") ? ENV.forgeApiUrl : `${ENV.forgeApiUrl}/`;
-  const endpoint = new URL("webdevtoken.v1.WebDevService/SendNotification", baseUrl).toString();
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-        "connect-protocol-version": "1",
-      },
-      body: JSON.stringify({ title: payload.title, content: payload.content }),
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.warn(`[Notification] Forge failed (${response.status})${detail ? `: ${detail}` : ""}`);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn("[Notification] Forge exception:", err);
-    return false;
-  }
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Send a notification to the platform owner.
+ * Send a notification to the platform owner via ZeptoMail email.
  * Returns true on success, false on failure (callers should handle gracefully).
+ * Requires ZEPTOMAIL_TOKEN to be set in environment variables.
  */
 export async function notifyOwner(payload: NotificationPayload): Promise<boolean> {
   const validated = validatePayload(payload);
 
-  // Prefer ZeptoMail when token is configured
   if (ENV.zeptomailToken) {
     return notifyViaZeptoMail(validated);
   }
-  // Fallback to Manus Forge when on Manus hosting
-  if (ENV.forgeApiUrl && ENV.forgeApiKey) {
-    return notifyViaForge(validated);
-  }
 
-  console.warn("[Notification] No notification transport configured (set ZEPTOMAIL_TOKEN or BUILT_IN_FORGE_API_KEY)");
+  console.warn("[Notification] No notification transport configured (set ZEPTOMAIL_TOKEN)");
   return false;
 }

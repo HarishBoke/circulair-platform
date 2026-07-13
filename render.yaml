@@ -14,49 +14,71 @@ services:
         value: production
       - key: PORT
         sync: false
-      # ── Core ──────────────────────────────────────────────────────────────────
+
+      # ── Database (Render PostgreSQL — created via Render Dashboard) ────────────
+      # Create a free PostgreSQL database in Render Dashboard → New → PostgreSQL
+      # Then link it here or paste the Internal Database URL below
+      # Format: postgresql://user:pass@host:5432/dbname
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: circulair-db
+          property: connectionString
+
+      # ── Security ─────────────────────────────────────────────────────────────
       - key: JWT_SECRET
         generateValue: true
+
+      # ── Platform Owner ────────────────────────────────────────────────────────
       - key: OWNER_EMAIL
         sync: false
       - key: OWNER_NAME
         value: Platform Owner
-      # ── OpenAI (LLM + Image + Voice) ──────────────────────────────────────────
+
+      # ── OpenAI (LLM + Image Generation + Voice Transcription) ─────────────────
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o
       - key: OPENAI_IMAGE_MODEL
         value: dall-e-3
-      # ── AWS S3 ────────────────────────────────────────────────────────────────
+
+      # ── AWS S3 (File Storage) ─────────────────────────────────────────────────
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
       - key: AWS_REGION
-        sync: false
+        value: ap-southeast-1
       - key: AWS_S3_BUCKET
         sync: false
+
       # ── Google Maps ───────────────────────────────────────────────────────────
       - key: GOOGLE_MAPS_API_KEY
         sync: false
       - key: VITE_GOOGLE_MAPS_API_KEY
         sync: false
-      # ── Email (Resend) ────────────────────────────────────────────────────────
+
+      # ── Email — ZeptoMail (Primary) ───────────────────────────────────────────
+      - key: ZEPTOMAIL_TOKEN
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@circulair.energy
+
+      # ── Email — Resend (Optional fallback) ───────────────────────────────────
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
         value: noreply@circulair.energy
-      # ── Stripe ────────────────────────────────────────────────────────────────
+
+      # ── Stripe (Payments) ─────────────────────────────────────────────────────
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: VITE_STRIPE_PUBLISHABLE_KEY
         sync: false
-      # ── MQTT ─────────────────────────────────────────────────────────────────
+
+      # ── MQTT (Real-time Battery Telemetry) ────────────────────────────────────
       - key: MQTT_BROKER_URL
         sync: false
       - key: MQTT_USERNAME
@@ -65,6 +87,14 @@ services:
         sync: false
       - key: MQTT_TOPIC_PREFIX
         value: CAI_
+
       # ── App Identity ─────────────────────────────────────────────────────────
       - key: VITE_APP_TITLE
         value: Circul-AI-r Platform
+
+databases:
+  - name: circulair-db
+    databaseName: circulair
+    user: circulair
+    region: singapore
+    plan: free

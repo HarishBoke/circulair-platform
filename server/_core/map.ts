@@ -33,20 +33,13 @@ export async function makeRequest<T = unknown>(
 ): Promise<T> {
   let url: URL;
 
-  if (ENV.googleMapsApiKey) {
-    // ── Direct Google Maps API ──────────────────────────────────────────────
-    url = new URL(`${GOOGLE_MAPS_BASE}${endpoint}`);
-    url.searchParams.append("key", ENV.googleMapsApiKey);
-  } else if (ENV.forgeApiUrl && ENV.forgeApiKey) {
-    // ── Manus Forge proxy fallback ──────────────────────────────────────────
-    const base = ENV.forgeApiUrl.endsWith("/") ? ENV.forgeApiUrl : `${ENV.forgeApiUrl}/`;
-    url = new URL(`${base}v1/maps/proxy${endpoint}`);
-    url.searchParams.append("key", ENV.forgeApiKey);
-  } else {
+  if (!ENV.googleMapsApiKey) {
     throw new Error(
-      "Google Maps not configured: set GOOGLE_MAPS_API_KEY (or BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY for Manus hosting)"
+      "Google Maps not configured: set GOOGLE_MAPS_API_KEY in your environment variables"
     );
   }
+  url = new URL(`${GOOGLE_MAPS_BASE}${endpoint}`);
+  url.searchParams.append("key", ENV.googleMapsApiKey);
 
   // Add additional query parameters
   Object.entries(params).forEach(([key, value]) => {

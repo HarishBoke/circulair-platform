@@ -155,7 +155,12 @@ export function registerAuthRoutes(app: Express) {
         },
       });
     } catch (error) {
-      console.error("[Auth] Register failed:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("[Auth] Register failed:", msg);
+      // Surface DB-specific errors as 503 so the client knows to retry
+      if (msg.includes("Database not available") || msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT")) {
+        return res.status(503).json({ error: "Database unavailable — please try again in a moment" });
+      }
       return res.status(500).json({ error: "Registration failed" });
     }
   });
@@ -198,7 +203,11 @@ export function registerAuthRoutes(app: Express) {
         },
       });
     } catch (error) {
-      console.error("[Auth] Login failed:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("[Auth] Login failed:", msg);
+      if (msg.includes("Database not available") || msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT")) {
+        return res.status(503).json({ error: "Database unavailable — please try again in a moment" });
+      }
       return res.status(500).json({ error: "Login failed" });
     }
   });

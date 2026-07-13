@@ -334,7 +334,7 @@ export async function createApiKey(params: {
     rateLimitTier: params.rateLimitTier ?? "standard",
     rateLimit: params.rateLimit ?? 100,
     expiresAt: params.expiresAt ?? null,
-  }).$returningId();
+  }).returning();
   const result = { id: _insertedId };
 
   return { id: result.id, key, prefix };
@@ -450,7 +450,7 @@ export async function createWebhook(params: {
     secret,
     events: params.events,
     maxRetries: params.maxRetries ?? 3,
-  }).$returningId();
+  }).returning();
   const result = { id: _insertedId };
   return { id: result.id, secret };
 }

@@ -3683,7 +3683,7 @@ Rules:
           quantity: input.quantity,
           deliveryMonth: input.deliveryMonth,
           maxPricePerKwh: input.maxPricePerKwh ? String(input.maxPricePerKwh) : null,
-        }).$returningId();
+        }).returning();
         return { success: true, id: 0 };
       }),
     listForwardOrders: protectedProcedure.query(async ({ ctx }) => {
@@ -3753,7 +3753,7 @@ Rules:
           bpan: input.bpanFilter ?? null,
           expiresAt,
           requestMessage: `Org: ${input.recipientOrgName} (${input.recipientOrgId})`,
-        }).$returningId();
+        }).returning();
         return { success: true, id: 0 };
       }),
     revokeConsent: protectedProcedure
