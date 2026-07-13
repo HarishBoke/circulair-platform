@@ -88,7 +88,8 @@ async function seed() {
       const serial = String(i + 1).padStart(4, '0');
       const capacityKwh = randFloat(20, 120, 2);
       const capacityCode = capacityKwh < 50 ? 'S1' : capacityKwh < 80 ? 'M2' : 'L3';
-      const bpan = `${country}${mfg}${capacityCode}${chem.code}${chem.voltageCode}${cellOrigin.code}A${year}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}F${serial}`;
+      // BPAN format: CC(2)+MFG(2)+CAP(2)+CHEM(1)+VOLT(2)+CELL(2)+YY(2)+MM(2)+DD(2)+SER(2) = 21 chars
+      const bpan = `${country}${mfg.slice(0,2)}${capacityCode}${chem.code}${chem.voltageCode}${cellOrigin.code}${String(year).slice(2)}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}${serial.slice(2)}`;
       const soh = randFloat(60, 100, 2);
       const status = soh > 80 ? rand(['operational', 'operational', 'in_transit']) : soh > 60 ? 'degraded' : 'retired';
       const ownerId = rand(userIds);
@@ -165,7 +166,7 @@ async function seed() {
       const bpan = bpans[i];
       try {
         await client.query(
-          `INSERT INTO "marketplaceListings" (
+          `INSERT INTO "marketplace_listings" (
             bpan, "batteryId", "sellerId", "listingType", condition,
             "askingPriceEur", currency, title, description, location,
             "isActive", "viewCount", "createdAt", "updatedAt"
@@ -191,7 +192,7 @@ async function seed() {
     for (let i = 0; i < Math.min(100, batteryIds.length); i++) {
       try {
         await client.query(
-          `INSERT INTO "sohPredictions" (
+          `INSERT INTO "soh_predictions" (
             "batteryId", bpan, "predictedSoh", "confidenceScore",
             "predictedAt", "modelVersion", "createdAt"
           ) VALUES ($1,$2,$3,$4,NOW(),$5,NOW())`,
@@ -270,7 +271,7 @@ async function seed() {
     for (let i = 0; i < 20; i++) {
       try {
         await client.query(
-          `INSERT INTO "eprTokens" (
+          `INSERT INTO "epr_tokens" (
             "issuedToId", jurisdiction, "tokenRef", "capacityKwh",
             "issuedAt", "expiresAt", "isRedeemed", "createdAt"
           ) VALUES ($1,$2,$3,$4,NOW(),$5,$6,NOW())`,
@@ -319,7 +320,7 @@ async function seed() {
     // ── Seed platform settings ───────────────────────────────────────────────
     try {
       await client.query(
-        `INSERT INTO "platformSettings" (key, value, "updatedAt")
+        `INSERT INTO "platform_settings" (key, value, "updatedAt")
          VALUES ('platform_name', 'Circul-AI-r Battery Intelligence Platform', NOW()),
                 ('default_currency', 'EUR', NOW()),
                 ('supported_jurisdictions', 'EU,DE,FR,NL,BE,SE,PL,IN', NOW()),
@@ -337,8 +338,8 @@ async function seed() {
       SELECT 
         (SELECT COUNT(*) FROM batteries) as batteries,
         (SELECT COUNT(*) FROM telemetry) as telemetry,
-        (SELECT COUNT(*) FROM "marketplaceListings") as listings,
-        (SELECT COUNT(*) FROM "sohPredictions") as soh_predictions,
+        (SELECT COUNT(*) FROM "marketplace_listings") as listings,
+        (SELECT COUNT(*) FROM "soh_predictions") as soh_predictions,
         (SELECT COUNT(*) FROM alerts) as alerts,
         (SELECT COUNT(*) FROM users) as users
     `);
