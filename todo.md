@@ -1382,3 +1382,15 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Font preloading in index.html (Google Fonts with preconnect)
 - [x] Cache-Control headers on sitemap.xml (24h)
 - [x] Cache-Control headers on AI context endpoints (1h)
+
+## Phase 56: iPad Responsive Fixes (768px–1024px) ✅
+- [x] Audit Home page at 768px — nav overflow, hero layout, stat grid, footer
+- [x] Fix Home page top nav for iPad — hamburger menu (lg:hidden), desktop nav hidden lg:flex
+- [x] Add slide-in mobile nav drawer with all nav links, CTA, and close button
+- [x] Hide Get Started CTA button on xs screens (hidden sm:inline-flex)
+- [x] Fix trust badges row: flex-wrap for small viewports
+- [x] Fix stats grid: grid-cols-2 md:grid-cols-4 (removed lg requirement)
+- [x] Fix capabilities grid: sm:grid-cols-2 lg:grid-cols-3
+- [x] Fix HowItWorks alternating steps: flex-col lg:flex-row (was md:flex-row)
+- [x] Fix HowItWorks summary cards: sm:grid-cols-2 lg:grid-cols-3
+- [x] PlatformLayout already uses overlay drawer below lg — no change needed

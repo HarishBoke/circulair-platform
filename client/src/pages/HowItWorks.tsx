@@ -167,8 +167,8 @@ export default function HowItWorks() {
                 <div
                   key={s.step}
                   id={`step-${s.step}`}
-                  className={`flex flex-col md:flex-row gap-8 items-start ${
-                    isEven ? "" : "md:flex-row-reverse"
+                  className={`flex flex-col lg:flex-row gap-8 items-start ${
+                    isEven ? "" : "lg:flex-row-reverse"
                   }`}
                 >
                   {/* Icon + Step Number */}
@@ -213,7 +213,7 @@ export default function HowItWorks() {
           <h2 className="text-3xl font-bold text-center mb-12">
             What You Get with Circul-AI-r
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 title: "Full Traceability",

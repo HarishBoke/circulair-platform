@@ -12,7 +12,7 @@ import {
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, Play,
   Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon,
-  Mail, Send, CheckCircle
+  Mail, Send, CheckCircle, Menu, X
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
@@ -198,6 +198,7 @@ export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeStakeholder, setActiveStakeholder] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Contact form state
   const [contactForm, setContactForm] = useState(EMPTY_CONTACT_FORM);
@@ -248,6 +249,36 @@ export default function Home() {
           overflow-x:hidden creates a new scroll container and breaks sticky.
           A padding-top on the first section compensates for the fixed header height. */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-10 py-4 border-b border-border/50 bg-background/90 backdrop-blur-2xl">
+        {/* Mobile nav drawer */}
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+            <nav className="absolute top-0 right-0 bottom-0 w-72 bg-background border-l border-border/50 flex flex-col p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2.5">
+                  <CirculairLogo size={26} />
+                  <span className="font-display text-base font-bold">Circul<span className="text-primary">-AI-</span>r</span>
+                </div>
+                <button onClick={() => setMobileNavOpen(false)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground" aria-label="Close menu">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                {[{href:'#capabilities',label:'Capabilities'},{href:'#stakeholders',label:'Stakeholders'},{href:'#compliance',label:'Compliance'},{href:'/how-it-works',label:'How It Works'},{href:'/faq',label:'FAQ'}].map(item => (
+                  <a key={item.href} href={item.href} onClick={() => setMobileNavOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+              <div className="pt-6 border-t border-border/40">
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl h-11" onClick={() => { setMobileNavOpen(false); window.location.href = '/login'; }}>
+                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </nav>
+          </div>
+        )}
         <div className="flex items-center gap-3">
           <CirculairLogo size={30} />
           <div>
@@ -259,14 +290,14 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-muted-foreground">
+        <nav className="hidden lg:flex items-center gap-8 text-[13px] font-medium text-muted-foreground">
           <a href="#capabilities" className="hover:text-foreground transition-colors duration-200">Capabilities</a>
           <a href="#stakeholders" className="hover:text-foreground transition-colors duration-200">Stakeholders</a>
           <a href="#compliance" className="hover:text-foreground transition-colors duration-200">Compliance</a>
           <Link href="/how-it-works" className="hover:text-foreground transition-colors duration-200">How It Works</Link>
           <Link href="/faq" className="hover:text-foreground transition-colors duration-200">FAQ</Link>
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
           <div className="hidden sm:flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-blink" />
             <span className="text-[10px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>LIVE</span>
@@ -282,20 +313,29 @@ export default function Home() {
           {!loading && (
             isAuthenticated ? (
               <Link href="/dashboard">
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md shadow-primary/20">
+                <Button size="sm" className="hidden sm:inline-flex bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md shadow-primary/20">
                   Dashboard <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Button>
               </Link>
             ) : (
               <Button
                 size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md shadow-primary/20"
+                className="hidden sm:inline-flex bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md shadow-primary/20"
                 onClick={() => window.location.href = "/login"}
               >
                 Get Started <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             )
           )}
+          {/* Hamburger — visible on md and below (< 1024px) */}
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="lg:hidden p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Open navigation menu"
+            aria-expanded={mobileNavOpen}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
@@ -347,7 +387,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-8 text-[13px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-8 text-[13px] text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Lock className="w-3.5 h-3.5 text-primary" />
@@ -415,7 +455,7 @@ export default function Home() {
       {/* ─── STATS BAR ──────────────────────────────────────────────────────── */}
       <section className="relative z-10 border-y border-border/40 bg-card/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-10">
             {PLATFORM_STATS.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-4xl lg:text-5xl font-extrabold text-primary mb-2 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
@@ -445,7 +485,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {CAPABILITIES.map((cap) => (
             <div key={cap.title} className="group bg-card/60 border border-border/50 rounded-2xl p-7 hover:border-primary/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -479,7 +519,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-5">
             {STAKEHOLDERS.map((sh, i) => (
               <div
                 key={sh.role}
