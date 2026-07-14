@@ -215,7 +215,7 @@ export function registerAuthRoutes(app: Express) {
   // ── Logout ──────────────────────────────────────────────────────────────────
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     const cookieOptions = getSessionCookieOptions(req);
-    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    res.clearCookie(COOKIE_NAME, cookieOptions);
     return res.json({ success: true });
   });
 
