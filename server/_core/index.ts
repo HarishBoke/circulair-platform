@@ -75,7 +75,7 @@ async function startServer() {
   app.get("/api/health", async (_req, res) => {
     const { getDb } = await import("../db");
     const db = await getDb();
-    const dbUrl = process.env.DATABASE_URL || "";
+    const dbUrl = process.env.MYSQL_DATABASE_URL || process.env.DATABASE_URL || "";
     const dbType = dbUrl.startsWith("postgres") ? "postgresql" : dbUrl.startsWith("mysql") ? "mysql" : "unknown";
     res.json({
       status: "ok",

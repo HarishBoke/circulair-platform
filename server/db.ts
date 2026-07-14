@@ -27,9 +27,10 @@ import { ENV } from "./_core/env";
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  const dbUrl = process.env.MYSQL_DATABASE_URL || (process.env.DATABASE_URL?.startsWith('mysql://') ? process.env.DATABASE_URL : null);
+  if (!_db && dbUrl) {
     try {
-      const url = new URL(process.env.DATABASE_URL);
+      const url = new URL(dbUrl);
       const pool = mysql.createPool({
         host: url.hostname,
         port: url.port ? parseInt(url.port) : 3306,
