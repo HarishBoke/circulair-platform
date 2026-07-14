@@ -27,11 +27,25 @@ import { ENV } from "./_core/env";
 let _db: NodePgDatabase | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
+    // Determine the correct PostgreSQL connection string
+    let connectionUrl = process.env.DATABASE_URL || '';
+    
+    // If DATABASE_URL still points to MySQL/TiDB, override with Render PostgreSQL internal URL
+    if (connectionUrl.startsWith('mysql://') || connectionUrl.includes('tidbcloud.com')) {
+      connectionUrl = 'postgresql://circulair_user:wKbtM8fh9EfLkjnLkoYqzL7EouQlTTSC@dpg-d95qdlcvikkc73e2aeig-a/circulair_production';
+      console.log('[Database] Overriding MySQL DATABASE_URL with Render PostgreSQL internal URL');
+    }
+    
+    if (!connectionUrl) {
+      console.warn('[Database] No DATABASE_URL configured');
+      return null;
+    }
+    
     try {
       const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+        connectionString: connectionUrl,
+        ssl: connectionUrl.includes('localhost') || connectionUrl.includes('dpg-') ? false : { rejectUnauthorized: false },
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
