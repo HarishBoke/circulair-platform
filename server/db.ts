@@ -1,6 +1,6 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "drizzle-orm";
-import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -24,17 +24,23 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: NodePgDatabase | null = null;
+let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
+      const url = new URL(process.env.DATABASE_URL);
+      const pool = mysql.createPool({
+        host: url.hostname,
+        port: url.port ? parseInt(url.port) : 3306,
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        database: url.pathname.replace(/^\//, ""),
+        ssl: url.hostname.includes('localhost') ? undefined : { rejectUnauthorized: false },
+        connectionLimit: 10,
+        connectTimeout: 10000,
+        waitForConnections: true,
+        queueLimit: 0,
       });
       _db = drizzle(pool) as any;
     } catch (error) {
@@ -70,8 +76,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  // PostgreSQL INSERT ... ON CONFLICT DO UPDATE — atomic upsert, no duplicate key errors
-  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet as any });
+  // MySQL INSERT ... ON DUPLICATE KEY UPDATE — atomic upsert, no duplicate key errors
+  await (db.insert(users).values(values) as any).onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {

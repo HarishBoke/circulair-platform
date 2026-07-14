@@ -104,9 +104,10 @@ async function startServer() {
       const { eq } = await import("drizzle-orm");
       const db = await getDb();
       if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
-      const result = await db.update(users).set({ role: "admin" }).where(eq(users.email, email)).returning({ id: users.id, email: users.email, role: users.role });
-      if (result.length === 0) { res.status(404).json({ error: "User not found" }); return; }
-      res.json({ success: true, user: result[0] });
+      await db.update(users).set({ role: "admin" }).where(eq(users.email, email));
+      const [updatedUser] = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, email));
+      if (!updatedUser) { res.status(404).json({ error: "User not found" }); return; }
+      res.json({ success: true, user: updatedUser });
     } catch (err) {
       console.error("[AdminBootstrap] Error:", err);
       res.status(500).json({ error: (err as Error).message });

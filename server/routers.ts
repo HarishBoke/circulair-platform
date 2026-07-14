@@ -3687,7 +3687,7 @@ Rules:
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const { forwardOrders } = await import("../drizzle/schema");
-        const [result] = await db.insert(forwardOrders).values({
+        const [insertResult] = await db.insert(forwardOrders).values({
           buyerId: ctx.user.id,
           targetSohMin: String(input.targetSohMin),
           targetSohMax: String(input.targetSohMax),
@@ -3696,8 +3696,8 @@ Rules:
           quantity: input.quantity,
           deliveryMonth: input.deliveryMonth,
           maxPricePerKwh: input.maxPricePerKwh ? String(input.maxPricePerKwh) : null,
-        }).returning();
-        return { success: true, id: 0 };
+        }).$returningId();
+        return { success: true, id: insertResult.id };
       }),
     listForwardOrders: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
@@ -3759,15 +3759,15 @@ Rules:
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const { dataSharingAgreements } = await import("../drizzle/schema");
         const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null;
-        const [result] = await db.insert(dataSharingAgreements).values({
+        const [insertResult] = await db.insert(dataSharingAgreements).values({
           requestingUserId: ctx.user.id,
           owningUserId: ctx.user.id,
           scope: JSON.stringify(input.dataScope),
           bpan: input.bpanFilter ?? null,
           expiresAt,
           requestMessage: `Org: ${input.recipientOrgName} (${input.recipientOrgId})`,
-        }).returning();
-        return { success: true, id: 0 };
+        }).$returningId();
+        return { success: true, id: insertResult.id };
       }),
     revokeConsent: protectedProcedure
       .input(z.object({ id: z.number() }))
