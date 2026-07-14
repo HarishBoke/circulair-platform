@@ -2,7 +2,7 @@
  * File Storage - Independent AWS S3 implementation
  *
  * Primary: AWS S3 SDK (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_S3_BUCKET + AWS_REGION)
- * Fallback: Manus Forge storage proxy (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+
  *           — used automatically when deployed on Manus hosting without AWS credentials
  *
  * The S3 bucket should be configured with public-read ACL or a CloudFront distribution

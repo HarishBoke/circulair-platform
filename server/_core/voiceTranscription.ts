@@ -2,7 +2,7 @@
  * Voice Transcription - Independent OpenAI Whisper implementation
  *
  * Primary: OpenAI Whisper API (OPENAI_API_KEY)
- * Fallback: Manus Forge Whisper proxy (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+
  *
  * Voice transcription helper using internal Speech-to-Text service
  *

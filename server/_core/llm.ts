@@ -2,7 +2,7 @@
  * LLM Integration - Independent OpenAI implementation
  *
  * Primary: OpenAI API (OPENAI_API_KEY) using gpt-4o
- * Fallback: Manus Forge proxy (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+
  *           — used automatically when deployed on Manus hosting without OpenAI key
  */
 

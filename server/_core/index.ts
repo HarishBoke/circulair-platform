@@ -39,7 +39,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Trust the first proxy hop (Manus reverse proxy / Cloudflare)
+  // Trust the first proxy hop (Render / Cloudflare reverse proxy)
   // Required for express-rate-limit to correctly identify client IPs from X-Forwarded-For
   app.set("trust proxy", 1);
   // Security headers + rate limiting
@@ -190,7 +190,10 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  // In production (Render), always use the assigned PORT directly
+  const port = process.env.NODE_ENV === "production"
+    ? preferredPort
+    : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);

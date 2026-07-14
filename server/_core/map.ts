@@ -2,7 +2,7 @@
  * Google Maps API Integration
  *
  * Primary: Direct Google Maps API (GOOGLE_MAPS_API_KEY)
- * Fallback: Manus Forge Maps proxy (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+
  *           — used automatically when deployed on Manus hosting without a direct API key
  */
 

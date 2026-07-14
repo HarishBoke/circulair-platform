@@ -25,7 +25,7 @@ export const ENV = {
   zeptomailToken: process.env.ZEPTOMAIL_TOKEN ?? "",
   fromEmail: process.env.FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? "noreply@circulair.energy",
 
-  // ── Email (Resend — kept for backward compat, no longer used) ────────────────
+  // ── Email (Resend) ──────────────────────────────────────────────────────────
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@circulair.energy",
 
@@ -34,16 +34,13 @@ export const ENV = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
 
-  // ── Manus Platform (forge API — used when hosted on Manus) ─────────────────────
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-
-  // ── Manus OAuth (used when hosted on Manus) ───────────────────────────────────
-  appId: process.env.VITE_APP_ID ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+  // ── MQTT ──────────────────────────────────────────────────────────────────────
+  mqttBrokerUrl: process.env.MQTT_BROKER_URL ?? "",
+  mqttUsername: process.env.MQTT_USERNAME ?? "",
+  mqttPassword: process.env.MQTT_PASSWORD ?? "",
+  mqttTopicPrefix: process.env.MQTT_TOPIC_PREFIX ?? "CAI_",
 
   // ── Runtime ───────────────────────────────────────────────────────────────────
   isProduction: process.env.NODE_ENV === "production",
-
+  port: parseInt(process.env.PORT ?? "3000", 10),
 };

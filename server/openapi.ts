@@ -50,7 +50,7 @@ All tRPC responses are wrapped in:
       description: "Production",
     },
     {
-      url: "https://circulai-su7xgbwd.manus.space",
+      url: "https://circulair.energy",
       description: "Staging",
     },
   ],

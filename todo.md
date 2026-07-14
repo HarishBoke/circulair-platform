@@ -1394,3 +1394,17 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Fix HowItWorks alternating steps: flex-col lg:flex-row (was md:flex-row)
 - [x] Fix HowItWorks summary cards: sm:grid-cols-2 lg:grid-cols-3
 - [x] PlatformLayout already uses overlay drawer below lg — no change needed
+
+## Phase 40: Render Deployment — Independent from Manus
+
+- [x] Audit all Manus-specific imports and helpers (OAuth, LLM, notification, storage, env)
+- [x] Remove Manus OAuth dependency — use standalone JWT email/password auth only
+- [x] Replace Manus LLM helper with direct OpenAI SDK calls (already was using OpenAI SDK)
+- [x] Replace Manus storage helper with direct AWS S3 SDK calls (already was using S3 SDK)
+- [x] Replace Manus notification helper with ZeptoMail (already independent)
+- [x] Remove Manus-specific env vars (BUILT_IN_FORGE_*, VITE_APP_ID, OAUTH_SERVER_URL, etc.)
+- [x] Create render.yaml for Render Blueprint auto-deployment
+- [x] Create production build script (build client + server) — already existed
+- [x] Document all required environment variables for Render
+- [x] Push to GitHub with auto-deploy configured
+- [x] Create RENDER_DEPLOYMENT.md with full setup instructions

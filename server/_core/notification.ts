@@ -2,7 +2,7 @@
  * Owner Notifications — ZeptoMail REST API implementation (direct fetch, no SDK)
  *
  * Primary: ZeptoMail REST API to OWNER_EMAIL (ZEPTOMAIL_TOKEN required)
- * Fallback: Manus Forge SendNotification webhook (BUILT_IN_FORGE_API_URL + BUILT_IN_FORGE_API_KEY)
+
  *           — used automatically when deployed on Manus hosting without ZeptoMail token
  */
 
