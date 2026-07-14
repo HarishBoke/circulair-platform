@@ -39,7 +39,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Trust the first proxy hop (Render / Cloudflare reverse proxy)
+  // Trust the first proxy hop (Manus reverse proxy / Cloudflare)
   // Required for express-rate-limit to correctly identify client IPs from X-Forwarded-For
   app.set("trust proxy", 1);
   // Security headers + rate limiting
@@ -75,7 +75,7 @@ async function startServer() {
   app.get("/api/health", async (_req, res) => {
     const { getDb } = await import("../db");
     const db = await getDb();
-    const dbUrl = process.env.MYSQL_DATABASE_URL || process.env.DATABASE_URL || "";
+    const dbUrl = process.env.DATABASE_URL || "";
     const dbType = dbUrl.startsWith("postgres") ? "postgresql" : dbUrl.startsWith("mysql") ? "mysql" : "unknown";
     res.json({
       status: "ok",
@@ -104,10 +104,9 @@ async function startServer() {
       const { eq } = await import("drizzle-orm");
       const db = await getDb();
       if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
-      await db.update(users).set({ role: "admin" }).where(eq(users.email, email));
-      const [updatedUser] = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, email));
-      if (!updatedUser) { res.status(404).json({ error: "User not found" }); return; }
-      res.json({ success: true, user: updatedUser });
+      const result = await db.update(users).set({ role: "admin" }).where(eq(users.email, email)).returning({ id: users.id, email: users.email, role: users.role });
+      if (result.length === 0) { res.status(404).json({ error: "User not found" }); return; }
+      res.json({ success: true, user: result[0] });
     } catch (err) {
       console.error("[AdminBootstrap] Error:", err);
       res.status(500).json({ error: (err as Error).message });
@@ -190,10 +189,7 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  // In production (Render), always use the assigned PORT directly
-  const port = process.env.NODE_ENV === "production"
-    ? preferredPort
-    : await findAvailablePort(preferredPort);
+  const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);

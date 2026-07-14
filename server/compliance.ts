@@ -324,7 +324,7 @@ export async function createApiKey(params: {
   const db = (await getDb())!;
   const { key, prefix, hash } = generateApiKey();
 
-    const [insertResult] = await db.insert(apiKeys).values({
+  const [{ id: _insertedId }] = await db.insert(apiKeys).values({
     name: params.name,
     description: params.description ?? null,
     keyHash: hash,
@@ -334,8 +334,10 @@ export async function createApiKey(params: {
     rateLimitTier: params.rateLimitTier ?? "standard",
     rateLimit: params.rateLimit ?? 100,
     expiresAt: params.expiresAt ?? null,
-  }).$returningId();
-  return { id: insertResult.id, key, prefix };
+  }).returning();
+  const result = { id: _insertedId };
+
+  return { id: result.id, key, prefix };
 }
 
 export async function validateApiKey(key: string) {
@@ -441,15 +443,16 @@ export async function createWebhook(params: {
 }) {
   const db = (await getDb())!;
   const secret = `whsec_${nanoid(32)}`;
-  const [insertResult] = await db.insert(webhooks).values({
+  const [{ id: _insertedId }] = await db.insert(webhooks).values({
     userId: params.userId,
     name: params.name,
     url: params.url,
     secret,
     events: params.events,
     maxRetries: params.maxRetries ?? 3,
-  }).$returningId();
-  return { id: insertResult.id, secret };
+  }).returning();
+  const result = { id: _insertedId };
+  return { id: result.id, secret };
 }
 
 export async function listWebhooks(userId?: number) {

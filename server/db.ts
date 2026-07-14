@@ -1,6 +1,6 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -24,24 +24,17 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: NodePgDatabase | null = null;
 
 export async function getDb() {
-  const dbUrl = process.env.MYSQL_DATABASE_URL || (process.env.DATABASE_URL?.startsWith('mysql://') ? process.env.DATABASE_URL : null);
-  if (!_db && dbUrl) {
+  if (!_db && process.env.DATABASE_URL) {
     try {
-      const url = new URL(dbUrl);
-      const pool = mysql.createPool({
-        host: url.hostname,
-        port: url.port ? parseInt(url.port) : 3306,
-        user: decodeURIComponent(url.username),
-        password: decodeURIComponent(url.password),
-        database: url.pathname.replace(/^\//, ""),
-        ssl: url.hostname.includes('localhost') ? undefined : { rejectUnauthorized: false },
-        connectionLimit: 10,
-        connectTimeout: 10000,
-        waitForConnections: true,
-        queueLimit: 0,
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
       });
       _db = drizzle(pool) as any;
     } catch (error) {
@@ -77,8 +70,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  // MySQL INSERT ... ON DUPLICATE KEY UPDATE — atomic upsert, no duplicate key errors
-  await (db.insert(users).values(values) as any).onDuplicateKeyUpdate({ set: updateSet });
+  // PostgreSQL INSERT ... ON CONFLICT DO UPDATE — atomic upsert, no duplicate key errors
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet as any });
 }
 
 export async function getUserByOpenId(openId: string) {
