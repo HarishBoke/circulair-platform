@@ -25,17 +25,40 @@ import {
 import { ENV } from "./_core/env";
 
 let _db: NodePgDatabase | null = null;
+let _pool: Pool | null = null;
+let _connectionAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+// Render PostgreSQL internal URL (fallback when DATABASE_URL is MySQL/TiDB)
+const RENDER_PG_INTERNAL = 'postgresql://circulair_user:wKbtM8fh9EfLkjnLkoYqzL7EouQlTTSC@dpg-d95qdlcvikkc73e2aeig-a/circulair_production';
+
+function resolveConnectionUrl(): string {
+  // Priority order:
+  // 1. RENDER_DATABASE_URL (explicit Render PostgreSQL URL if set)
+  // 2. DATABASE_URL (if it's already PostgreSQL)
+  // 3. Hardcoded Render internal URL (if DATABASE_URL is MySQL/TiDB)
+  const renderDbUrl = process.env.RENDER_DATABASE_URL;
+  if (renderDbUrl && renderDbUrl.startsWith('postgres')) {
+    return renderDbUrl;
+  }
+  
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl.startsWith('postgres')) {
+    return dbUrl;
+  }
+  
+  // DATABASE_URL is MySQL/TiDB or empty — use Render PostgreSQL internal URL
+  if (dbUrl.startsWith('mysql://') || dbUrl.includes('tidbcloud.com') || !dbUrl) {
+    console.log('[Database] Using Render PostgreSQL internal URL (DATABASE_URL is MySQL or empty)');
+    return RENDER_PG_INTERNAL;
+  }
+  
+  return dbUrl;
+}
 
 export async function getDb() {
   if (!_db) {
-    // Determine the correct PostgreSQL connection string
-    let connectionUrl = process.env.DATABASE_URL || '';
-    
-    // If DATABASE_URL still points to MySQL/TiDB, override with Render PostgreSQL internal URL
-    if (connectionUrl.startsWith('mysql://') || connectionUrl.includes('tidbcloud.com')) {
-      connectionUrl = 'postgresql://circulair_user:wKbtM8fh9EfLkjnLkoYqzL7EouQlTTSC@dpg-d95qdlcvikkc73e2aeig-a/circulair_production';
-      console.log('[Database] Overriding MySQL DATABASE_URL with Render PostgreSQL internal URL');
-    }
+    const connectionUrl = resolveConnectionUrl();
     
     if (!connectionUrl) {
       console.warn('[Database] No DATABASE_URL configured');
@@ -43,20 +66,51 @@ export async function getDb() {
     }
     
     try {
-      const pool = new Pool({
+      _pool = new Pool({
         connectionString: connectionUrl,
         ssl: connectionUrl.includes('localhost') || connectionUrl.includes('dpg-') ? false : { rejectUnauthorized: false },
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
       });
-      _db = drizzle(pool) as any;
+      
+      // Handle pool-level errors gracefully to prevent process crashes
+      _pool.on('error', (err) => {
+        console.error('[Database] Pool error (will attempt reconnect on next query):', err.message);
+        _db = null; // Force reconnection on next getDb() call
+        _pool = null;
+      });
+      
+      // Verify connection works on first attempt
+      const client = await _pool.connect();
+      client.release();
+      _connectionAttempts = 0; // Reset on success
+      
+      _db = drizzle(_pool) as any;
+      console.log('[Database] Connected successfully to PostgreSQL');
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      _connectionAttempts++;
+      console.warn(`[Database] Failed to connect (attempt ${_connectionAttempts}/${MAX_RECONNECT_ATTEMPTS}):`, (error as Error).message);
       _db = null;
+      _pool = null;
+      
+      // If we haven't exceeded max attempts, allow retry on next call
+      if (_connectionAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('[Database] Max reconnection attempts reached. Database unavailable.');
+      }
     }
   }
   return _db;
+}
+
+// Utility to force reconnection (useful for health checks or recovery)
+export function resetDbConnection() {
+  _db = null;
+  if (_pool) {
+    _pool.end().catch(() => {});
+    _pool = null;
+  }
+  _connectionAttempts = 0;
 }
 
 // ─── USER HELPERS ─────────────────────────────────────────────────────────────
