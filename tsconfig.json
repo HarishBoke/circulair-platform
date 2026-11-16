@@ -9,10 +9,7 @@
     "node_modules",
     "build",
     "dist",
-    "**/*.test.ts",
-    "server/_core/sdk.ts",
-    "server/_core/oauth.ts",
-    "server/_core/dataApi.ts"
+    "**/*.test.ts"
   ],
   "compilerOptions": {
     "incremental": true,

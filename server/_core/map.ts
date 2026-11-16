@@ -1,9 +1,7 @@
 /**
  * Google Maps API Integration
  *
- * Primary: Direct Google Maps API (GOOGLE_MAPS_API_KEY)
-
- *           — used automatically when deployed on Manus hosting without a direct API key
+ * Uses the direct Google Maps API (GOOGLE_MAPS_API_KEY required).
  */
 
 import { ENV } from "./env";

@@ -1,0 +1,29 @@
+# Optional native Render Cron job. Applying this template creates a billable service.
+# Render documents a $1/month minimum per Cron service plus active compute charges.
+# Apply only after the outbox migration, explicit PostgreSQL URL, key and region are verified.
+# The web app tries immediate delivery; this finite command handles due retries and expired leases.
+services:
+  - type: cron
+    name: circulair-pagerduty-outbox
+    runtime: node
+    region: singapore
+    plan: starter
+    branch: main
+    schedule: "* * * * *"
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm exec tsx scripts/process-pagerduty.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_URL
+        value: https://circulair.energy
+      - key: PAGERDUTY_ENABLED
+        value: "false"
+      - key: PAGERDUTY_ROUTING_KEY
+        sync: false
+      - key: PAGERDUTY_REGION
+        value: us
+      - key: PAGERDUTY_ENVIRONMENT
+        value: production

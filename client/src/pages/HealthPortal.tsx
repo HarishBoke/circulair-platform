@@ -168,11 +168,11 @@ export default function HealthPortal() {
     // Core
     { name: "API Gateway",        description: "tRPC + REST endpoints",          icon: Globe,     status: "unknown", category: "core" },
     { name: "Database",           description: "MySQL (TiDB Cloud)",             icon: Database,  status: "unknown", category: "core" },
-    { name: "Authentication",     description: "Manus OAuth + JWT sessions",     icon: Lock,      status: "unknown", category: "core" },
+    { name: "Authentication",     description: "Email/password + JWT sessions",  icon: Lock,      status: "unknown", category: "core" },
     { name: "WebSocket / RT",     description: "Real-time dashboard updates",    icon: Wifi,      status: "unknown", category: "core" },
     // Integrations
     { name: "MQTT Broker",        description: "IoT telemetry ingestion",        icon: Radio,     status: "unknown", category: "integration" },
-    { name: "AI / LLM Service",   description: "Built-in Forge LLM inference",  icon: Cpu,       status: "unknown", category: "integration" },
+    { name: "AI / LLM Service",   description: "Direct OpenAI LLM integration",   icon: Cpu,       status: "unknown", category: "integration" },
     { name: "File Storage (S3)",  description: "AWS S3 document & asset store",  icon: Server,    status: "unknown", category: "integration" },
     { name: "Email (ZeptoMail)",  description: "Transactional email delivery",   icon: Mail,      status: "unknown", category: "integration" },
     { name: "Stripe Payments",    description: "Payment processing gateway",     icon: Zap,       status: "unknown", category: "integration" },
@@ -198,7 +198,7 @@ export default function HealthPortal() {
             return { ...s, status: apiOk ? "operational" : "outage", latency: apiLatency, detail: `${apiLatency}ms avg response` };
           }
           if (s.name === "Authentication") {
-            return { ...s, status: apiOk ? "operational" : "degraded", detail: res.status === 401 ? "OAuth ready (not logged in)" : "Active session verified" };
+            return { ...s, status: apiOk ? "operational" : "degraded", detail: res.status === 401 ? "JWT authentication endpoint reachable (not logged in)" : "Session endpoint reachable" };
           }
           return s;
         }));
@@ -217,7 +217,7 @@ export default function HealthPortal() {
           case "MQTT Broker":
             return { ...s, status: "operational", detail: "emqxsl.com broker — telemetry ingestion active" };
           case "AI / LLM Service":
-            return { ...s, status: "operational", detail: "Built-in Forge API — LLM + image generation available" };
+            return { ...s, status: "unknown", detail: "Direct OpenAI integration — provider availability not checked" };
           case "File Storage (S3)":
             return { ...s, status: "operational", detail: "AWS S3 bucket accessible — static assets served" };
           case "Email (ZeptoMail)":

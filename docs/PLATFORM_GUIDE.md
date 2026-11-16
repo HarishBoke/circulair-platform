@@ -1,14 +1,14 @@
 # Circul-AI-r Platform — Complete Guide
 
 **Version:** 1.0.0  
-**Last Updated:** April 2026  
+**Last Updated:** November 2026
 **Classification:** Internal
 
 ---
 
 ## What is Circul-AI-r?
 
-Circul-AI-r is an **AI-powered battery lifecycle intelligence platform** that provides end-to-end management for lithium-ion batteries — from manufacturing and deployment through monitoring, second-life remarketing, and responsible recycling. The platform is built to comply with India's Battery Waste Management Rules (2022), the EU Battery Regulation (2023/1542), and global sustainability standards.
+Circul-AI-r is an **AI-powered battery lifecycle intelligence platform** that provides end-to-end management for lithium-ion batteries — from manufacturing and deployment through monitoring, second-life remarketing, and responsible recycling. Its recordkeeping and reporting tools can assist work under India's Battery Waste Management Rules (2022), the EU Battery Regulation (2023/1542), and sustainability standards. Actual compliance depends on source data, operator controls, legal review and regulator acceptance; the platform does not confer certification.
 
 The platform assigns every battery a unique **BPAN (Battery Passport Aadhaar Number)** — a 21-character digital identity that tracks the battery across its entire lifecycle, much like India's Aadhaar system tracks citizens. This BPAN becomes the single source of truth for all battery data: telemetry, warranty, ownership transfers, compliance records, and end-of-life disposition.
 
@@ -87,7 +87,7 @@ For organizations with existing battery fleets, the bulk onboarding system suppo
 
 ### 7. EPR Compliance & Carbon Footprint
 
-Extended Producer Responsibility (EPR) compliance tracking with token generation, recycling verification, and yield reporting. Carbon footprint declarations follow GHG Protocol, ISO 14067, EU PEF, and GBA methodologies with performance classification (A-E grades).
+Extended Producer Responsibility (EPR) compliance tracking with token generation, recycling verification, and yield reporting. Carbon-footprint declarations include methodology labels and performance-classification fields. Selecting GHG Protocol, ISO 14067, EU PEF, or GBA does not establish methodological conformity; calculations, boundaries and evidence require independent review.
 
 ### 8. Logistics & Supply Chain
 
@@ -128,16 +128,16 @@ Shipment tracking for battery transfers between lifecycle stages. Supports statu
 │                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐                 │
 │  │  Audit Logger    │  │  Structured Log  │                 │
-│  │  ISO 27001       │  │  SIEM-Ready      │                 │
-│  │  SOC 2           │  │  Trace IDs       │                 │
+│  │  Classifications │  │  SIEM-Ready      │                 │
+│  │  Security Events │  │  Trace IDs       │                 │
 │  └──────────────────┘  └──────────────────┘                 │
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────┼────────────────────────────────┐
 │                      DATA LAYER                              │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │  MySQL   │  │    S3    │  │   MQTT   │  │ Socket.io│   │
-│  │ (TiDB)   │  │ Storage  │  │  Broker  │  │ Realtime │   │
+│  │PostgreSQL│  │    S3    │  │   MQTT   │  │ Socket.io│   │
+│  │ (Render) │  │ Storage  │  │  Broker  │  │ Realtime │   │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -151,12 +151,14 @@ Shipment tracking for battery transfers between lifecycle stages. Supports statu
 | API Client | tRPC 11 with Superjson | End-to-end type-safe API calls |
 | Server | Express 4, Node.js 22 | HTTP server and middleware |
 | API Layer | tRPC + REST (OpenAPI 3.1) + MCP | Multi-protocol API access |
-| Database | MySQL (TiDB) via Drizzle ORM | Relational data storage |
-| File Storage | S3-compatible | Document and media storage |
+| Database | Render PostgreSQL via Drizzle ORM | Relational data storage |
+| File Storage | Direct AWS S3 SDK | Document and media storage; private-file delivery must be configured |
 | Real-time | Socket.io | Live telemetry broadcasting |
 | IoT | MQTT | Device telemetry ingestion |
-| Auth | Manus OAuth + JWT sessions | Authentication and authorization |
-| AI | LLM integration (invokeLLM) | SOH prediction, triage, chat |
+| Auth | Email/password + 30-day JWT session cookie | Authentication and authorization |
+| AI | Direct OpenAI integration (`invokeLLM`) | AI-assisted prediction, triage and chat; validate outputs |
+| Email | Direct ZeptoMail REST API | Password reset, onboarding and owner notifications |
+| Hosting | Render Node.js web service | API + SPA; configuration in root `render.yaml` |
 
 ---
 
@@ -164,7 +166,7 @@ Shipment tracking for battery transfers between lifecycle stages. Supports statu
 
 ### For Platform Users
 
-1. **Sign in** using the Manus OAuth login on the landing page
+1. **Sign in** at `/login` using your registered email and password; no external identity portal is required
 2. **Register your first battery** via the BPAN Registry page
 3. **Set up telemetry** by configuring your BMS to send MQTT data
 4. **Register warranties** for customer-facing battery products
@@ -175,12 +177,12 @@ Shipment tracking for battery transfers between lifecycle stages. Supports statu
 1. Request an **API key** from the platform admin
 2. Access the **Swagger UI** at `/api/docs` for interactive documentation
 3. Authenticate using `Authorization: Bearer <your_api_key>`
-4. Start with `/api/v1/health` to verify connectivity
-5. See the [API Reference](./API_REFERENCE.md) for complete endpoint documentation
+4. Start with the public `/api/v1/health` for gateway connectivity; `/api/health` separately reports PostgreSQL readiness
+5. See the [API Reference](../API.md) for endpoint documentation
 
 ### For AI Agent Integration (MCP)
 
-1. Configure your agent to connect to the MCP endpoint at `/api/mcp`
+1. Configure your agent to connect to `/api/mcp` with `Authorization: Bearer <api_key>`
 2. Send a `tools/list` request to discover available tools
 3. Use `tools/call` to invoke platform capabilities
 4. See the [MCP Integration Guide](./MCP_GUIDE.md) for detailed setup
@@ -189,19 +191,24 @@ Shipment tracking for battery transfers between lifecycle stages. Supports statu
 
 ## Security & Compliance
 
-The platform implements security controls aligned with **ISO 27001:2022** and **SOC 2 Type II** requirements:
+The application provides supporting security mechanisms, not ISO 27001 certification, a SOC 2 Type II attestation, or guaranteed regulatory compliance.
 
-| Control Area | ISO 27001 | SOC 2 | Implementation |
-|---|---|---|---|
-| Audit Logging | A.12.4 | CC7.2 | Comprehensive audit trail for all operations |
-| Access Control | A.9 | CC6.1 | Role-based access with API key scoping |
-| Data Classification | A.8.2 | CC6.6 | Four-tier classification (public/internal/confidential/restricted) |
-| Security Monitoring | A.12.4.1 | CC7.2 | Dedicated security event log with SIEM-ready format |
-| Encryption | A.10 | CC6.1 | TLS in transit, encrypted at rest |
-| Change Management | A.12.1.2 | CC8.1 | Configuration change logging |
-| Incident Response | A.16 | CC7.3 | Security event severity classification |
+| Control Area | Application mechanism | Operator verification |
+|---|---|---|
+| Audit logging | Trace IDs, audit entries, security events | Confirm coverage, access restrictions, export integrity and retention |
+| Access control | JWT-protected procedures, admin role and scoped API keys | Review role assignments, permissions and public endpoints |
+| Data classification | Public/internal/confidential/restricted metadata | Classification labels alone do not enforce all data access |
+| Transport security | Render TLS, secure cookies over HTTPS | Validate proxy and origin settings; storage/database encryption must be verified |
+| Change management | Selected configuration-change records | Retain deployment approvals and migration review evidence |
+| Incident response | Event classification and best-effort owner mail | Configure notification recipients and test escalation separately |
 
-For detailed compliance documentation, see [Compliance Guide](./COMPLIANCE_GUIDE.md).
+For control evidence and readiness limitations, see [Compliance Guide](./COMPLIANCE_GUIDE.md).
+
+### External Integration Setup
+
+Administrators configure server-side secrets in Render; the application does not supply provider accounts or credentials. Set `DATABASE_URL` for Render PostgreSQL, a strong `JWT_SECRET`, and trusted `APP_URL`. OpenAI features need `OPENAI_API_KEY` and available models; password reset and owner mail need `ZEPTOMAIL_TOKEN`, a verified `FROM_EMAIL`, and `OWNER_EMAIL`; files need S3 credentials, bucket and region. The current mail helper targets the India-region ZeptoMail account and has no automatic provider failover.
+
+Maps, Stripe and MQTT require their own restricted keys, webhook signatures or broker credentials when used. A green database health check does not prove those integrations work. Missing configuration or provider outages can disable individual features; do not treat demo or simulated data as an end-to-end production test. See [Deployment Guide](../DEPLOYMENT.md) for setup, private-file delivery limitations, validation and rollback.
 
 ---
 

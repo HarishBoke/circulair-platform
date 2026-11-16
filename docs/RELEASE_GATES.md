@@ -24,7 +24,7 @@ Verify email recovery delivery, private S3 storage/download authorization, Rende
 
 ## Messaging
 
-The requested phrase “pager messages” remains unconfirmed. Working in-app alerts, PagerDuty paging, and SMS/WhatsApp delivery are different features. No external messaging or recurring monitoring has been enabled without that scope and channel configuration.
+The user confirmed PagerDuty incident alerts. A native Events API v2 adapter and durable PostgreSQL outbox are implemented and tested locally, but remain disabled. Configure the routing key/region in Render, apply the additive outbox migration, fix alert-source/authorization and safety-rule defects, then verify the intended service and deployment before live activation. No live PagerDuty incident or on-call notification has been sent. The optional Render-native retry Cron service is not created and has separate billing; see PAGERDUTY_RUNBOOK.md. External uptime detection remains a separate requirement.
 
 ## Deployment
 

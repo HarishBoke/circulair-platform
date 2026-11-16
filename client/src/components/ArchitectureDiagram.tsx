@@ -38,7 +38,7 @@ const SYSTEM_NODES: DiagramNode[] = [
   { id: "trpc", label: "tRPC Gateway", description: "Type-safe RPC layer with 23 routers. Handles auth context, input validation, and procedure routing.", icon: Zap, color: "#8b5cf6", x: 50, y: 140, width: 180, height: 70 },
   { id: "rest", label: "REST API v1", description: "OpenAPI 3.1 compliant REST gateway at /api/v1. API key auth, rate limiting, versioned endpoints.", icon: Globe, color: "#06b6d4", x: 280, y: 140, width: 180, height: 70 },
   { id: "mcp", label: "MCP Server", description: "Model Context Protocol server at /api/mcp. 20 tools, 5 resources, 4 prompts for AI agent integration.", icon: Bot, color: "#10b981", x: 510, y: 140, width: 180, height: 70 },
-  { id: "server", label: "Express Server", description: "Express 4 application server. Mounts tRPC, REST, MCP, OAuth, and static file serving.", icon: Server, color: "#f59e0b", x: 280, y: 280, width: 180, height: 70 },
+  { id: "server", label: "Express Server", description: "Express 4 application server. Mounts tRPC, REST, MCP, email/password authentication, and static file serving.", icon: Server, color: "#f59e0b", x: 280, y: 280, width: 180, height: 70 },
   { id: "db", label: "MySQL / TiDB", description: "Relational database with 20+ tables. Drizzle ORM for type-safe queries. Stores all platform data.", icon: Database, color: "#ef4444", x: 130, y: 400, width: 180, height: 70 },
   { id: "s3", label: "S3 Storage", description: "Object storage for documents, reports, PDFs. CDN-backed URLs for fast delivery.", icon: Cloud, color: "#ec4899", x: 430, y: 400, width: 180, height: 70 },
   { id: "mqtt", label: "MQTT Broker", description: "Real-time telemetry ingestion via EMQX. Subscribed to CAI_/+ topics for battery data.", icon: Wifi, color: "#14b8a6", x: 510, y: 20, width: 180, height: 70 },
@@ -80,7 +80,7 @@ const DATA_FLOW_EDGES: DiagramEdge[] = [
 ];
 
 const SECURITY_NODES: DiagramNode[] = [
-  { id: "oauth", label: "JWT Auth", description: "Email/password authentication with JWT session cookies and bcrypt hashing.", icon: Users, color: "#3b82f6", x: 50, y: 20, width: 200, height: 65 },
+  { id: "auth", label: "JWT Auth", description: "Email/password authentication with JWT session cookies and bcrypt hashing.", icon: Users, color: "#3b82f6", x: 50, y: 20, width: 200, height: 65 },
   { id: "rbac", label: "Role-Based Access", description: "Admin/User roles with procedure-level enforcement. adminProcedure gates sensitive operations.", icon: Lock, color: "#8b5cf6", x: 300, y: 20, width: 200, height: 65 },
   { id: "apikey", label: "API Key Auth", description: "Scoped API keys with rate limiting. Keys have read/write/admin permission levels.", icon: Key, color: "#f59e0b", x: 550, y: 20, width: 200, height: 65 },
   { id: "audit", label: "Audit Logging", description: "ISO 27001 compliant audit trail. Every data access, modification, and auth event logged.", icon: FileText, color: "#10b981", x: 50, y: 140, width: 200, height: 65 },
@@ -91,7 +91,7 @@ const SECURITY_NODES: DiagramNode[] = [
 ];
 
 const SECURITY_EDGES: DiagramEdge[] = [
-  { from: "oauth", to: "rbac", label: "session" },
+  { from: "auth", to: "rbac", label: "session" },
   { from: "rbac", to: "audit", label: "log access" },
   { from: "apikey", to: "rate", label: "enforce" },
   { from: "audit", to: "compliance", label: "evidence" },

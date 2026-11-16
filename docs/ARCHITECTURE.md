@@ -1,7 +1,7 @@
 # Circul-AI-r Architecture Documentation
 
 **Version:** 1.0.0  
-**Last Updated:** April 2026  
+**Last Updated:** November 2026
 **Classification:** Internal
 
 ---
@@ -79,7 +79,7 @@ Circul-AI-r follows a **modular monolith** architecture that provides the organi
 │  │                                                                │   │
 │  │  ┌────────────┐  ┌────────────┐  ┌────────────┐              │   │
 │  │  │  Audit Log │  │ Structured │  │  Security  │              │   │
-│  │  │ (ISO27001) │  │  Logger    │  │  Events    │              │   │
+│  │  │ (Trace IDs) │  │  Logger    │  │  Events    │              │   │
 │  │  └────────────┘  └────────────┘  └────────────┘              │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────┬──────────────────────────────────────┘
@@ -88,10 +88,10 @@ Circul-AI-r follows a **modular monolith** architecture that provides the organi
 │                    INFRASTRUCTURE LAYER                               │
 │                                                                      │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
-│  │  MySQL   │  │    S3    │  │   MQTT   │  │ Socket.io│           │
-│  │ (TiDB)   │  │ Storage  │  │  Broker  │  │ Realtime │           │
+│  │PostgreSQL│  │    S3    │  │   MQTT   │  │ Socket.io│           │
+│  │ (Render) │  │ Storage  │  │  Broker  │  │ Realtime │           │
 │  │          │  │          │  │          │  │          │           │
-│  │ 16 Tables│  │ Files &  │  │ IoT      │  │ Live     │           │
+│  │  Schema  │  │ Files &  │  │ IoT      │  │ Live     │           │
 │  │ Drizzle  │  │ Documents│  │ Telemetry│  │ Updates  │           │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘           │
 └─────────────────────────────────────────────────────────────────────┘
@@ -119,13 +119,13 @@ Each module owns its data access layer and business logic. Modules communicate t
 
 ## Database Schema
 
-The platform uses 16 tables organized by module:
+The PostgreSQL schema is defined in `drizzle/schema.ts`; the following tables are a module overview, not an exhaustive inventory. Use the schema for exact SQL identifiers and current columns:
 
 ### Core Tables
 
 | Table | Purpose | Key Columns |
 |---|---|---|
-| `users` | Platform users | id, openId, name, email, role (admin/user) |
+| `users` | Platform users | id, openId (local identifier), name, email, passwordHash, role (admin/user) |
 | `batteries` | Battery registry | id, bpan, manufacturer, chemistry, capacityKwh, status |
 | `telemetry_data` | IoT telemetry | id, bpan, voltage, current, temperature, soc, cycleCount |
 | `soh_predictions` | AI predictions | id, bpan, predictedSoh, rulCycles, triageRecommendation |
@@ -167,10 +167,10 @@ The platform uses 16 tables organized by module:
 | Aspect | tRPC (/api/trpc) | REST (/api/v1) | MCP (/api/mcp) |
 |---|---|---|---|
 | **Use Case** | Frontend, internal services | External microservices | AI agents |
-| **Auth** | OAuth session cookie | API key (Bearer token) | None (public) |
+| **Auth** | Email/password JWT session cookie | Scoped API key (Bearer token) | API key, with tool scope checks |
 | **Type Safety** | End-to-end TypeScript | OpenAPI 3.1 spec | JSON Schema |
-| **Transport** | HTTP POST | HTTP GET/POST | JSON-RPC 2.0 |
-| **Rate Limiting** | Session-based | Tier-based (10-2000/min) | None |
+| **Transport** | HTTP GET queries / POST mutations | HTTP GET/POST | JSON-RPC 2.0 over HTTP |
+| **Rate Limiting** | Shared API/IP limits | Shared API/IP + key-tier limits | Shared API/IP middleware; review key-limit enforcement |
 | **Documentation** | TypeScript types | Swagger UI | tools/list |
 | **Serialization** | Superjson | JSON | JSON |
 
@@ -181,8 +181,11 @@ The platform uses 16 tables organized by module:
 ### Authentication Flow
 
 ```
-User → Login Page → Manus OAuth → Callback → JWT Session Cookie → Protected Procedures
+User → /login → POST /api/auth/login → bcrypt verification
+     → 30-day JWT session cookie → Database user lookup → Protected Procedures
 ```
+
+The session cookie is `app_session_id`, host-only and `HttpOnly`. Over HTTPS it is `Secure` with `SameSite=None`; local HTTP uses `SameSite=Lax`. Cross-origin API mutations are checked against trusted application origins. Logout clears the cookie but does not revoke a copied token. REST `/api/auth/me` returns 401 without a session; tRPC `auth.me` returns null.
 
 ### API Key Flow
 
@@ -200,38 +203,42 @@ Client → Authorization Header → API Gateway → Key Validation → Scope Che
 | **Input Validation** | Zod schemas on all tRPC procedures |
 | **Authentication** | JWT sessions (tRPC), API keys (REST) |
 | **Authorization** | Role-based (admin/user), scope-based (API keys) |
-| **Audit** | Comprehensive audit logging for all operations |
+| **Audit** | Audit and security event logging for instrumented operations; coverage must be reviewed |
 | **Monitoring** | Security event classification and alerting |
 
 ---
 
 ## Deployment Architecture
 
-The platform is deployed as a single Node.js process that serves both the API server and the React SPA. This simplifies deployment and reduces infrastructure complexity.
+The supported production target is a Render Node.js web service backed by Render PostgreSQL. A single process serves the Express API and React SPA. The root `render.yaml` builds with `pnpm install --frozen-lockfile && pnpm build`, starts `node dist/index.js`, and checks `/api/health`. Schema migrations are a separate reviewed operator step, not part of the web build.
 
 **Runtime Requirements:**
 
 | Component | Requirement |
 |---|---|
 | Node.js | 22.x LTS |
-| Database | MySQL 8.0+ or TiDB |
-| Storage | S3-compatible object storage |
+| Database | Render PostgreSQL (disposable PostgreSQL locally) |
+| Storage | AWS S3 with server-side credentials, required for file features |
 | MQTT Broker | MQTT 3.1.1+ (optional, for IoT) |
 
 **Environment Variables:**
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | MySQL/TiDB connection string |
+| `DATABASE_URL` | Explicit PostgreSQL URL for the intended environment |
 | `JWT_SECRET` | Session cookie signing secret |
-| `VITE_APP_ID` | OAuth application ID |
-| `OAUTH_SERVER_URL` | OAuth backend URL |
+| `APP_URL` | Trusted application origin for recovery links (HTTPS in production) |
+| `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL` | Direct OpenAI models and project access |
+| `ZEPTOMAIL_TOKEN`, `FROM_EMAIL`, `OWNER_EMAIL` | Direct ZeptoMail delivery and owner notifications |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET` | Direct AWS S3 file storage |
 | `MQTT_BROKER_URL` | MQTT broker connection (optional) |
 | `MQTT_USERNAME` | MQTT authentication (optional) |
 | `MQTT_PASSWORD` | MQTT authentication (optional) |
 | `MQTT_TOPIC_PREFIX` | MQTT topic prefix (optional) |
 
 ---
+
+Provider integrations require separate accounts, sender/domain verification, storage permissions, and model/API access. OpenAI and S3 operations can fail when unconfigured; mail is best-effort and does not automatically fail over to another provider. See [Deployment Guide](../DEPLOYMENT.md) for configuration and S3 private-file limitations.
 
 ## Scalability Considerations
 
@@ -247,11 +254,11 @@ The modular monolith can be decomposed into independent microservices if scaling
 
 ### Database Scaling
 
-TiDB provides horizontal scaling for the database layer. For MySQL deployments, read replicas can be added for query-heavy modules (telemetry, analytics).
+Size the Render PostgreSQL plan for telemetry volume and retention. Consider indexing, partitioning, query optimization and connection-pool limits before scaling. Read replicas or service extraction require additional architecture work; they are not configured automatically by the current code.
 
 ### IoT Scaling
 
-MQTT broker can be clustered for high-volume telemetry ingestion. The platform's MQTT subscriber processes messages asynchronously, preventing backpressure on the main server.
+A broker may support clustering, but multiple application instances need explicit coordination to avoid duplicate MQTT ingestion. Socket.io state and simulations are process-local; horizontal web scaling requires a shared adapter/coordination design and load testing.
 
 ---
 
@@ -260,7 +267,7 @@ MQTT broker can be clustered for high-volume telemetry ingestion. The platform's
 | Layer | Tool | Purpose |
 |---|---|---|
 | **Application** | Structured Logger | JSON-formatted logs with trace IDs |
-| **Security** | Audit Logger | ISO 27001 compliant audit trail |
+| **Security** | Audit Logger | Supporting audit evidence; not ISO 27001 certification |
 | **Performance** | Timer utilities | Request duration tracking |
 | **Real-time** | Socket.io | Live telemetry and activity feeds |
-| **Health** | /api/v1/health | System health check endpoint |
+| **Health** | /api/health | PostgreSQL readiness (200 connected, 503 degraded); no external-provider checks |

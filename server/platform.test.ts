@@ -10,7 +10,7 @@ function createAuthContext(role: "user" | "admin" = "user"): { ctx: TrpcContext 
     openId: "test-user-openid",
     email: "test@circulair.io",
     name: "Test User",
-    loginMethod: "manus",
+    loginMethod: "email",
     role,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -31,7 +31,7 @@ describe("auth.logout", () => {
     const clearedCookies: string[] = [];
     const ctx: TrpcContext = {
       user: {
-        id: 1, openId: "test", email: "test@test.com", name: "Test", loginMethod: "manus", role: "user",
+        id: 1, openId: "test", email: "test@test.com", name: "Test", loginMethod: "email", role: "user",
         createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
       },
       req: { protocol: "https", headers: {} } as TrpcContext["req"],

@@ -10,7 +10,7 @@ Frontend: React 19, Tailwind CSS 4, Vite
 Database: MySQL / TiDB
 AI/ML: CNN-LSTM for SOH prediction
 IoT: MQTT over TLS
-Auth: Manus OAuth
+Auth: Email/password with JWT sessions
 Hosting: Render (Autoscale)
 CDN: CloudFront
 

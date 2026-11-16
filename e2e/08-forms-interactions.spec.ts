@@ -86,13 +86,16 @@ test.describe("Demo Mode", () => {
 });
 
 test.describe("Getting Started Flow", () => {
-  test("getting started page has actionable content", async ({ page }) => {
+  test("getting started offers unauthenticated users a working sign-in path", async ({ page }) => {
     await page.goto("/getting-started");
-    await expect(page.locator("body")).toBeVisible();
-    const bodyText = await page.locator("body").textContent();
-    expect(bodyText).not.toContain("Internal Server Error");
-    // Should have some instructional content
-    expect(bodyText!.trim().length).toBeGreaterThan(100);
+    // This route intentionally requires authentication. Wait for auth resolution,
+    // not merely the visible body, which can still contain the loading screen.
+    await expect(page.getByRole("heading", { name: "Welcome Back", exact: true })).toBeVisible();
+    const signIn = page.getByRole("button", { name: "Sign In to Platform" });
+    await expect(signIn).toBeVisible();
+    await signIn.click();
+    await expect(page).toHaveURL(/\/login(?:\?|$)/);
+    await expect(page.locator("input[type='email']")).toBeVisible();
   });
 });
 

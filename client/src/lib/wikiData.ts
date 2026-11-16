@@ -612,9 +612,9 @@ SOC 2 Type II evaluates an organization's controls over an extended period (typi
 
 | Criteria | Title | Implementation |
 |---|---|---|
-| CC6.1 | Logical Access | OAuth, API keys, role-based procedures |
+| CC6.1 | Logical Access | JWT sessions, API keys, role-based procedures |
 | CC6.2 | Credential Management | API key lifecycle (create, rotate, revoke) |
-| CC6.3 | Registration | Manus OAuth with verified identity |
+| CC6.3 | Registration | Email/password accounts with bcrypt password hashing |
 | CC7.1 | System Monitoring | Structured logging, security events |
 | CC7.2 | Anomaly Detection | Thermal anomaly detection, rate limiting |
 | CC7.3 | Incident Response | Security event classification and alerting |
@@ -1025,7 +1025,7 @@ Circul-AI-r follows a **modular monolith** architecture that provides the organi
 | Database | MySQL (TiDB) with Drizzle ORM |
 | Storage | S3-compatible object storage |
 | Real-time | Socket.io, MQTT |
-| Auth | Manus OAuth with JWT sessions |
+| Auth | Email/password authentication with JWT sessions |
 
 ### Three API Protocols
 
@@ -1033,7 +1033,7 @@ The platform exposes three API protocols, all backed by the same business logic:
 
 | Protocol | Path | Use Case | Auth |
 |---|---|---|---|
-| tRPC | /api/trpc | Internal web app | OAuth session |
+| tRPC | /api/trpc | Internal web app | JWT session cookie |
 | REST | /api/v1 | External microservices | API key |
 | MCP | /api/mcp | AI agents | None (public) |
 
@@ -1105,9 +1105,9 @@ Circul-AI-r implements a defense-in-depth security model with multiple layers of
 
 ### Authentication Flows
 
-**Web Application (OAuth):**
+**Web Application (Email/Password):**
 \`\`\`
-User → Login → Manus OAuth → Callback → JWT Cookie → Protected Procedures
+User → Login → Email/Password Validation → JWT Cookie → Protected Procedures
 \`\`\`
 
 **REST API (API Key):**

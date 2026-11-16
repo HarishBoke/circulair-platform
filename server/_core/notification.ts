@@ -1,9 +1,7 @@
 /**
  * Owner Notifications — ZeptoMail REST API implementation (direct fetch, no SDK)
  *
- * Primary: ZeptoMail REST API to OWNER_EMAIL (ZEPTOMAIL_TOKEN required)
-
- *           — used automatically when deployed on Manus hosting without ZeptoMail token
+ * Sends email through the ZeptoMail REST API to OWNER_EMAIL (ZEPTOMAIL_TOKEN required).
  */
 
 import { TRPCError } from "@trpc/server";

@@ -1,9 +1,7 @@
 /**
  * LLM Integration - Independent OpenAI implementation
  *
- * Primary: OpenAI API (OPENAI_API_KEY) using gpt-4o
-
- *           — used automatically when deployed on Manus hosting without OpenAI key
+ * Uses the OpenAI API (OPENAI_API_KEY), with OPENAI_MODEL defaulting to gpt-4o.
  */
 
 import OpenAI from "openai";

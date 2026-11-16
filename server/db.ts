@@ -1,6 +1,8 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "drizzle-orm";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { pagerDutyConfig, shouldPageAlert, makePagerDutyEvent } from "./pagerDuty";
+import { pagerDutyOutbox } from "../drizzle/pagerDutySchema";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -132,8 +134,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   // Build the insert values
   const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date(), ...updateSet };
-  // Owner bootstrap: if OWNER_EMAIL is set and this user's email matches, promote to admin
-  // (ownerOpenId is no longer used — Manus-independent auth)
 
   // Ensure at least lastSignedIn is in the update set
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
@@ -396,7 +396,22 @@ export async function getEprStats() {
 export async function createAlert(data: InsertAlert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(alerts).values(data);
+  const config = pagerDutyConfig();
+  if (!config.enabled || !shouldPageAlert({ ...data, severity: data.severity ?? "info", metadata: data.metadata ?? null })) {
+    return (await db.insert(alerts).values(data).returning())[0];
+  }
+  const alert = await db.transaction(async tx => {
+    const [inserted] = await tx.insert(alerts).values(data).returning();
+    const event = makePagerDutyEvent(inserted, config);
+    await tx.insert(pagerDutyOutbox).values({ alertId: inserted.id, dedupKey: event.dedup_key,
+      routingFingerprint: config.routingFingerprint, event });
+    return inserted;
+  });
+  // Best-effort immediate delivery; the durable outbox and a Render Cron job recover interrupted attempts.
+  void import("./pagerDutyOutbox").then(m => m.processPagerDutyOutbox(1)).catch(() => {
+    console.error(JSON.stringify({ event: "pagerduty.immediate_drain_failed", code: "outbox_processing_error" }));
+  });
+  return alert;
 }
 
 export async function listAlerts(userId?: number, limit = 50) {

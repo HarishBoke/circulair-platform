@@ -16,7 +16,7 @@ All tRPC procedures are accessible via:
 - **POST** \`/api/trpc/{router}.{procedure}\` for mutations
 
 ### Authentication
-Protected endpoints require a valid session cookie obtained via Manus OAuth login.
+Protected endpoints require a valid JWT session cookie obtained via email/password login at \`POST /api/auth/login\`.
 Admin endpoints additionally require the user to have \`role: "admin"\` in the database.
 
 ### tRPC Batch Requests
@@ -98,8 +98,8 @@ All tRPC responses are wrapped in:
       sessionCookie: {
         type: "apiKey",
         in: "cookie",
-        name: "session",
-        description: "Session cookie obtained via Manus OAuth login at `/api/oauth/login`",
+        name: "app_session_id",
+        description: "HttpOnly JWT session cookie obtained via email/password login at `POST /api/auth/login`",
       },
     },
     schemas: {
@@ -300,33 +300,53 @@ All tRPC responses are wrapped in:
         },
       },
     },
-    "/api/oauth/login": {
-      get: {
+    "/api/auth/login": {
+      post: {
         tags: ["Auth"],
-        summary: "Initiate OAuth login",
-        description: "Redirects to the Manus OAuth login portal. Pass `returnPath` query param to redirect after login.",
-        operationId: "oauth.login",
-        parameters: [
-          { name: "returnPath", in: "query", schema: { type: "string" }, description: "Path to redirect to after login" },
-        ],
-        responses: {
-          "302": { description: "Redirect to OAuth portal" },
+        summary: "Sign in with email and password",
+        description: "Validates local account credentials and sets an HttpOnly JWT session cookie.",
+        operationId: "auth.login",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "password"],
+                properties: {
+                  email: { type: "string", format: "email", maxLength: 320 },
+                  password: { type: "string", format: "password" },
+                },
+              },
+            },
+          },
         },
-      },
-    },
-    "/api/oauth/callback": {
-      get: {
-        tags: ["Auth"],
-        summary: "OAuth callback",
-        description: "Handles the OAuth callback from Manus, sets session cookie, and redirects to the app.",
-        operationId: "oauth.callback",
-        parameters: [
-          { name: "code", in: "query", required: true, schema: { type: "string" } },
-          { name: "state", in: "query", required: true, schema: { type: "string" } },
-        ],
         responses: {
-          "302": { description: "Redirect to app after successful authentication" },
-          "400": { description: "Invalid OAuth state or code" },
+          "200": {
+            description: "Login successful; JWT session cookie set",
+            headers: {
+              "Set-Cookie": {
+                description: "HttpOnly app_session_id session cookie",
+                schema: { type: "string" },
+              },
+            },
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    user: { $ref: "#/components/schemas/User" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Missing or invalid email/password input" },
+          "401": { description: "Invalid email or password" },
+          "500": { description: "Login failed" },
+          "503": { description: "Database unavailable" },
         },
       },
     },

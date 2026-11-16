@@ -1425,7 +1425,11 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [ ] Verify Render PostgreSQL environment configuration before removing embedded credential fallback
 - [x] Execute existing browser suite and isolated real-data regressions; report failures and limitations
 - [ ] Complete functional acceptance across all lifecycle modules and real external integrations
-- [ ] Clarify and implement the intended pager-message functionality
+- [x] Clarify intended pager functionality: PagerDuty incident alerts
+- [x] Implement native PagerDuty Events v2 adapter, durable outbox, admin status, tests and operator runbook
+- [x] Remove remaining runtime plugin and obsolete provider/auth adapters from the independent application
+- [ ] Configure the PagerDuty routing key/region and apply the additive migration on Render
+- [ ] Approve/create the optional billable Render retry Cron job and verify controlled on-call delivery
 - [x] Save the tested development checkpoint
 - [ ] Verify actual Render deployment separately from the checkpoint/preview
 - [x] Publish a retest report with results, limitations, unresolved blockers, and credential-rotation actions

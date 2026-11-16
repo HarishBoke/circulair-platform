@@ -1,7 +1,7 @@
 /**
  * auth.ts — Custom JWT email/password authentication
  *
- * Replaces Manus OAuth with simple email/password auth.
+ * Standalone email/password authentication with signed session cookies.
  * - POST /api/auth/register — create account
  * - POST /api/auth/login    — sign in, get JWT cookie
  * - POST /api/auth/logout   — clear session cookie

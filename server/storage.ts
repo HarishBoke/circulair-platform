@@ -1,9 +1,7 @@
 /**
  * File Storage - Independent AWS S3 implementation
  *
- * Primary: AWS S3 SDK (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_S3_BUCKET + AWS_REGION)
-
- *           — used automatically when deployed on Manus hosting without AWS credentials
+ * Uses AWS S3 SDK (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_S3_BUCKET + AWS_REGION).
  *
  * The S3 bucket should be configured with public-read ACL or a CloudFront distribution
  * so returned URLs are directly accessible without presigning.

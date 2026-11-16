@@ -2,9 +2,9 @@
 
 > **The Operating System for Battery Circular Economy**
 >
-> End-to-end traceability from cell to pack, AI-driven health prediction, real-time IoT telemetry, and regulatory compliance across 7 jurisdictions — all in one unified platform.
+> Battery lifecycle traceability, health analytics, IoT telemetry, and tools for regulatory reporting. External integrations require operator configuration and validation.
 
-**Live domain:** [circulair.energy](https://circulair.energy) | **Staging:** [circulai-su7xgbwd.manus.space](https://circulai-su7xgbwd.manus.space)
+**Application domain:** [circulair.energy](https://circulair.energy). Production deployment targets Render with PostgreSQL; this document does not verify live availability.
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## Platform Overview
 
-Circul-AI-r is a multinational battery lifecycle management platform designed for manufacturers, fleet operators, recyclers, and regulators. It tracks every battery from cell assembly through deployment, real-time monitoring, secondary-life marketplace trading, and end-of-life recycling — generating the digital documentation required by the EU Battery Regulation (2023/1542), India BIS standards, and five additional jurisdictions.
+Circul-AI-r is a multinational battery lifecycle management platform designed for manufacturers, fleet operators, recyclers, and regulators. It tracks every battery from cell assembly through deployment, real-time monitoring, secondary-life marketplace trading, and end-of-life recycling — providing records and report templates to assist regulatory work. Operators must verify required fields, methodologies, and regulator acceptance for their jurisdiction.
 
 ### Core Modules
 
@@ -51,44 +51,23 @@ Circul-AI-r is a multinational battery lifecycle management platform designed fo
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        circulair.energy                         │
-│                   (Manus Hosted — CDN + TLS)                    │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ HTTPS
-┌──────────────────────────▼──────────────────────────────────────┐
-│                    Express 4 Server (Node.js)                   │
-│                                                                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
-│  │  tRPC v11   │  │  REST API v1 │  │   MCP Server           │ │
-│  │  /api/trpc  │  │  /api/v1/*   │  │   /api/mcp/*           │ │
-│  │  (typed RPC)│  │  (OpenAPI)   │  │   (AI agent bridge)    │ │
-│  └─────────────┘  └──────────────┘  └────────────────────────┘ │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │                   Auth Layer                            │   │
-│  │  Manus OAuth  ·  JWT cookies  ·  bcrypt passwords       │   │
-│  │  Rate limiting  ·  Helmet headers  ·  CORS              │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              MQTT Subscriber (real-time IoT)            │   │
-│  │  emqxsl broker  ·  TLS  ·  topic: CAI_/{bpan}          │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-          ┌────────────────┼────────────────┐
-          ▼                ▼                ▼
-   ┌─────────────┐  ┌──────────────┐  ┌──────────┐
-   │  TiDB/MySQL │  │  S3 Storage  │  │  Resend  │
-   │  (database) │  │  (files)     │  │  (email) │
-   └─────────────┘  └──────────────┘  └──────────┘
+```text
+Browser: React SPA + tRPC client + Socket.io
+    │ HTTPS (Render TLS termination)
+    ▼
+Render Node.js service: Express API + dist/public frontend
+    ├── /api/auth/* — email/password login + JWT session cookies
+    ├── /api/trpc — typed procedures with public/protected/admin access
+    ├── /api/v1 — REST gateway with scoped API keys
+    ├── /api/mcp — API-key-authenticated AI agent interface
+    ├── Render PostgreSQL — Drizzle ORM
+    └── Direct integrations: OpenAI, ZeptoMail, AWS S3
+        Optional: operator-configured MQTT, Google Maps, Stripe
 ```
 
-**Frontend** is a React 19 SPA served by Vite in development and as static files in production. All data access goes through tRPC hooks — no raw `fetch` calls in application code.
+The frontend is served by Vite in development and Express in production. Most application data access uses tRPC hooks; login and password recovery use `/api/auth/*` HTTP routes.
 
-**Real-time telemetry** flows from IoT devices → MQTT broker → `mqttSubscriber.ts` → database + Socket.io broadcast → React dashboard.
+Real-time telemetry flows from configured devices and an MQTT broker through `mqttSubscriber.ts` into PostgreSQL and Socket.io broadcasts. Simulated telemetry is not evidence of a working device integration.
 
 ---
 
@@ -102,16 +81,16 @@ Circul-AI-r is a multinational battery lifecycle management platform designed fo
 | RPC layer | tRPC | 11 |
 | Backend framework | Express | 4 |
 | Database ORM | Drizzle ORM | latest |
-| Database | TiDB (MySQL-compatible) | cloud |
+| Database | Render PostgreSQL | cloud |
 | Real-time | Socket.io | 4 |
-| IoT messaging | MQTT (emqxsl) | mqttjs |
-| Authentication | Manus OAuth + JWT + bcrypt | — |
-| Email | Resend | 6.10 |
-| File storage | S3 (Manus built-in) | — |
-| Build tool | Vite | 6 |
+| IoT messaging | MQTT (operator-configured broker) | mqttjs |
+| Authentication | Email/password + JWT + bcrypt | — |
+| Email | Direct ZeptoMail REST API | — |
+| File storage | AWS S3 (direct SDK) | — |
+| Build tool | Vite | 7 |
 | Runtime | Node.js | 22 |
 | Language | TypeScript | 5 |
-| Testing | Vitest | 3 |
+| Testing | Vitest / Playwright | see package.json |
 | Serialisation | SuperJSON | 2 |
 
 ---
@@ -130,11 +109,11 @@ cd circulair-platform
 # 2. Install dependencies
 pnpm install
 
-# 3. Copy environment template and fill in values
-cp .env.example .env
-# Edit .env with your credentials
+# 3. Configure local environment securely
+# Set DATABASE_URL to a disposable local PostgreSQL database.
+# Set JWT_SECRET and APP_URL=http://localhost:3000 (see variables below).
 
-# 4. Push the database schema
+# 4. Review migrations, then apply to the disposable local PostgreSQL database
 pnpm db:push
 
 # 5. Start the development server
@@ -150,7 +129,7 @@ The server starts on `http://localhost:3000`. Vite HMR is active for the fronten
 | `pnpm dev` | Start development server with hot reload |
 | `pnpm build` | Build frontend (Vite) + backend (esbuild) for production |
 | `pnpm start` | Run the production build (`NODE_ENV=production`) |
-| `pnpm test` | Run all 385 Vitest tests |
+| `pnpm test` | Run the Vitest suite |
 | `pnpm check` | TypeScript type-check without emitting |
 | `pnpm format` | Prettier format all files |
 | `pnpm db:push` | Generate and apply Drizzle migrations |
@@ -159,52 +138,47 @@ The server starts on `http://localhost:3000`. Vite HMR is active for the fronten
 
 ## Environment Variables
 
-All secrets are injected at runtime by the Manus platform. For local development, create a `.env` file at the project root.
+Configure secrets in Render's environment settings for production and in a private, untracked local environment for development. Never put service secrets in `VITE_*` variables: these are compiled into the browser bundle. See `render.yaml` for the deployment configuration.
 
-### Required — Platform Infrastructure
+### Required — Runtime and Authentication
 
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | MySQL/TiDB connection string |
-| `JWT_SECRET` | Session cookie signing secret (min 32 chars) |
-| `VITE_APP_ID` | Manus OAuth application ID |
-| `OAUTH_SERVER_URL` | Manus OAuth backend base URL |
-| `VITE_OAUTH_PORTAL_URL` | Manus login portal URL (frontend) |
-| `OWNER_OPEN_ID` | Platform owner's Manus Open ID |
-| `OWNER_NAME` | Platform owner's display name |
-| `BUILT_IN_FORGE_API_URL` | Manus built-in API base URL (server-side) |
-| `BUILT_IN_FORGE_API_KEY` | Manus built-in API bearer token (server-side) |
-| `VITE_FRONTEND_FORGE_API_URL` | Manus built-in API URL (frontend) |
-| `VITE_FRONTEND_FORGE_API_KEY` | Manus built-in API bearer token (frontend) |
+| `DATABASE_URL` | Explicit PostgreSQL connection URL for the intended environment; obtain securely from Render PostgreSQL |
+| `JWT_SECRET` | Strong random session signing secret, at least 32 characters in production |
+| `APP_URL` | Trusted application origin used for password recovery links; HTTPS in production |
+| `NODE_ENV` | `production` on Render; `development` for local Vite |
+| `PORT` | Assigned by Render; defaults to 3000 locally |
+| `ALLOWED_APP_ORIGINS` | Optional comma-separated explicit trusted origins; avoid broad allowlists |
+| `ADMIN_BOOTSTRAP_SECRET` | Optional privileged initial admin bootstrap; remove/rotate after use |
 
-### Required — Transactional Email
+### Feature-Specific — Direct External Integrations
 
-| Variable | Description | How to obtain |
+| Feature | Variables | Operator responsibilities |
 |---|---|---|
-| `RESEND_API_KEY` | Resend API key (starts with `re_`) | [resend.com/api-keys](https://resend.com/api-keys) |
-| `RESEND_FROM_EMAIL` | Verified sender address | Verify domain in Resend dashboard |
+| AI/chat, images, transcription | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL` | Configure OpenAI project access, model availability, billing and limits; defaults are `gpt-4o` and `dall-e-3` |
+| Password reset and notifications | `ZEPTOMAIL_TOKEN`, `FROM_EMAIL`, `OWNER_EMAIL`, `OWNER_NAME` | Use the full provider authorization value; verify sender domain and the India-region account used by the current email helper |
+| File uploads/downloads | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET` | Grant least-privilege S3 access and validate private-file delivery; uploads return a bucket URL and reads can use signed URLs |
+| Maps | `GOOGLE_MAPS_API_KEY`, `VITE_GOOGLE_MAPS_API_KEY` | Enable the required APIs and restrict keys by API and permitted application origins |
+| Payments | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` | Configure Stripe account and signed webhook; test with non-production payments |
+| IoT telemetry | `MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`, `MQTT_TOPIC_PREFIX` | Configure an authorized TLS broker, device credentials and topic namespace |
 
-### Required — IoT / MQTT
-
-| Variable | Description |
-|---|---|
-| `MQTT_BROKER_URL` | MQTT broker URL (e.g. `mqtts://broker.example.com:8883`) |
-| `MQTT_USERNAME` | MQTT broker username |
-| `MQTT_PASSWORD` | MQTT broker password |
-| `MQTT_TOPIC_PREFIX` | Topic namespace prefix (e.g. `CAI_`) |
+AI and storage operations fail when required credentials are absent. Email delivery is best-effort; an accepted password-reset request is not proof of email delivery. The current email helpers use ZeptoMail directly; legacy `RESEND_API_KEY`/`RESEND_FROM_EMAIL` settings do not provide automatic mail failover (`RESEND_FROM_EMAIL` is a sender-address compatibility fallback only).
 
 ### Optional — Analytics
 
 | Variable | Description |
 |---|---|
-| `VITE_ANALYTICS_ENDPOINT` | Umami/Plausible analytics endpoint |
+| `VITE_ANALYTICS_ENDPOINT` | Configured analytics endpoint |
 | `VITE_ANALYTICS_WEBSITE_ID` | Analytics website ID |
+
+Validate consent, retention, and provider data-processing requirements before enabling analytics.
 
 ---
 
 ## Database Schema
 
-The platform uses 35 Drizzle ORM tables across the following domains:
+The platform uses PostgreSQL tables defined in `drizzle/schema.ts`. The following is a domain overview, not an exhaustive list; consult the schema for exact table and column names:
 
 | Domain | Tables |
 |---|---|
@@ -226,7 +200,7 @@ pnpm db:push
 # This runs: drizzle-kit generate && drizzle-kit migrate
 ```
 
-> **Warning:** The database is not automatically backed up. Always export data before running destructive migrations in production.
+> **Warning:** Confirm Render PostgreSQL backup retention for the selected plan and test restoration. Review generated migrations and back up data before production changes; never run migration or seed commands against an implicit database target.
 
 ---
 
@@ -234,13 +208,13 @@ pnpm db:push
 
 ### Authentication Flows
 
-The platform supports three authentication mechanisms:
+**Email + password** — `/login` calls `POST /api/auth/login`. Registration at `POST /api/auth/register` hashes passwords with bcrypt. Successful login issues a signed JWT in the `app_session_id` cookie and updates `lastSignedIn`; there is no external identity-provider redirect.
 
-**1. Manus OAuth (primary)** — Users click "Sign in with Manus" on the login page. The OAuth flow completes at `/api/oauth/callback` and sets a signed JWT session cookie.
+**Session reads and logout** — `GET /api/auth/me` returns 401 without a valid session. Public tRPC `auth.me` returns 200 with `result.data.json: null` when unauthenticated. `POST /api/auth/logout` and tRPC `auth.logout` clear the session cookie; they do not revoke an already copied JWT.
 
-**2. Email + Password** — Users register with an email and bcrypt-hashed password. Sessions are managed via the same JWT cookie mechanism.
+**Password reset** — A 15-minute single-use token is emailed through ZeptoMail. Links use the configured `APP_URL`, not untrusted request headers. Reset tokens and reset URLs are not returned in public responses.
 
-**3. Password Reset** — A time-limited (15-minute) single-use token is generated and emailed via Resend. The reset link points to `/reset-password?token=<hex>`.
+---
 
 ### Security Controls
 
@@ -249,12 +223,12 @@ The platform supports three authentication mechanisms:
 | **Security headers** | Helmet.js (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) |
 | **Rate limiting** | 120 req/min on `/api/*`; 20 req/15min on `/api/auth/*` |
 | **Password hashing** | bcrypt with 12 rounds |
-| **Session tokens** | JWT signed with `JWT_SECRET`, 1-year expiry, `HttpOnly` + `SameSite=Lax` cookies |
-| **CSRF protection** | SameSite cookie policy + origin validation in OAuth state |
+| **Session tokens** | HS256 JWT signed with `JWT_SECRET`, 30-day expiry; `HttpOnly`, host-only cookie, `Secure` + `SameSite=None` over HTTPS, `SameSite=Lax` locally over HTTP |
+| **Cross-origin mutations** | API middleware checks `Origin` / `Sec-Fetch-Site` against configured trusted origins; operators must review proxy/origin settings |
 | **API key auth** | Bearer token auth on REST API v1, stored as SHA-256 hashes |
-| **Audit logging** | ISO 27001 A.12.4 — all data access and mutations logged with trace IDs |
+| **Audit logging** | Selected operations and security events logged with trace IDs; coverage and retention require operator review |
 | **Role-based access** | `admin` / `user` roles; `adminProcedure` guards all admin tRPC procedures |
-| **Email enumeration** | Forgot-password endpoint always returns 200 regardless of email existence |
+| **Email enumeration** | Well-formed forgot-password requests receive a generic success message for known/unknown accounts; validation and infrastructure errors may return non-200 |
 
 ### Role Management
 
@@ -274,7 +248,7 @@ All tRPC procedures are called via the React client using `trpc.*.useQuery()` or
 
 | Namespace | Procedures | Auth |
 |---|---|---|
-| `auth` | `me`, `logout`, `register`, `login` | mixed |
+| `auth` | `me`, `logout` (login/register use `/api/auth/*`) | public/session-aware |
 | `bpan` | `list`, `get`, `register`, `update`, `validate` | protected |
 | `telemetry` | `latest`, `history`, `ingest`, `stats` | protected |
 | `marketplace` | `list`, `get`, `createListing`, `makeOffer`, `getStats` | mixed |
@@ -312,7 +286,7 @@ An [MCP-compatible](https://modelcontextprotocol.io/) endpoint allows AI agents 
 
 ## Testing
 
-The platform has 385 automated tests across 26 test files, covering all critical server-side logic.
+The repository includes Vitest unit/integration tests and Playwright E2E tests. Counts and results change with the codebase; test presence does not establish production readiness or complete coverage.
 
 ```bash
 # Run all tests
@@ -330,7 +304,7 @@ pnpm test --coverage
 | `auth.test.ts` | Login, register, JWT session |
 | `auth.logout.test.ts` | Logout flow |
 | `passwordReset.test.ts` | Forgot/reset password (14 tests) |
-| `email.test.ts` | Resend email helper (7 tests) |
+| `email.test.ts` | Transactional email helper |
 | `batterySimulator.test.ts` | SOH/RUL simulation engine |
 | `telemetryIngest.test.ts` | MQTT telemetry ingestion |
 | `telemetrySocket.test.ts` | Socket.io broadcast |
@@ -358,33 +332,20 @@ pnpm test --coverage
 
 ## Deployment
 
-The platform is hosted on **Manus** with built-in CI/CD. Deployment is triggered by clicking the **Publish** button in the Manus Management UI after saving a checkpoint.
-
-### Production Build
+Production deployment targets a **Render Node.js web service with Render PostgreSQL**. The root `render.yaml` specifies:
 
 ```bash
-pnpm build
-# Output: dist/public/ (frontend) + dist/index.js (backend)
-
-pnpm start
-# Runs: NODE_ENV=production node dist/index.js
+# Build command
+pnpm install --frozen-lockfile && pnpm build
+# Start command (NODE_ENV=production configured in Render)
+node dist/index.js
 ```
 
-### Environment Configuration for Production
+The build outputs `dist/public/` and `dist/index.js`. Render uses `/api/health` for database readiness: it returns 200 when PostgreSQL is reachable and 503 when degraded. It does not verify OpenAI, mail, S3, payment, or IoT functionality.
 
-Ensure all environment variables listed in the [Environment Variables](#environment-variables) section are configured in the Manus Secrets panel before publishing.
+Connect the repository in Render, securely set required environment values (including all applicable `sync: false` entries), and configure the explicit PostgreSQL URL. Review and apply migrations separately; builds do not migrate the database automatically. Use the DNS values shown for the web service's custom domain, rather than copying provider-host examples.
 
-### DNS Configuration
-
-The platform is configured for the following domains:
-
-| Domain | Purpose |
-|---|---|
-| `circulair.energy` | Primary production domain |
-| `www.circulair.energy` | www redirect |
-| `circulai-su7xgbwd.manus.space` | Auto-generated staging domain |
-
-For full deployment instructions including DNS setup, SSL, and rollback procedures, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for setup, verification, rollback, and the operational runbook.
 
 ---
 
@@ -392,22 +353,17 @@ For full deployment instructions including DNS setup, SSL, and rollback procedur
 
 The platform is designed to support the following regulatory frameworks:
 
-| Jurisdiction | Regulation | Status |
+| Jurisdiction | Regulation | Intended reporting scope |
 |---|---|---|
-| 🇪🇺 European Union | EU Battery Regulation 2023/1542 | Supported |
-| 🇮🇳 India | BIS Battery Standards | Supported |
-| 🇨🇳 China | GB/T Battery Standards | Supported |
-| 🇺🇸 United States | EPA / state-level EPR | Supported |
-| 🇬🇧 United Kingdom | UK Battery Regulations | Supported |
-| 🇩🇪 Germany | ElektroG / BattG | Supported |
-| 🌏 Global | ISO 14040 LCA, IEC 62619 | Supported |
+| 🇪🇺 European Union | EU Battery Regulation 2023/1542 | Operator validation required |
+| 🇮🇳 India | BIS Battery Standards | Operator validation required |
+| 🇨🇳 China | GB/T Battery Standards | Operator validation required |
+| 🇺🇸 United States | EPA / state-level EPR | Operator validation required |
+| 🇬🇧 United Kingdom | UK Battery Regulations | Operator validation required |
+| 🇩🇪 Germany | ElektroG / BattG | Operator validation required |
+| 🌏 Global | ISO 14040 LCA, IEC 62619 | Operator validation required |
 
-The compliance framework (`server/compliance.ts`) implements:
-
-- **ISO 27001 A.12.4** — Comprehensive audit logging with data classification labels
-- **SOC 2 CC6.1** — Data access logging with correlation trace IDs
-- **ISO 27001 A.9** — Role-based access control matrix
-- **GDPR** — Cookie consent, privacy policy, data minimisation
+The compliance framework (`server/compliance.ts`) provides audit records, security events, classification metadata, and API-key management. These are supporting controls, not proof of ISO 27001 certification, a SOC 2 Type II report, GDPR compliance, or regulator acceptance. Operators must assess control coverage, legal obligations, retention, and evidence independently. See [Compliance Guide](./docs/COMPLIANCE_GUIDE.md).
 
 ---
 

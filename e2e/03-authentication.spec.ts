@@ -1,118 +1,94 @@
 /**
- * 03-authentication.spec.ts
- * Tests the authentication flow — login redirect, session handling,
- * protected route access, and logout.
+ * Email/password login UI, anonymous sessions and protected-route behavior.
+ * No successful login, registration, password reset or application-data writes.
  */
 import { test, expect } from "@playwright/test";
+import { COOKIE_NAME } from "../shared/const";
+
+test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("Authentication Flow", () => {
-  test("unauthenticated user sees login prompt on protected pages", async ({ page }) => {
-    await page.goto("/batteries");
-    // Should either redirect to login or show a login button/prompt
-    const bodyText = await page.locator("body").textContent();
-    const hasLoginPrompt =
-      bodyText!.toLowerCase().includes("sign in") ||
-      bodyText!.toLowerCase().includes("log in") ||
-      bodyText!.toLowerCase().includes("login") ||
-      bodyText!.toLowerCase().includes("connect") ||
-      page.url().includes("login") ||
-      page.url().includes("oauth");
-    expect(hasLoginPrompt).toBe(true);
+  for (const route of ["/batteries", "/dashboard", "/admin/users"]) {
+    test(`unauthenticated user sees login prompt on ${route}`, async ({ page }) => {
+      await page.goto(route);
+      await expect(page.locator("body")).toContainText(/sign in|log in|login/i);
+    });
+  }
+
+  test("login page exposes a same-origin email/password form", async ({ page, baseURL }) => {
+    await page.goto("/login");
+    expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
+    await expect(page.getByLabel("Email Address", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "password");
+    await expect(page.getByRole("button", { name: "Sign In", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Forgot password?", exact: true })).toHaveAttribute("href", "/forgot-password");
+    // Do not submit credentials against production; successful login writes lastSignedIn.
   });
 
-  test("unauthenticated user sees login prompt on dashboard", async ({ page }) => {
-    await page.goto("/dashboard");
-    const bodyText = await page.locator("body").textContent();
-    const hasLoginPrompt =
-      bodyText!.toLowerCase().includes("sign in") ||
-      bodyText!.toLowerCase().includes("log in") ||
-      bodyText!.toLowerCase().includes("login") ||
-      bodyText!.toLowerCase().includes("connect") ||
-      page.url().includes("login") ||
-      page.url().includes("oauth");
-    expect(hasLoginPrompt).toBe(true);
+  test("anonymous session reads do not issue a login cookie", async ({ request }) => {
+    const res = await request.get("/api/trpc/auth.me");
+    expect(res.status()).toBe(200);
+    expect((await res.json()).result.data.json).toBeNull();
+    expect(res.headers()["set-cookie"] ?? "").not.toContain(COOKIE_NAME);
+    const state = await request.storageState();
+    expect(state.cookies.some(cookie => cookie.name === COOKIE_NAME)).toBe(false);
   });
 
-  test("unauthenticated user sees login prompt on admin pages", async ({ page }) => {
-    await page.goto("/admin/users");
-    const bodyText = await page.locator("body").textContent();
-    const hasLoginPrompt =
-      bodyText!.toLowerCase().includes("sign in") ||
-      bodyText!.toLowerCase().includes("log in") ||
-      bodyText!.toLowerCase().includes("login") ||
-      bodyText!.toLowerCase().includes("connect") ||
-      page.url().includes("login") ||
-      page.url().includes("oauth");
-    expect(hasLoginPrompt).toBe(true);
+  test("malformed JWT remains unauthenticated", async ({ request }) => {
+    // Deliberately invalid text, not a signed token or a real account credential.
+    const headers = { Cookie: `${COOKIE_NAME}=not-a-valid-session` };
+    const rest = await request.get("/api/auth/me", { headers });
+    expect(rest.status()).toBe(401);
+    expect(await rest.json()).toEqual({ error: "Not authenticated" });
+    const trpc = await request.get("/api/trpc/auth.me", { headers });
+    expect(trpc.status()).toBe(200);
+    expect((await trpc.json()).result.data.json).toBeNull();
   });
 
-  test("login button/link is clickable and initiates OAuth flow", async ({ page }) => {
-    await page.goto("/");
-    // Find a login button
-    const loginBtn = page.locator(
-      "a[href*='login'], a[href*='oauth'], button:has-text('Sign In'), button:has-text('Login'), button:has-text('Connect'), a:has-text('Sign In'), a:has-text('Login')"
-    ).first();
-    if (await loginBtn.isVisible()) {
-      await loginBtn.click();
-      // Should navigate somewhere (OAuth provider or login page)
-      await page.waitForTimeout(1000);
-      const url = page.url();
-      // Should have navigated away from root or to an OAuth URL
-      expect(url).toBeTruthy();
-    }
-  });
+  test("logout clears a synthetic invalid cookie on localhost only", async ({ request, baseURL }) => {
+    const url = new URL(baseURL!);
+    const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+      && !url.username && !url.password;
+    test.skip(!isLocal, "Cookie-mutating logout is restricted to localhost; no production mutation.");
 
-  test("session cookie is set after visiting API", async ({ page, context }) => {
-    await page.goto("/api/trpc/auth.me");
-    const cookies = await context.cookies();
-    // Cookies may or may not be set for unauthenticated users
-    expect(Array.isArray(cookies)).toBe(true);
+    const res = await request.post("/api/auth/logout", {
+      headers: { Cookie: `${COOKIE_NAME}=not-a-valid-session`, Origin: url.origin },
+      data: {},
+      maxRedirects: 0,
+    });
+    expect(res.status()).toBe(200);
+    expect(await res.json()).toEqual({ success: true });
+    const cleared = res.headers()["set-cookie"] ?? "";
+    expect(cleared).toContain(`${COOKIE_NAME}=`);
+    expect(cleared).toMatch(/expires=Thu, 01 Jan 1970|Max-Age=0/i);
+    const me = await request.get("/api/auth/me");
+    expect(me.status()).toBe(401);
   });
 });
 
 test.describe("Protected Route Behavior", () => {
   const protectedRoutes = [
-    "/batteries",
-    "/telemetry",
-    "/ai-soh",
-    "/marketplace",
-    "/logistics",
-    "/epr-compliance",
-    "/analytics",
-    "/alerts",
-    "/documents",
-    "/device-provisioning",
-    "/compliance",
-    "/warranty",
-    "/assistant",
+    "/batteries", "/telemetry", "/ai-soh", "/marketplace", "/logistics",
+    "/epr-compliance", "/analytics", "/alerts", "/documents",
+    "/device-provisioning", "/compliance", "/warranty", "/assistant",
   ];
 
   for (const route of protectedRoutes) {
-    test(`${route} does not crash for unauthenticated user`, async ({ page }) => {
+    test(`${route} does not crash for an unauthenticated user`, async ({ page }) => {
       await page.goto(route);
       await expect(page.locator("body")).toBeVisible();
-      const bodyText = await page.locator("body").textContent();
-      expect(bodyText).not.toContain("Internal Server Error");
-      expect(bodyText).not.toContain("Cannot GET");
-      // Should not show a blank white page (must have some content)
-      expect(bodyText!.trim().length).toBeGreaterThan(10);
+      await expect(page.locator("body")).not.toHaveText(/^\s*$/);
+      await expect(page.locator("body")).not.toContainText(/Internal Server Error|Cannot GET/);
     });
   }
 });
 
 test.describe("Admin Route Protection", () => {
-  test("/admin/users shows auth gate for unauthenticated user", async ({ page }) => {
-    await page.goto("/admin/users");
-    await expect(page.locator("body")).toBeVisible();
-    const bodyText = await page.locator("body").textContent();
-    // Should not show admin content to unauthenticated users
-    expect(bodyText).not.toContain("Internal Server Error");
-  });
-
-  test("/admin/system shows auth gate for unauthenticated user", async ({ page }) => {
-    await page.goto("/admin/system");
-    await expect(page.locator("body")).toBeVisible();
-    const bodyText = await page.locator("body").textContent();
-    expect(bodyText).not.toContain("Internal Server Error");
-  });
+  for (const route of ["/admin/users", "/admin/system"]) {
+    test(`${route} shows an auth gate for an unauthenticated user`, async ({ page }) => {
+      await page.goto(route);
+      await expect(page.locator("body")).toContainText(/sign in|log in|login/i);
+      await expect(page.locator("body")).not.toContainText("Internal Server Error");
+    });
+  }
 });

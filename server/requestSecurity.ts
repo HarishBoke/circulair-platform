@@ -10,10 +10,10 @@ function httpOrigin(value: string | undefined): string | null {
 }
 
 /** Password-recovery links never derive their destination from user-controlled headers. */
-export function getApplicationOrigin(): string {
-  const configured = process.env.APP_URL || 'https://circulair.energy';
+export function getApplicationOrigin(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env.APP_URL || 'https://circulair.energy';
   const origin = httpOrigin(configured);
-  if (!origin || (process.env.NODE_ENV === 'production' && !origin.startsWith('https://'))) {
+  if (!origin || (env.NODE_ENV === 'production' && !origin.startsWith('https://'))) {
     throw new Error('APP_URL must be a valid application URL (HTTPS in production)');
   }
   return origin;

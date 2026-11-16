@@ -1127,3 +1127,6 @@ export const contactInquiries = pgTable("contact_inquiries", {
 });
 export type ContactInquiry = typeof contactInquiries.$inferSelect;
 export type InsertContactInquiry = typeof contactInquiries.$inferInsert;
+
+// Native incident-delivery persistence; no third-party runtime SDK is required.
+export { pagerDutyOutbox } from './pagerDutySchema';

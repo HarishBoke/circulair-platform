@@ -14,8 +14,6 @@ vi.mock("./_core/env", () => ({
     fromEmail: "noreply@circulair.energy",
     ownerEmail: "owner@circulair.energy",
     ownerName: "Platform Owner",
-    forgeApiUrl: "",
-    forgeApiKey: "",
   },
 }));
 

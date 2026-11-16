@@ -2,7 +2,7 @@
 # https://render.com/docs/blueprint-spec
 #
 # Auto-deploys from the `main` branch of the connected GitHub repo.
-# Database: External MySQL/TiDB (not Render PostgreSQL)
+# Database: Render PostgreSQL; configure an explicit PostgreSQL environment URL.
 # All `sync: false` variables must be configured in the Render dashboard.
 
 services:
@@ -20,8 +20,8 @@ services:
       - key: NODE_ENV
         value: production
 
-      # ── Database (External MySQL/TiDB) ────────────────────────────────────────
-      # Format: mysql://user:pass@host:4000/dbname?ssl={"rejectUnauthorized":true}
+      # ── Database (Render PostgreSQL) ─────────────────────────────────────────
+      # Use the existing Render PostgreSQL connection URL; never embed credentials in source.
       - key: DATABASE_URL
         sync: false
 
@@ -94,3 +94,15 @@ services:
       # ── App Identity ─────────────────────────────────────────────────────────
       - key: VITE_APP_TITLE
         value: Circul-AI-r Platform
+      - key: APP_URL
+        value: https://circulair.energy
+
+      # ── PagerDuty (off until migration/key/service acceptance are complete) ───
+      - key: PAGERDUTY_ENABLED
+        value: "false"
+      - key: PAGERDUTY_ROUTING_KEY
+        sync: false
+      - key: PAGERDUTY_REGION
+        value: us
+      - key: PAGERDUTY_ENVIRONMENT
+        value: production

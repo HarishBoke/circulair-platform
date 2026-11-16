@@ -6,6 +6,7 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
+import { getPagerDutyStatus } from "./pagerDutyOutbox";
 import {
   createBattery, getBatteryByBpan, getBatteryById, listBatteries, updateBatteryStatus, getBatteryStats,
   insertTelemetry, getLatestTelemetry, getTelemetryHistory, getThermalAnomalies,
@@ -160,6 +161,7 @@ function calculateSpotPrice(soh: number, capacityKwh: number, chemistry: string)
 // ─── APP ROUTER ───────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
+  pagerDuty: router({ status: adminProcedure.query(() => getPagerDutyStatus()) }),
   auth: router({
     me: publicProcedure.query(({ ctx }) => {
       if (!ctx.user) return null;

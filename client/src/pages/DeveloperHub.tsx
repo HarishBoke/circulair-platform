@@ -399,8 +399,8 @@ export default function DeveloperHub() {
                 title: "Session Cookie (tRPC)",
                 color: "#8b5cf6",
                 icon: Shield,
-                desc: "The tRPC API uses HttpOnly session cookies set by the OAuth login flow. Use this for server-side integrations that maintain a logged-in session.",
-                code: `Cookie: session=<jwt_token>`,
+                desc: "The tRPC API uses HttpOnly JWT session cookies set by email/password login at /api/auth/login. Use this for server-side integrations that maintain a logged-in session.",
+                code: `Cookie: app_session_id=<jwt_token>`,
                 badge: "Server-side",
               },
               {

@@ -20,7 +20,7 @@ This document covers all available API endpoints: the tRPC procedure layer (used
 
 ### Session Authentication (tRPC / Browser)
 
-The browser frontend authenticates via a signed JWT cookie set at login. All `protectedProcedure` calls require this cookie to be present. The cookie is `HttpOnly`, `SameSite=Lax`, and is automatically included in all same-origin requests.
+The browser frontend authenticates with email and password via a signed 30-day HS256 JWT in the `app_session_id` cookie. Protected procedures require a valid token and matching database user. The cookie is host-only, `HttpOnly`, and uses `Secure` + `SameSite=None` over HTTPS (`SameSite=Lax` over local HTTP). Same-origin requests include it automatically. API mutation middleware rejects untrusted cross-origin requests; configure `APP_URL` and any explicit `ALLOWED_APP_ORIGINS` carefully.
 
 To obtain a session:
 
@@ -28,10 +28,19 @@ To obtain a session:
 POST /api/auth/login
 Content-Type: application/json
 
-{ "email": "user@example.com", "password": "secret" }
+{ "email": "user@example.com", "password": "<password>" }
 ```
 
-Or redirect the user to the Manus OAuth portal via `getLoginUrl()` from `client/src/const.ts`.
+Use the application `/login` form; there is no external login portal or callback. Authentication HTTP routes are separate from the tRPC `auth` namespace:
+
+| Method | Endpoint | Behavior |
+|---|---|---|
+| `POST` | `/api/auth/login` | 200 and session cookie on success; 400 for invalid/missing inputs, 401 for invalid credentials; may return infrastructure errors |
+| `POST` | `/api/auth/register` | Creates an email/password account; 201 on success, 400 on invalid inputs, 409 for an existing account |
+| `GET` | `/api/auth/me` | Current-user JSON; 401 without a valid session |
+| `POST` | `/api/auth/logout` | Clears session cookie and returns `{ "success": true }`; no server-side JWT revocation |
+
+`tRPC auth.me` is a public session-aware query: it returns HTTP 200 with `result.data.json: null` when unauthenticated, unlike `/api/auth/me`. `auth.logout` is the corresponding cookie-clearing tRPC mutation. Do not create users or perform successful production logins as health checks: registration and login write account data.
 
 ### API Key Authentication (REST API v1)
 
@@ -39,7 +48,7 @@ Third-party integrations use Bearer token authentication on the REST API.
 
 ```http
 GET /api/v1/batteries
-Authorization: Bearer cai_live_xxxxxxxxxxxx
+Authorization: Bearer <api_key>
 ```
 
 API keys are created via the Compliance Dashboard (`/compliance`) or the `compliance.apiKey.create` tRPC procedure. Keys are stored as SHA-256 hashes — the plaintext key is only shown once at creation time.
@@ -61,7 +70,7 @@ Content-Type: application/json
 { "token": "<hex>", "password": "newPassword123" }
 ```
 
-All three endpoints return HTTP 200 regardless of whether the email exists, to prevent email enumeration.
+Only well-formed forgot-password requests use a generic HTTP 200 response for both known and unknown accounts. Malformed requests return 400; delivery is best-effort through ZeptoMail and does not change the generic response. The reset operation returns 400 for invalid, expired, or used tokens. Token validation returns `{ "valid": false }` for invalid tokens (400 when the token is missing); infrastructure errors may return 500. Tokens expire after 15 minutes and are single-use. Links derive from trusted `APP_URL`; public responses do not include recovery tokens or URLs.
 
 ---
 
@@ -228,7 +237,7 @@ The auth level column uses the following notation:
 | `reports.cpcbReport` | mutation | protected | Generate CPCB compliance report |
 | `reports.listReports` | query | protected | List generated reports |
 | `reports.eprComplianceReport` | mutation | protected | Generate EPR compliance report PDF |
-| `reports.batteryComplianceCert` | mutation | protected | Generate battery compliance certificate PDF |
+| `reports.batteryComplianceCert` | mutation | protected | Generate a report template; not an independently issued certification |
 
 ### `deviceProfile` namespace
 
@@ -367,7 +376,7 @@ The auth level column uses the following notation:
 
 ## REST API v1
 
-The REST API is available at `/api/v1` and is documented via Swagger UI at `/api/docs`. All endpoints require an API key in the `Authorization: Bearer <key>` header.
+The REST API is available at `/api/v1`, with Swagger UI at `/api/docs` (redirects to `/api/v1/docs`). Data endpoints require an API key in the `Authorization: Bearer <key>` header. `/api/v1/health`, OpenAPI JSON, and documentation routes are public. The Render readiness endpoint is `/api/health` (200/503 based on PostgreSQL connectivity); the public gateway `/api/v1/health` is a lightweight response, not an integration or database readiness guarantee.
 
 ### Batteries
 
@@ -448,25 +457,32 @@ Error responses:
 
 ## MCP Server
 
-The Model Context Protocol server at `/api/mcp` allows AI agents to discover and invoke platform capabilities using the standard MCP tool specification.
+The Model Context Protocol server at `/api/mcp` supports JSON-RPC discovery and invocation. All MCP routes require `Authorization: Bearer <api_key>`; tools may additionally require specific key scopes. These are application interfaces, not an AI hosting dependency.
 
 ### Discovering Tools
 
 ```http
 GET /api/mcp/tools
+Authorization: Bearer <api_key>
 ```
 
-Returns a JSON array of available tools with their input schemas.
+Returns available tools with their input schemas. For JSON-RPC discovery, send `POST /api/mcp` with `{ "jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {} }` and the same authorization header.
 
 ### Invoking a Tool
 
 ```http
-POST /api/mcp/invoke
+POST /api/mcp
+Authorization: Bearer <api_key>
 Content-Type: application/json
 
 {
-  "tool": "get_battery",
-  "input": { "bpan": "CAI-EU-NMC-20240101-ABCD1234" }
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_battery",
+    "arguments": { "bpan": "<registered_bpan>" }
+  }
 }
 ```
 
@@ -575,7 +591,7 @@ The `ts` field is a Unix timestamp in milliseconds. If omitted, the server uses 
 
 | Code | HTTP Status | Description |
 |---|---|---|
-| `UNAUTHORIZED` (10001) | 401 | No valid session — redirect to login |
+| `UNAUTHORIZED` | 401 | No valid session — redirect to login |
 | `FORBIDDEN` | 403 | Insufficient role (admin required) |
 | `NOT_FOUND` | 404 | Resource does not exist |
 | `BAD_REQUEST` | 400 | Invalid input — check Zod validation errors |
@@ -592,3 +608,10 @@ The `ts` field is a Unix timestamp in milliseconds. If omitted, the server uses 
 | `validation_error` | Request body failed schema validation |
 | `rate_limited` | Too many requests — back off and retry |
 | `internal_error` | Unexpected server error — include `traceId` in support requests |
+
+
+## External Integration Configuration
+
+AI features call OpenAI directly (`OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`); transactional email and owner notifications call ZeptoMail directly (`ZEPTOMAIL_TOKEN`, `FROM_EMAIL`, `OWNER_EMAIL`); file operations use the AWS S3 SDK (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`). Keep these credentials server-side. Missing credentials, account restrictions, provider outages, and permissions can make individual features unavailable. Render PostgreSQL connectivity alone does not prove those integrations work.
+
+Configure Maps, Stripe, and MQTT only for the features in use. Restrict browser-visible Maps keys, verify Stripe signatures, and use authorized TLS MQTT credentials. Read [DEPLOYMENT.md](./DEPLOYMENT.md) before enabling uploads: `storagePut` returns a bucket URL, whereas `storageGet` generates a signed URL. Do not make private customer documents public to satisfy an upload preview.
