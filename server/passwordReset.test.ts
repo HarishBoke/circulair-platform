@@ -20,6 +20,9 @@ vi.mock("./db", () => ({
 vi.mock("./_core/notification", () => ({
   notifyOwner: vi.fn().mockResolvedValue(true),
 }));
+vi.mock('./email', () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
+}));
 
 import * as db from "./db";
 import express from "express";
@@ -72,7 +75,7 @@ describe("POST /api/auth/forgot-password", () => {
     expect(res.body.error).toMatch(/email is required/i);
   });
 
-  it("includes resetUrl in development mode", async () => {
+  it("never exposes reset credentials in development mode", async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "development";
     const mockUser = { id: 7, email: "dev@example.com", name: "Dev" };
@@ -82,8 +85,9 @@ describe("POST /api/auth/forgot-password", () => {
     const res = await request(app)
       .post("/api/auth/forgot-password")
       .send({ email: "dev@example.com" });
-    expect(res.body.token).toBeDefined();
-    expect(res.body.resetUrl).toContain("/reset-password?token=");
+    expect(res.body.token).toBeUndefined();
+    expect(res.body.resetUrl).toBeUndefined();
+    expect(res.body.success).toBe(true);
     process.env.NODE_ENV = originalEnv;
   });
 });

@@ -1414,3 +1414,18 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Create Delivery Document (docs/DELIVERY_DOCUMENT.md) — all delivered components, 56 routes, 28 tables, integrations, CI/CD, acceptance criteria, handover checklist
 - [x] Create QA Documentation (docs/QA_DOCUMENTATION.md) — test strategy, 420+ automated tests, 60+ manual test cases, performance benchmarks, security tests, regression protocol, bug template
 - [x] Create User Personas & Feedback Framework (docs/USER_PERSONAS_AND_FEEDBACK.md) — 7 real personas, UAT workflows, feedback forms, aggregation scorecard, feedback-to-action pipeline, cross-persona scenarios, launch criteria
+
+
+## Phase 73: Full regression, authorized security assessment, and messaging
+- [x] Record baseline commit and current Render/live health evidence
+- [x] Rerun full Vitest suite, TypeScript check, and production build (551 tests pass)
+- [x] Evaluate Strix prerequisites and execute alternate scoped assessment; Strix itself was not run
+- [x] Review auth/RBAC, REST/tRPC/MCP, secrets/configuration, realtime, and tenant isolation
+- [x] Fix prioritized verified vulnerabilities and add 33 security regression tests
+- [ ] Verify Render PostgreSQL environment configuration before removing embedded credential fallback
+- [x] Execute existing browser suite and isolated real-data regressions; report failures and limitations
+- [ ] Complete functional acceptance across all lifecycle modules and real external integrations
+- [ ] Clarify and implement the intended pager-message functionality
+- [x] Save the tested development checkpoint
+- [ ] Verify actual Render deployment separately from the checkpoint/preview
+- [x] Publish a retest report with results, limitations, unresolved blockers, and credential-rotation actions

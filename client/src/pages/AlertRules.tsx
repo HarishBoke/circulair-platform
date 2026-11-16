@@ -326,23 +326,23 @@ export default function AlertRules() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-56 h-8 text-sm"
           />
-          <Select value={filterChemistry} onValueChange={setFilterChemistry}>
+          <Select value={filterChemistry || "all"} onValueChange={(value) => setFilterChemistry(value === "all" ? "" : value)}>
             <SelectTrigger className="w-36 h-8 text-sm">
               <SelectValue placeholder="All chemistries" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All chemistries</SelectItem>
+              <SelectItem value="all">All chemistries</SelectItem>
               {(["NMC", "LFP", "NCA", "LCO", "LMO", "LEAD_ACID"] as Chemistry[]).map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterMetric} onValueChange={setFilterMetric}>
+          <Select value={filterMetric || "all"} onValueChange={(value) => setFilterMetric(value === "all" ? "" : value)}>
             <SelectTrigger className="w-44 h-8 text-sm">
               <SelectValue placeholder="All metrics" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All metrics</SelectItem>
+              <SelectItem value="all">All metrics</SelectItem>
               {(Object.keys(METRIC_LABELS) as Metric[]).map((m) => (
                 <SelectItem key={m} value={m}>{METRIC_LABELS[m].label}</SelectItem>
               ))}
@@ -560,12 +560,12 @@ export default function AlertRules() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Chemistry Scope</Label>
-                  <Select value={form.chemistry} onValueChange={(v) => setForm((f) => ({ ...f, chemistry: v as Chemistry | "" }))}>
+                  <Select value={form.chemistry || "all"} onValueChange={(v) => setForm((f) => ({ ...f, chemistry: v === "all" ? "" : v as Chemistry }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Platform-wide" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Platform-wide (all)</SelectItem>
+                      <SelectItem value="all">Platform-wide (all)</SelectItem>
                       {(["NMC", "LFP", "NCA", "LCO", "LMO", "LEAD_ACID"] as Chemistry[]).map((c) => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}

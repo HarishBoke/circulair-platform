@@ -103,6 +103,7 @@ export function TelemetrySocketProvider({ children }: { children: ReactNode }) {
     const socket = io(`${serverUrl}/telemetry`, {
       path: "/api/socket.io",
       transports: ["websocket", "polling"],
+      withCredentials: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,

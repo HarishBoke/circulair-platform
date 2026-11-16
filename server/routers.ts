@@ -161,7 +161,11 @@ function calculateSpotPrice(soh: number, capacityKwh: number, chemistry: string)
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
+    me: publicProcedure.query(({ ctx }) => {
+      if (!ctx.user) return null;
+      const { passwordHash: _passwordHash, ...user } = ctx.user;
+      return user;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -656,18 +660,8 @@ Respond with JSON only: { "triageReason": string, "maintenanceRecommendations": 
 
     purchase: protectedProcedure
       .input(z.object({ listingId: z.number(), offeredPriceInr: z.number().optional() }))
-      .mutation(async ({ input, ctx }) => {
-        const db = await import("./db").then((m) => m.getDb());
-        if (!db) throw new Error("Database not available");
-        const { marketplaceListings } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-        await db.update(marketplaceListings).set({
-          status: "sold",
-          buyerId: ctx.user.id,
-          transactionDate: new Date(),
-          finalPriceInr: input.offeredPriceInr ? String(input.offeredPriceInr) : undefined,
-        } as any).where(eq(marketplaceListings.id, input.listingId));
-        return { success: true };
+      .mutation(async (): Promise<{ success: boolean }> => {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Direct purchase is disabled. A verified payment settlement is required.' });
       }),
     // Photo upload for listings
     uploadPhoto: protectedProcedure
@@ -2952,8 +2946,8 @@ Rules:
 
     /** Delete a webhook */
     delete: protectedProcedure
-      .input(z.object({ webhookId: z.number() }))
-      .mutation(({ input }) => deleteWebhook(input.webhookId)),
+      .input(z.object({ webhookId: z.number().int().positive() }))
+      .mutation(({ input, ctx }) => deleteWebhook(input.webhookId, ctx.user.id)),
   }),
 
   // ─── WIKI FEEDBACK ───────────────────────────────────────────────────────

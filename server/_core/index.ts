@@ -16,6 +16,7 @@ import { createSitemapRouter } from "../sitemap";
 import { createSeoRouter } from "../seoRoutes";
 import { handleStripeWebhook } from "../stripe";
 import { openapiSpec as trpcOpenapiSpec } from "../openapi";
+import { handleHealth } from "../health";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -72,18 +73,7 @@ async function startServer() {
   // MCP Server (Model Context Protocol for AI agents)
   app.use("/api/mcp", createMcpRouter());
   // Health check endpoint (used by Render and load balancers)
-  app.get("/api/health", async (_req, res) => {
-    const { getDb } = await import("../db");
-    const db = await getDb();
-    // Always report postgresql since db.ts overrides MySQL URLs with Render PostgreSQL
-    res.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      db: db ? "connected" : "disconnected",
-      dbType: "postgresql",
-      env: process.env.NODE_ENV || "development",
-    });
-  });
+  app.get("/api/health", handleHealth);
   // Admin bootstrap endpoint — promotes a user to admin role using a shared secret
   // Usage: POST /api/admin/bootstrap-admin with { secret, email }
   app.post("/api/admin/bootstrap-admin", express.json(), async (req, res) => {

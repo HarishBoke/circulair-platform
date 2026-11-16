@@ -7,7 +7,7 @@
  * - POST /api/auth/logout   — clear session cookie
  * - GET  /api/auth/me       — get current user from cookie
  */
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -18,10 +18,16 @@ import * as db from "../db";
 import { ENV } from "./env";
 import { getSessionCookieOptions } from "./cookies";
 import type { User } from "../../drizzle/schema";
+import { getApplicationOrigin } from "../requestSecurity";
+
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 // ─── JWT HELPERS ─────────────────────────────────────────────────────────────
 
 function getSecret() {
+  if (!ENV.cookieSecret || (process.env.NODE_ENV === 'production' && ENV.cookieSecret.length < 32)) {
+    throw new Error('JWT_SECRET must be configured securely');
+  }
   return new TextEncoder().encode(ENV.cookieSecret);
 }
 
@@ -54,7 +60,7 @@ export async function verifySessionToken(
     const id = Number(payload.sub);
     const openId = payload.openId as string;
     const name = (payload.name as string) ?? "";
-    if (!id || !openId) return null;
+    if (!Number.isSafeInteger(id) || id <= 0 || typeof openId !== 'string' || !openId || typeof name !== 'string') return null;
     return { id, openId, name };
   } catch {
     return null;
@@ -82,10 +88,9 @@ export async function authenticateRequest(req: Request): Promise<User | null> {
   if (!session) return null;
 
   const user = await db.getUserByOpenId(session.openId);
-  if (!user) return null;
+  if (!user || user.id !== session.id) return null;
 
-  // Touch lastSignedIn
-  await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
+  // Record lastSignedIn on successful login, not on every read request.
   return user;
 }
 
@@ -103,13 +108,13 @@ export function registerAuthRoutes(app: Express) {
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
       }
-      if (!EMAIL_RE.test(email)) {
+      if (typeof email !== 'string' || email.length > 320 || !EMAIL_RE.test(email.trim())) {
         return res.status(400).json({ error: "Invalid email format" });
       }
-      if (typeof password !== "string" || password.length < 8) {
+      if (typeof password !== "string" || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
       }
-      if (typeof name === "string" && name.length > 200) {
+      if (name != null && (typeof name !== "string" || name.length > 200)) {
         return res.status(400).json({ error: "Name is too long" });
       }
 
@@ -142,7 +147,7 @@ export function registerAuthRoutes(app: Express) {
       // Issue JWT
       const token = await createSessionToken(user);
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
       return res.status(201).json({
         success: true,
@@ -174,6 +179,10 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: "Email and password are required" });
       }
 
+      if (typeof email !== 'string' || email.length > 320 || typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72) {
+        return res.status(400).json({ error: 'Invalid email or password format' });
+      }
+
       const user = await db.getUserByEmail(email.toLowerCase().trim());
       if (!user || !user.passwordHash) {
         return res.status(401).json({ error: "Invalid email or password" });
@@ -190,7 +199,7 @@ export function registerAuthRoutes(app: Express) {
       // Issue JWT
       const token = await createSessionToken(user);
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
       return res.json({
         success: true,
@@ -247,7 +256,7 @@ export function registerPasswordResetRoutes(app: Express) {
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       const { email } = req.body ?? {};
-      if (!email || typeof email !== "string") {
+      if (!email || typeof email !== "string" || email.length > 320) {
         return res.status(400).json({ error: "Email is required" });
       }
 
@@ -265,7 +274,7 @@ export function registerPasswordResetRoutes(app: Express) {
       await db.createPasswordResetToken({ userId: user.id, token, expiresAt });
 
       // Build the reset URL
-      const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, "") || "https://circulair.energy";
+      const origin = getApplicationOrigin();
       const resetUrl = `${origin}/reset-password?token=${token}`;
 
       // Send the reset email via Resend (best-effort — failure must not block the response)
@@ -289,18 +298,16 @@ export function registerPasswordResetRoutes(app: Express) {
         const { notifyOwner } = await import("./notification");
         await notifyOwner({
           title: `[Circul-AI-r] Password reset requested for ${user.email}`,
-          content: `A password reset was requested for ${user.email}.\n\nReset link (valid 15 min):\n${resetUrl}\n\nIf you did not request this, ignore this message.`,
+          content: `A password reset was requested for ${user.email}. No recovery token is included in this audit notification.`,
         });
       } catch {
         // Notification failure must not block the response
       }
 
-      // In development / demo mode, return the token so it can be used without email
-      const isDev = process.env.NODE_ENV !== "production";
+      // Public development previews must not expose account-recovery credentials either.
       return res.json({
         success: true,
         message: "If that email exists, a reset link has been sent.",
-        ...(isDev ? { resetUrl, token } : {}),
       });
     } catch (error) {
       console.error("[Auth] Forgot password failed:", error);
@@ -315,7 +322,7 @@ export function registerPasswordResetRoutes(app: Express) {
       if (!token || typeof token !== "string") {
         return res.status(400).json({ error: "Reset token is required" });
       }
-      if (!password || typeof password !== "string" || password.length < 8) {
+      if (!password || typeof password !== "string" || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
       }
 

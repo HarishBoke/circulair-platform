@@ -6,6 +6,7 @@
 import type { Express } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { isTrustedMutationOrigin } from "./requestSecurity";
 
 export function applySecurityMiddleware(app: Express): void {
   const isProd = process.env.NODE_ENV === "production";
@@ -32,6 +33,13 @@ export function applySecurityMiddleware(app: Express): void {
       crossOriginEmbedderPolicy: false, // Allow embedding external images (CDN assets)
     })
   );
+  app.use('/api', (req, res, next) => {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !isTrustedMutationOrigin(req)) {
+      res.status(403).json({ error: 'Cross-origin mutation rejected' });
+      return;
+    }
+    next();
+  });
 
   // ── Rate limiting on API routes ───────────────────────────────────────────
   const apiLimiter = rateLimit({
@@ -49,6 +57,7 @@ export function applySecurityMiddleware(app: Express): void {
     max: 20, // 20 auth attempts per 15 min
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/logout',
     message: { error: "Too many authentication attempts, please try again later." },
   });
   app.use("/api/auth/", authLimiter);

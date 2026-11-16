@@ -461,9 +461,9 @@ export async function listWebhooks(userId?: number) {
   return db.select().from(webhooks).where(where).orderBy(desc(webhooks.createdAt));
 }
 
-export async function deleteWebhook(webhookId: number) {
+export async function deleteWebhook(webhookId: number, userId: number) {
   const db = (await getDb())!;
-  await db.delete(webhooks).where(eq(webhooks.id, webhookId));
+  await db.delete(webhooks).where(and(eq(webhooks.id, webhookId), eq(webhooks.userId, userId)));
 }
 
 /** Deliver a webhook event to all matching subscribers */
