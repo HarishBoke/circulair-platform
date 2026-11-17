@@ -1,466 +1,293 @@
-# Circul-AI-r Platform — User Personas and Product Feedback Framework
-
-**Document Version:** 2.0  
-**Date:** July 25, 2026  
-**Prepared by:** Setoo Engineering  
-**Purpose:** Define real user personas, UAT workflows, and structured feedback collection for product review
-
----
-
-## 1. Introduction
-
-This document defines seven real-world user personas representing the primary stakeholders of the Circul-AI-r Platform. Each persona includes a biographical profile, their goals and pain points, the specific platform workflows they will exercise during User Acceptance Testing (UAT), and a structured feedback collection framework. The purpose is to ensure that product review is conducted from the perspective of actual end users — not abstract test cases — so that feedback is actionable, grounded, and representative of real operational needs.
-
----
-
-## 2. User Personas
-
-### Persona 1: Rajesh Mehta — OEM Fleet Manager
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Rajesh Mehta |
-| **Role** | Fleet Operations Manager |
-| **Company** | Ather Energy (EV OEM, Bangalore) |
-| **Age** | 38 |
-| **Technical Level** | Moderate (uses dashboards, not APIs) |
-| **Platform Role** | OEM |
-| **Primary Goal** | Monitor 2,000+ deployed battery packs, predict failures before warranty claims |
-| **Pain Points** | Currently uses Excel + manual BMS reports; no unified view of fleet health; warranty claims cost ₹4.2Cr/year |
-
-**Primary Workflows to Test:**
-
-1. **Bulk Onboarding:** Upload CSV of 500 batteries from existing fleet → verify all get BPANs
-2. **Fleet Dashboard:** View aggregated SOH distribution, identify batteries below 70%
-3. **Telemetry Monitoring:** Connect factory MQTT broker → see live voltage/temperature for 10 batteries
-4. **SOH Prediction:** Run batch SOH prediction → identify batteries approaching warranty threshold
-5. **Warranty Management:** Register warranties for new shipments → track active claims
-6. **Alert Configuration:** Set thermal anomaly rules for NMC chemistry (T > 45°C)
-7. **PDF Export:** Generate health passport for a battery being returned under warranty
-
-**Key Questions for Rajesh:**
-- Can you complete the bulk onboarding of your existing fleet in under 30 minutes?
-- Does the SOH prediction give you enough confidence to make warranty decisions?
-- Are the alert thresholds appropriate for your NMC battery chemistry?
-- Is the dashboard view useful for your weekly fleet review meeting?
-- What information is missing from the health passport PDF?
-
----
-
-### Persona 2: Dr. Priya Sharma — Recycler Operations Head
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Dr. Priya Sharma |
-| **Role** | Head of Operations |
-| **Company** | Attero Recycling (Noida) |
-| **Age** | 42 |
-| **Technical Level** | High (PhD in Materials Science, comfortable with data) |
-| **Platform Role** | Recycler |
-| **Primary Goal** | Maximize mineral recovery yield, maintain CPCB compliance, earn EPR tokens |
-| **Pain Points** | Manual CPCB Form BW-3 filing takes 3 days; no way to verify incoming battery SOH claims; yield data scattered across SCADA systems |
-
-**Primary Workflows to Test:**
-
-1. **EOL Battery Intake:** Receive battery from logistics → verify BPAN → check SOH claim
-2. **Yield Verification:** Enter SCADA data → compare theoretical vs actual Black Mass yield
-3. **EPR Token Issuance:** Complete yield verification → receive EPR token → view in ledger
-4. **CPCB Report Generation:** Generate Form BW-3 PDF for quarterly submission
-5. **Compliance Dashboard:** View EPR token balance, submission deadlines, compliance status
-6. **Mineral Recovery Reporting:** Track Co, Li, Ni, Mn recovery percentages per batch
-7. **Document Storage:** Upload recycling certificates, access audit trail
-
-**Key Questions for Priya:**
-- Does the CPCB Form BW-3 match the latest CPCB portal format exactly?
-- Is the yield verification formula correct for your specific process (hydrometallurgical)?
-- Can you trace a battery from OEM registration through to your recycling certificate?
-- Are EPR token issuance rules aligned with current CPCB guidelines?
-- What additional fields would you need in the compliance report?
-
----
-
-### Persona 3: Marcus Weber — BESS Project Developer
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Marcus Weber |
-| **Role** | Senior Project Engineer |
-| **Company** | Sonnen GmbH (Munich, Germany) |
-| **Age** | 35 |
-| **Technical Level** | High (electrical engineer, API-literate) |
-| **Platform Role** | BESS Developer |
-| **Primary Goal** | Source second-life batteries with verified SOH > 75% for C&I storage projects |
-| **Pain Points** | No trusted marketplace for second-life batteries; SOH claims from sellers are unverifiable; procurement takes 3-6 months |
-
-**Primary Workflows to Test:**
-
-1. **Marketplace Browse:** Search for LFP batteries with SOH > 75%, capacity > 50kWh
-2. **Health Passport Review:** Open listing → verify SOH prediction, telemetry history, service records
-3. **Make Offer:** Submit offer with price in EUR → complete Stripe checkout
-4. **EU Battery Passport:** Verify carbon footprint declaration, recycled content compliance
-5. **Predictive Procurement:** Set forward order for Q4 delivery of 200kWh LFP modules
-6. **API Integration:** Use REST API v1 to pull marketplace listings into internal ERP
-7. **Carbon Accounting:** Verify lifecycle carbon footprint for project sustainability report
-
-**Key Questions for Marcus:**
-- Is the SOH prediction trustworthy enough to base a €50K procurement decision on?
-- Does the health passport contain all the data your engineering team needs?
-- Is the EU Battery Passport page compliant with Regulation 2023/1542 Article 77?
-- Can you integrate the REST API with your SAP system?
-- What additional filters would help you find the right batteries faster?
-
----
-
-### Persona 4: Amit Patel — Service Provider Field Engineer
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Amit Patel |
-| **Role** | Field Service Engineer |
-| **Company** | BatteryPool India (Mumbai) |
-| **Age** | 29 |
-| **Technical Level** | Moderate (uses mobile apps, configures BMS hardware) |
-| **Platform Role** | Service Provider |
-| **Primary Goal** | Commission new BMS devices, record service events, monitor battery health in the field |
-| **Pain Points** | Currently uses WhatsApp to report service events; no structured service history; device provisioning is manual and error-prone |
-
-**Primary Workflows to Test:**
-
-1. **Device Provisioning:** Register new IoT gateway → link to BPAN → get MQTT credentials
-2. **MQTT Flow Testing:** Use flow tester to verify device is publishing correctly
-3. **Gateway Documentation:** Follow ESP32 CAN bus setup guide → commission device
-4. **Service History Recording:** Log service event (battery swap, BMS firmware update)
-5. **Telemetry Verification:** Confirm live readings appear within 5 seconds of device power-on
-6. **Alert Response:** Receive thermal anomaly alert → acknowledge → record resolution
-7. **Mobile Usage:** Complete all above workflows on a mobile phone (Android Chrome)
-
-**Key Questions for Amit:**
-- Can you provision a new device and see live data in under 10 minutes?
-- Is the gateway documentation clear enough to follow without calling support?
-- Does the MQTT flow tester help you diagnose connection issues in the field?
-- Is the mobile experience usable on a 6-inch phone screen in bright sunlight?
-- What information do you need on the service history form that is currently missing?
-
----
-
-### Persona 5: Sunita Reddy — Government Regulator (CPCB)
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Sunita Reddy |
-| **Role** | Deputy Director, Hazardous Waste Management |
-| **Company** | Central Pollution Control Board (Delhi) |
-| **Age** | 52 |
-| **Technical Level** | Low (uses government portals, basic Excel) |
-| **Platform Role** | Government / Regulator |
-| **Primary Goal** | Verify EPR compliance of battery producers and recyclers, audit collection efficiency |
-| **Pain Points** | Receives paper-based BW-3 forms; no way to verify claims independently; audit trail is fragmented |
-
-**Primary Workflows to Test:**
-
-1. **Compliance Dashboard:** View all registered producers/recyclers and their EPR status
-2. **EPR Token Verification:** Check EPR token ledger for a specific recycler
-3. **CPCB Report Audit:** Download Form BW-3 PDF → verify against CPCB portal fields
-4. **Battery Traceability:** Trace a battery from OEM registration through recycling
-5. **Collection Efficiency:** View collection targets vs actual for each producer
-6. **EU Battery Passport (reference):** View public passport page for cross-border batteries
-
-**Key Questions for Sunita:**
-- Is the compliance dashboard understandable without technical training?
-- Does the Form BW-3 match the format your office currently accepts?
-- Can you independently verify a recycler's EPR token claim?
-- Is the audit trail sufficient for your annual compliance review?
-- What additional regulatory fields are required for your jurisdiction?
-
----
-
-### Persona 6: Thomas Fischer — Battery Manufacturer (EU)
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Thomas Fischer |
-| **Role** | Quality & Compliance Manager |
-| **Company** | VARTA AG (Ellwangen, Germany) |
-| **Age** | 45 |
-| **Technical Level** | Moderate (uses SAP, compliance tools) |
-| **Platform Role** | Battery Manufacturer |
-| **Primary Goal** | Comply with EU Battery Regulation 2023/1542 before February 2027 deadline |
-| **Pain Points** | Carbon footprint calculation is complex; recycled content tracking requires supply chain data; no single system covers all Article 77 requirements |
-
-**Primary Workflows to Test:**
-
-1. **Battery Registration:** Register production batch with manufacturing data
-2. **Carbon Footprint Declaration:** Enter 4 lifecycle stages → get performance class (A-E)
-3. **Recycled Content Declaration:** Enter Co, Li, Ni, Pb percentages → verify EU 2031 targets
-4. **EU Battery Passport Generation:** Verify public passport page has all required fields
-5. **QR Code Generation:** Generate QR codes for production batch → verify scan resolves to passport
-6. **Multi-language Support:** Switch to German → verify all compliance labels are translated
-7. **API Integration:** Use REST API to push production data from SAP
-
-**Key Questions for Thomas:**
-- Does the carbon footprint calculator align with the EU delegated act methodology?
-- Are the recycled content thresholds correct for 2027 vs 2031 targets?
-- Does the EU Battery Passport page contain all Article 77 mandatory fields?
-- Can you generate passports in bulk for a production batch of 10,000 cells?
-- Is the German translation accurate for regulatory terminology?
-
----
-
-### Persona 7: Vikram Singh — Platform Administrator
-
-| Attribute | Detail |
-|-----------|--------|
-| **Name** | Vikram Singh |
-| **Role** | Platform Operations Lead |
-| **Company** | Setoo (Platform Operator) |
-| **Age** | 33 |
-| **Technical Level** | High (full-stack developer, DevOps) |
-| **Platform Role** | Admin |
-| **Primary Goal** | Ensure platform stability, manage user access, monitor system health |
-| **Pain Points** | Needs visibility into all platform operations; must respond to incidents quickly; user role management should be auditable |
-
-**Primary Workflows to Test:**
-
-1. **User Management:** List all users → change role → verify audit log entry
-2. **System Health:** Check super admin dashboard → verify DB, MQTT, API status
-3. **Alert Rules Management:** Create/edit/disable alert rules for different chemistries
-4. **Feedback Review:** Review wiki feedback submissions → approve/reject/merge
-5. **Platform Settings:** Configure default locale, currency, active jurisdictions
-6. **API Key Management:** Create API key for external integration → set scopes → monitor usage
-7. **Incident Response:** Detect anomaly in logs → trace to specific battery → resolve alert
-
-**Key Questions for Vikram:**
-- Is the super admin dashboard giving you real-time visibility into system health?
-- Can you trace a user's actions through the audit log for compliance purposes?
-- Is the role management workflow auditable enough for ISO 27001?
-- What monitoring/alerting capabilities are missing for production operations?
-- Can you onboard a new client (create account, assign role) in under 5 minutes?
-
----
-
-## 3. UAT Execution Plan
-
-### 3.1 UAT Schedule
-
-| Phase | Duration | Personas | Focus |
-|-------|----------|----------|-------|
-| **Week 1** | 5 days | Rajesh (OEM), Priya (Recycler) | Core workflows: registration, telemetry, compliance |
-| **Week 2** | 5 days | Marcus (BESS), Thomas (Manufacturer) | Marketplace, EU compliance, API integration |
-| **Week 3** | 3 days | Amit (Service), Sunita (Government) | Field operations, regulatory audit |
-| **Week 4** | 2 days | Vikram (Admin) | Platform operations, security audit |
-| **Week 5** | 3 days | All personas | Cross-functional scenarios, edge cases |
-
-### 3.2 UAT Environment
-
-| Parameter | Value |
-|-----------|-------|
-| URL | https://circulair.energy |
-| Database | Production (PostgreSQL on Render) |
-| Test payment card | 4242 4242 4242 4242 (Stripe test mode) |
-| MQTT broker | EMQX Cloud (test credentials provided) |
-| Admin access | First registered user auto-promoted |
-| Test data | 40 batteries, 480 telemetry readings pre-seeded |
-
-### 3.3 UAT Entry Criteria
-
-Before UAT begins, the following must be confirmed:
-
-1. All 420+ automated tests passing
-2. Zero TypeScript errors
-3. Health endpoint returning `{"status":"ok","db":"connected","dbType":"postgresql"}`
-4. All personas have registered accounts with correct platform roles assigned
-5. Test MQTT broker credentials distributed to relevant personas
-6. Stripe test mode confirmed active
-7. Mobile devices available for responsive testing
-
----
-
-## 4. Feedback Collection Framework
-
-### 4.1 Feedback Categories
-
-Each persona will provide feedback across six dimensions:
-
-| Dimension | Description | Rating Scale |
-|-----------|-------------|--------------|
-| **Functionality** | Does the feature work correctly end-to-end? | 1-5 (Broken → Flawless) |
-| **Usability** | Is the workflow intuitive without training? | 1-5 (Confusing → Effortless) |
-| **Performance** | Is the response time acceptable? | 1-5 (Unusable → Instant) |
-| **Completeness** | Are all required fields/data present? | 1-5 (Major gaps → Complete) |
-| **Accuracy** | Is the data/calculation correct? | 1-5 (Wrong → Verified) |
-| **Mobile Experience** | Does it work well on mobile? | 1-5 (Broken → Native-like) |
-
-### 4.2 Feedback Form Template
-
-Each persona completes this form after testing each workflow:
-
-```
-═══════════════════════════════════════════════════
-CIRCUL-AI-R PLATFORM — USER FEEDBACK FORM
-═══════════════════════════════════════════════════
-
-Reviewer Name: _________________________________
-Role / Persona: _________________________________
-Date: __________________________________________
-Workflow Tested: ________________________________
-Device Used: [ ] Desktop  [ ] Mobile  [ ] Tablet
-Browser: _______________________________________
-
-─── RATINGS (1-5) ───────────────────────────────
-
-Functionality:    [ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-Usability:        [ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-Performance:      [ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-Completeness:     [ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-Accuracy:         [ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-Mobile Experience:[ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ]
-
-─── QUALITATIVE FEEDBACK ────────────────────────
-
-What worked well?
-__________________________________________________
-__________________________________________________
-
-What was confusing or difficult?
-__________________________________________________
-__________________________________________________
-
-What is missing that you need?
-__________________________________________________
-__________________________________________________
-
-Would you use this in production today? [ ] Yes [ ] No
-If No, what must be fixed first?
-__________________________________________________
-
-─── BUGS FOUND ──────────────────────────────────
-
-Bug 1: ___________________________________________
-Severity: [ ] Critical [ ] High [ ] Medium [ ] Low
-Steps: ___________________________________________
-
-Bug 2: ___________________________________________
-Severity: [ ] Critical [ ] High [ ] Medium [ ] Low
-Steps: ___________________________________________
-
-─── FEATURE REQUESTS ────────────────────────────
-
-Request 1: _______________________________________
-Priority: [ ] Must-have [ ] Nice-to-have [ ] Future
-
-Request 2: _______________________________________
-Priority: [ ] Must-have [ ] Nice-to-have [ ] Future
-
-═══════════════════════════════════════════════════
+# Circul-AI-r Platform — Fictional Personas and Real-User Feedback Plan
+
+**Document Version:** 3.0 — bounded handoff refresh
+**Date:** 17 November 2026
+**Prepared for:** Circul-AI-r / Setoo product and engineering handoff
+**Purpose:** Seven fictional composite role groups, safe voluntary recruitment and evidence-based UAT capture
+**Research status:** No actual participant recruitment, interviews, quotes, ratings, employer endorsements or sign-offs are evidenced by this document
+
+## 1. Truthful Persona and Research Boundary
+
+**Every profile below is a FICTIONAL COMPOSITE**, a planning aid rather than a real person or recruited participant. The personal names, employers, ages, financial losses and operational volumes in the July version were not supported by research evidence and have been removed. Generic OEM, recycler, BESS, service, regulator, manufacturer and operator descriptions imply no employer or government endorsement. Goals and pain points are **hypotheses to investigate**, not observed feedback.
+
+No feedback has been invented. The questions, schedules, forms and workflow expectations are a proposed protocol. They cannot be counted as real UAT results or approvals. Record actual consenting participants separately under pseudonymous IDs, without representing them as the composites or implying that their employer endorses the product.
+
+This document supersedes the July “real reviewers” and launch-score claims. Use [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) for current consolidated evidence and [RELEASE_GATES.md](RELEASE_GATES.md) for release decisions. Use the dated report and evidence summary to identify the exact verified snapshot. Historical feature inventories, development completion and mock/unit passes are not acceptance certificates; there is no guaranteed uptime, 100% functionality, platform-wide security/compliance or neural accuracy evidence.
+
+### 1.1 Current product boundary for research invitations
+
+Render commit `54920faa9c392fa03a1689e4cbe151d67323edda` is live; configuration redeploy `dep-dbu0nbg8v5cc73bj680g` was observed live on 17 November at 08:11:24 UTC. Managed PostgreSQL new login/session user `circulair_runtime_20261117`, rotated random 64-character JWT secret and canonical `APP_URL` have recorded configuration evidence. AutoDeploy is Off; the old exposed database credential remains valid and not revoked. The protective Render logical export was ready at 07:41 UTC but was not downloaded or restore-tested. The additive outbox table/index were applied and verified; PagerDuty remains disabled (`false`), with no real on-call test.
+
+Recorded production HTTP smoke was **14/14** and anonymous telemetry handshake returned `Unauthorized`. **Successful production email/password login has not been verified.** These observations do not qualify production as a safe default user-test environment or certify provider workflows.
+
+The November 17 development fixes cover alert authorization, MQTT synthetic-source preservation, simulator resistance units, role-aware alert UI, environment-only PostgreSQL resolution, explicit-input admin bootstrap scripts and gateway REST transport. Final local verification is complete; these newer fixes are **not deployed to Render**. The saved development identifier is recorded in the evidence summary; the live release remains `54920faa`. Consult [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) for exact counts, commands, warnings and remaining defects. Strix has not run; dependency advisories and broad launch blockers remain.
+
+**Global alert rules are administrator-only in the local remediation**, including listing rules/defaults and all changes. Ordinary participants should request an administrator change; do not ask them to configure global rules themselves. Viewing/marking an account alert is not PagerDuty acknowledgement or resolution. Declared MQTT demo/test labels suppress paging but do not establish hardware identity or complete simulation data/state isolation. The simulator is an uncalibrated demo, not a battery safety model.
+
+## 2. Seven Fictional Composite Role Groups
+
+All tasks below are **planned, unverified or blocked** until separately executed with recorded evidence in an approved isolated staging environment. Use small synthetic fixtures; no customer datasets, live devices, real purchases or regulatory submissions. Label/disable known unsupported features rather than asking participants to pretend they work.
+
+### Persona P1 — OEM Fleet Operations Manager (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic EV OEM / fleet operator; no named employer |
+| Platform role group | OEM |
+| Technical context | Dashboard/CSV user; limited API experience |
+| Goal hypothesis | Reconcile registered packs, review condition and prepare service/warranty decisions |
+| Pain-point hypothesis | Fragmented spreadsheets/BMS exports and unclear asset identifiers |
+
+**Planned tasks:** Import a small synthetic fleet CSV with reviewed valid/invalid rows; find a registered pack and review its identifier; explore fleet filters and known synthetic telemetry; inspect a health estimate with explicit model limitations; review a synthetic warranty record; **request an administrator** thermal-rule change; review a sample draft health passport. Do not connect a factory broker or make a real safety/warranty decision.
+
+**Known boundary:** BPAN downstream contracts, lifecycle authorization, warranties and SOH calibration remain blocked/unverified. Live telemetry/safety thresholds are not certified. Administrator handling of the requested rule is a separate controlled QA task.
+
+**Neutral questions:** Which fields would you need to identify this pack? What do you think the estimate means, and what independent evidence would you require before a decision? How would you request a threshold change? Where did you become uncertain or need help?
+
+### Persona P2 — Recycler Operations Lead (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic battery recycler / material-recovery operator |
+| Platform role group | Recycler |
+| Technical context | Process-data and audit-document user |
+| Goal hypothesis | Reconcile intake, recovery evidence and draft reporting |
+| Pain-point hypothesis | Separate process measurements, identifiers and reporting records |
+
+**Planned tasks:** Trace a synthetic intake record; inspect the canonical battery ID/BPAN; enter approved synthetic yield fixtures only after engineering validation; review a draft ledger and draft CPCB-style report; identify missing mineral recovery/context fields; review synthetic recycling-certificate metadata with privacy expectations.
+
+**Known boundary:** Repeated/negative yield credit, atomicity, canonical IDs, private documents, organization/period scope and report methodology remain blockers. Draft tokens are not official credits; PDF generation is not regulatory acceptance. No filing or process-system connection occurs.
+
+**Neutral questions:** What evidence would you need to reconcile an intake and yield? Which report fields are absent or ambiguous? How would you detect repeated credit? Do not ask for confirmation that a draft is legally compliant without a qualified independent review.
+
+### Persona P3 — BESS Project/Procurement Engineer (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic stationary-storage developer / second-life buyer |
+| Platform role group | BESS Developer |
+| Technical context | Engineering/specification reviewer; may understand APIs |
+| Goal hypothesis | Compare candidate second-life assets and evidence quality |
+| Pain-point hypothesis | Inconsistent condition claims, units and supporting records |
+
+**Planned tasks:** Browse synthetic listings with chemistry/capacity/SOH filters; inspect sample passport/telemetry/service evidence; prepare a nonbinding offer draft without checkout; list integration fields needed for an internal procurement system; review advanced forward-order/carbon screens as labeled scaffolds only.
+
+**Known boundary:** Settlement, authorization, reservation, currency/refund/payout and foreign-battery/photo controls block real-money use. SOH accuracy, carbon methodology, forward matching and SDK/interface claims are unverified. No purchase, payment, reservation or external ERP connection is made.
+
+**Neutral questions:** What would make a condition claim credible to you? Which units or filters were unclear? What would you need before approving procurement? Which missing evidence stopped you? Do not solicit trust in an unvalidated estimate as proof of accuracy.
+
+### Persona P4 — Field Service Engineer (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic battery maintenance / field-service provider |
+| Platform role group | Service Provider |
+| Technical context | Mobile-first technician; may configure BMS hardware |
+| Goal hypothesis | Locate assigned asset, review telemetry and record service history |
+| Pain-point hypothesis | Unstructured service notes and ambiguous device-to-pack binding |
+
+**Planned tasks:** On an approved mobile device, locate a synthetic assigned pack; follow a written/sample provisioning flow without broker changes or real credentials; review gateway/flow-tester instructions; add a synthetic service note only after canonical-ID gates; inspect a synthetic account alert and mark read in isolated QA; report missing fields and connection/error messaging. If a rule needs changing, request an administrator.
+
+**Known boundary:** Device credential authorization, revocation/heartbeat, topic/payload identity and service ID/BPAN contracts remain blocked. No real device is commissioned or thermal event induced. Browser ingestion intentionally rejects unsupported writes; mark-read does not resolve an on-call incident.
+
+**Neutral questions:** At what point did you know which pack/device you were viewing? What would help diagnose a failed connection? Could you distinguish loading, failure and no alerts? Which mobile controls or instructions were difficult?
+
+### Persona P5 — Compliance/Regulatory Reviewer (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic oversight/compliance office; no named agency affiliation |
+| Platform role group | Government / Regulator |
+| Technical context | Portal/document reviewer, varied technical experience |
+| Goal hypothesis | Understand traceability and evidence underlying draft reports |
+| Pain-point hypothesis | Inconsistent fields, periods, organizations and audit provenance |
+
+**Planned tasks:** Review an authorized read-only synthetic compliance dashboard; inspect draft ledger/report fields; trace an example pack through authorized lifecycle records; identify collection-target/actual gaps; inspect a synthetic public passport and distinguish public from private fields.
+
+**Known boundary:** Global all-time reporting, authorization, credit legitimacy and methodology remain unresolved. Participation is personal/role-based usability research unless explicitly authorized otherwise; it is not government approval, certification, a regulatory audit or a submission.
+
+**Neutral questions:** Which evidence would you need to verify this draft claim independently? Can you identify reporting organization and period? Which fields should never be public? What review questions remain unanswered?
+
+### Persona P6 — Battery Manufacturing Quality/Compliance Manager (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic battery/cell manufacturer |
+| Platform role group | Battery Manufacturer |
+| Technical context | Production-data, quality and compliance workflow user |
+| Goal hypothesis | Associate production data, declarations and draft passports |
+| Pain-point hypothesis | Supply-chain evidence and manufacturing identifiers in separate systems |
+
+**Planned tasks:** Register a small synthetic production batch; review carbon/recycled-content inputs using known fixtures; inspect a clearly draft passport and sample QR; explore language labels; identify required integration fields from a static API example. No real ERP upload or regulated declaration occurs.
+
+**Known boundary:** Numeric units, methodology, period/organization scope, thresholds/legal interpretation, BPAN consumers and API scope remain unverified/blocked. No regulatory deadline, complete mandatory-field claim or batch-capacity guarantee is certified by this session.
+
+**Neutral questions:** Which inputs have a known source, and which need clarification? What unit/reference would you expect? Which labels need specialist translation review? What independent review would be needed before using the draft operationally?
+
+### Persona P7 — Platform Operations Administrator (FICTIONAL COMPOSITE)
+
+| Attribute | Planning hypothesis |
+|---|---|
+| Organization type | Generic platform operator; not a real named staff reviewer |
+| Platform role group | Platform Admin |
+| Technical context | Access, audit, monitoring and operational workflow user |
+| Goal hypothesis | Understand system state and safely administer authorized users/rules |
+| Pain-point hypothesis | Misleading green/empty states, unclear privileges and incident provenance |
+
+**Planned tasks:** With an explicitly approved QA admin account, inspect synthetic users/audit; perform a reviewed reversible role change without removing the last admin; compare owner vs global alerts; list/create/edit/toggle/delete a QA global rule and test errors/Retry; inspect clearly mocked/unknown provider statuses and feedback queue; discuss outage/recovery expectations from a tabletop scenario.
+
+**Known boundary:** No production roles/settings, broker configuration, routing key, incident or Cron is changed. PagerDuty stays disabled. Real browser/cache/API acceptance of the newer alert UI is open. Synthetic provenance is not hardware trust; empty results do not prove health. No ISO/security/availability certification is implied.
+
+**Neutral questions:** Can you tell what is measured, unavailable or merely configured? Can you identify the scope of a rule change? What evidence would you need before enabling paging or declaring recovery? Which actions need additional approval/audit context?
+
+## 3. Practical Voluntary Real-User Recruitment
+
+### 3.1 Recruitment plan
+
+A designated research coordinator should recruit **actual willing adults from each of the seven role groups** through authorized professional contacts, opt-in communities or permission-based outreach. Do not scrape personal contact lists, impersonate employers/regulators or infer participation from a public biography. These composites are not named recruitment targets.
+
+For an initial exploratory round, propose one or two consenting participants per group, then review gaps and seek more only if needed. This is a recruitment target, not a achieved sample or statistically representative study. Include varied technical experience, organization scale and mobile/desktop needs. If a role cannot be recruited, record “not recruited,” do not fabricate ratings or substitute an internal tester as external-user evidence. Engineering QA may proceed separately under its own label.
+
+Use a short screener: role category; recent relevant workflow experience; preferred device/language; accessibility accommodation; availability; voluntary participation and confidentiality constraints. Ask no customer names, credentials, employee identifiers or commercially sensitive figures. Store contact details separately from pseudonymous research records with restricted access. Do not collect an employer name unless truly necessary and separately consented; never publish it as endorsement.
+
+### 3.2 Invitation template — send only after outreach authorization
+
+> We are inviting volunteers who work with [role-relevant battery workflow] to a 30–45 minute exploratory usability session for Circul-AI-r. You would use an isolated test environment with synthetic data or review a prototype. Several workflows are incomplete or blocked; this is not a certified production, safety or regulatory system. Participation is optional, you may skip questions or stop at any time, and your decision will not affect access to services or employment. We will not ask for customer data, credentials, payments, broker changes, regulatory submissions or on-call tests. We will explain data use and request separate consent before any recording. Your participation does not imply employer endorsement. If interested, please reply through the approved contact channel with your role category and availability.
+
+The coordinator must disclose any approved compensation before consent and make clear it is not contingent on positive feedback. No compensation, invitations or appointments have been arranged by this document.
+
+### 3.3 Consent checklist and data handling
+
+Before the session, provide a plain-language notice stating the organizer/contact, purpose, test environment, approximate duration, tasks and blocked features, voluntary nature, stop/skip/withdrawal procedure, data collected, intended audience, storage/access controls and **specific retention/deletion dates**. An owner must set these dates before recruitment; they are not silently open-ended.
+
+Obtain affirmative consent to participate, separately to notes, separately to screen/audio/video recording (off by default), and separately to any quotation or future follow-up. A refusal to record must not exclude otherwise eligible participants. Ask whether workplace permission is required and avoid confidentiality conflicts. Do not solicit confidential customer/employer information. Confirm the participant understands there are **no real payments, broker changes, regulatory submissions or on-call tests**. If any proposed task exceeds that boundary, stop and seek a separate owner-approved engineering test, not expanded implied participant consent.
+
+Record consent date/version and a participant ID; keep personal contact/consent records restricted and separate from workflow findings. Explain how to request withdrawal/deletion and any stated anonymization limit before consent. Delete raw recordings according to the agreed policy and verify access permissions before sharing evidence. Redact PII and sensitive information from notes, logs and screenshots: names, faces, emails/phones, addresses, customer BPANs, credentials, cookies, tokens, private URLs and employer-sensitive data. If accidental exposure occurs, stop capture, secure the material, notify the authorized owner and follow the approved removal process; do not upload raw screenshots to a public issue.
+
+## 4. Environment, Entry Gates and Facilitator Script
+
+### 4.1 Safe session setup
+
+| Setup item | Required preparation |
+|---|---|
+| Environment | Owner-approved isolated staging/QA or prototype; **not production by default** |
+| Data | Small synthetic fixtures with agreed expected results; no July seed count assumed current |
+| Accounts | Explicit assigned role; approved separate admin; no first-registrant auto-promotion assumption |
+| Providers | Disabled/mocked; no real Stripe checkout, broker publication/configuration, government filing, on-call message or live device operation |
+| Blocked features | Clearly labeled demo/scaffold/unknown or disabled; facilitator records blocked rather than simulates success |
+| Build/evidence | Identify local snapshot/commit and provider mode; consult current retest report and QA_DOCUMENTATION.md |
+| Consent/capture | Written notice and affirmative consent; recording only if separately opted in; tested redaction process |
+| Safety/stop rule | Stop on security/privacy issue, unexpected external action, distress or participant request; log blocker without unsafe probing |
+
+Full UAT for advertised workflows is gated by unresolved defects; narrowly scoped research on safe staging/prototypes can be approved separately without implying product acceptance. An intermediate passing unit run is not sufficient UAT entry evidence for all modules.
+
+### 4.2 Facilitator script (30–45 minute proposal, not a completed schedule)
+
+1. **Introduction and consent, about 5 minutes:** “We are testing the design, not you. Some features are incomplete. Please do not enter real customer data or credentials. You can skip a task or stop at any time. We will use synthetic data and will not make payments, change brokers, submit reports or send on-call alerts. May I confirm your participation and note-taking consent? Recording is optional and separate.” Verify any requested accommodation.
+2. **Context, about 5 minutes:** Ask about the participant's typical workflow without personal/customer/employer-sensitive details. Identify information they normally need; do not read the fictional profile as their biography.
+3. **Two or three tasks, about 15–25 minutes:** State a neutral outcome, e.g. “Find the sample pack and tell me what evidence you would need next,” not “Click this working feature.” Start the timer when the task is understood; allow think-aloud optionally. Observe without coaching; if help is needed, record the intervention. Stop at a blocked/unsafe boundary. A task not attempted is not a failure or pass.
+4. **Debrief, about 5 minutes:** Ask “What did you expect?”, “What actually happened?”, “Where did you become uncertain?”, “What is missing?” and “What would need to change before use?” Do not pressure a positive score or a launch approval. Read back findings for correction.
+5. **Close:** Explain next steps, consented follow-up channel and deletion/withdrawal contact. Do not promise fixes or deployment dates that the owner has not agreed. Thank the participant regardless of criticism or completion.
+
+For an ordinary persona encountering alert thresholds, use: “If you need a global rule changed, describe your request to an administrator.” For the admin composite/task, use approved isolated QA changes only. If a feature is unavailable, record the blocker and ask about the expected workflow rather than pretending completion.
+
+## 5. Feedback Capture — Blank Templates, No Invented Results
+
+### 5.1 Required session/workflow record
+
+Capture expected vs actual behavior, completion time and blocker/severity for **every attempted task**, including assisted, abandoned or blocked tasks. Ratings are optional and cannot replace behavioral evidence.
+
+```markdown
+## Session / Workflow Feedback
+Participant ID (pseudonym):
+Role group (P1–P7; actual experience, not composite identity):
+Consent notice version/date and restricted record reference:
+Notes consent: Yes / No
+Recording consent: Yes / No (off unless separately approved)
+Quote/recontact consent: separate Yes / No fields
+Session date/time/timezone; facilitator:
+Environment, build/local snapshot/deployed commit (if relevant):
+Browser/version, OS/device; real hardware or emulation:
+Provider mode: disabled / mocked / isolated test
+Workflow / QA case ID; synthetic fixture:
+
+Task goal and expected result:
+Steps actually attempted:
+Actual result (observed, not assumed):
+Outcome: Completed / Completed with assistance / Failed / Blocked / Not attempted
+Completion time (seconds/minutes; start/end rule, pauses recorded):
+Assistance/interventions:
+Blocker and severity: None / Critical / High / Medium / Low
+Reproducibility / scope / safety stop reason:
+Participant comment (verbatim only if recorded and separately consented for use):
+Facilitator observation (separate from participant quote):
+Hypothesis / interpretation (clearly labeled, not a fact):
+Optional rating and N/A / not tested:
+What is missing / suggested improvement:
+Sanitized screenshot/log evidence reference (PII/secrets redacted):
+Owner / defect ID / proposed action / retest status:
+Follow-up permission/reference; retention/deletion date:
 ```
 
-### 4.3 In-Platform Feedback (CirculWiki)
+A missing rating is N/A, not zero. A blocked feature is not “tested successfully.” A quote must be actual, accurately attributed to a pseudonym with appropriate permission; do not reconstruct a quote from a composite or blend multiple participants into purported evidence.
 
-The platform includes a built-in feedback system accessible from the CirculWiki knowledge base. Users can submit feedback with:
+### 5.2 Optional feedback dimensions
 
-- **Star rating** (1-5)
-- **Feedback type:** Helpful, Not Helpful, Suggest Edit, Flag Outdated, Flag Inaccurate, Request Topic, General
-- **Free-text comment**
-- **Admin review workflow:** Pending → Approved / Rejected / Merged
+| Dimension | Prompt | Qualification |
+|---|---|---|
+| Functionality | Did the attempted task complete as expected? | Record actual outcome first |
+| Usability | Where was the path unclear or assistance needed? | Record time/intervention; optional 1–5 |
+| Performance | Did waiting interfere with your task? | Perception is not a p95 benchmark |
+| Completeness | Which information/action was missing? | Separate feature request from defect |
+| Accuracy | Which value could you check against known evidence? | User confidence is not scientific/regulatory validation |
+| Mobile/accessibility | Which controls/readability barriers occurred? | Specify device/assistive technology and scope |
 
-This system is accessible at `/admin/feedback` for administrators.
+### 5.3 Collection channels and backup capture
 
-### 4.4 Feedback Aggregation
+The historical CirculWiki feedback interface includes rating/type/comment and an admin review queue at `/admin/feedback`; its end-to-end persistence/access acceptance must be verified before relying on it. Use the restricted pseudonymous template as a fallback. Never assume empty in-app feedback means no issues or successful submission. Do not publish raw recordings or screenshots in the app. Proposed post-launch surveys/support reviews require separate authorization and privacy handling; no existing NPS, enterprise reviews, analytics cadence or participant channel is asserted.
 
-After each UAT phase, feedback is aggregated into a scorecard:
+### 5.4 Role coverage ledger — not a scorecard of approvals
 
-| Persona | Functionality | Usability | Performance | Completeness | Accuracy | Mobile | Overall |
-|---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Rajesh (OEM) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Priya (Recycler) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Marcus (BESS) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Amit (Service) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Sunita (Gov) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Thomas (Mfg) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| Vikram (Admin) | /5 | /5 | /5 | /5 | /5 | /5 | /5 |
-| **Average** | **/5** | **/5** | **/5** | **/5** | **/5** | **/5** | **/5** |
+| Role group | Recruitment/session evidence | Workflow results / blockers | Status at this document refresh |
+|---|---|---|---|
+| P1 OEM | Not supplied | Not supplied | Planned; no verified participant |
+| P2 Recycler | Not supplied | Not supplied | Planned; no verified participant |
+| P3 BESS developer | Not supplied | Not supplied | Planned; no verified participant |
+| P4 Service provider | Not supplied | Not supplied | Planned; no verified participant |
+| P5 Government/regulatory reviewer | Not supplied | Not supplied | Planned; no verified participant |
+| P6 Battery manufacturer | Not supplied | Not supplied | Planned; no verified participant |
+| P7 Platform administrator | Not supplied | Not supplied | Planned; no verified participant |
 
-**UAT Pass Threshold:** Overall average ≥ 3.5/5 with no Critical bugs unresolved.
+Only replace these cells with linked actual consenting-session evidence. Report attempted/completed/blocked task denominators, assistance, time ranges and recruitment gaps. Do not average absent ratings or use a small exploratory sample as representative market validation.
 
----
+## 6. Feedback-to-Action and Retest
 
-## 5. Feedback-to-Action Pipeline
+Separate observed defects, participant suggestions, facilitator hypotheses and source-confirmed pre-existing blockers. Have product, engineering and research owners review sanitized records, assign severity/owner and agree a response; the former automatic 24-/48-hour promises are not verified SLAs.
 
-### 5.1 Triage Process
+| Severity | Handling proposal |
+|---|---|
+| Critical | Stop affected use/test; notify authorized owner for security, data loss, financial or dangerous outcome |
+| High | Primary workflow blocked/major incorrect data; prioritize before broader release |
+| Medium | Partial failure with safe workaround; track and schedule |
+| Low | Cosmetic/usability/documentation; prioritize with owner |
 
-All feedback is triaged within 24 hours of submission:
+No feedback item independently authorizes a hotfix, payment, broker change or deploy. After a reviewed fix, identify whether it is local, checkpointed or actually deployed, then repeat the same safe task with consented follow-up and recorded expected/actual outcome. Communicate only agreed actions: acknowledge the issue, give its reference/owner and explain whether a fix is planned, locally tested or deployed. Do not announce a local fix as live.
 
-| Priority | Criteria | Action |
-|----------|----------|--------|
-| **P0 — Blocker** | Prevents workflow completion, data loss, security issue | Fix immediately, hotfix deploy |
-| **P1 — Critical** | Major feature broken, workaround exists but painful | Fix within current sprint |
-| **P2 — Important** | Feature gap identified by multiple personas | Schedule for next sprint |
-| **P3 — Enhancement** | Nice-to-have improvement, single persona request | Add to backlog |
-| **P4 — Cosmetic** | Visual polish, minor UX tweak | Fix when convenient |
+## 7. Cross-Role Scenarios — Synthetic and Gated
 
-### 5.2 Feedback Review Meeting
+| Scenario | Role groups | Proposed isolated sequence | Boundary |
+|---|---|---|---|
+| Battery lifecycle | OEM → Service → BESS → Recycler | Register → record service → evaluate listing → review intake | No real purchase, transport or processing; canonical-ID/authorization gates |
+| Compliance review | Manufacturer → Regulatory reviewer | Draft declaration → independent field/evidence review | Not official approval/submission |
+| Marketplace review | OEM → BESS | Synthetic listing → nonbinding offer review | Payment/settlement blocked |
+| Warranty investigation | OEM → Service | Synthetic condition review → draft service/claim review | No validated safety decision; claim route/privacy gates |
+| Yield/ledger review | Recycler → Regulatory reviewer | Reviewed synthetic yield → draft ledger evidence | No official credits; repeated/negative credit blockers |
+| Rule request | Ordinary role → Admin | Describe threshold need → approved QA admin evaluates change | No ordinary global-rule control; no live on-call test |
 
-After each UAT phase, a feedback review meeting is held:
+A discussion/prototype walkthrough is not an executed end-to-end workflow. Mark stages unavailable/blocked honestly.
 
-- **Attendees:** Product Owner, Engineering Lead, UAT Coordinator
-- **Inputs:** Aggregated feedback scorecard, bug list, feature requests
-- **Outputs:** Prioritized action items, sprint plan updates, persona communication
+## 8. Acceptance and Launch Boundary
 
-### 5.3 Persona Communication
+No recruited participant or composite has approved this product in the supplied evidence. The July average-score, “five of seven personas approve,” endpoint timing and blanket accessibility/security thresholds do not constitute current launch criteria. Real participant preference is useful research input but cannot waive credential, privacy, payment, hardware, safety, numeric/model, compliance, backup or availability blockers.
 
-Each persona receives a response within 48 hours of submitting feedback:
-
-1. **Acknowledgement:** "Thank you for your feedback on [workflow]. We have logged [N] items."
-2. **Action plan:** "The following items will be addressed: [list with timeline]"
-3. **Follow-up:** "We have deployed fixes for [items]. Please re-test at your convenience."
-
----
-
-## 6. Cross-Persona Scenarios
-
-These scenarios test interactions between multiple personas:
-
-| Scenario | Personas Involved | Workflow |
-|----------|-------------------|----------|
-| **Battery Lifecycle** | Rajesh → Amit → Marcus → Priya | OEM registers → Service maintains → BESS buys → Recycler processes |
-| **Compliance Audit** | Thomas → Sunita | Manufacturer declares carbon footprint → Regulator verifies |
-| **Marketplace Transaction** | Rajesh → Marcus | OEM lists EOL battery → BESS developer purchases |
-| **Warranty Claim** | Rajesh → Amit | OEM detects degradation → Service provider investigates → Claim filed |
-| **EPR Token Flow** | Priya → Sunita | Recycler completes yield → Token issued → Regulator audits |
-
----
-
-## 7. Success Criteria for Product Launch
-
-The product is considered ready for commercial launch when:
-
-| Criterion | Threshold | Measurement |
-|-----------|-----------|-------------|
-| UAT overall score | ≥ 3.5/5 | Aggregated persona ratings |
-| Critical bugs | 0 open | Bug tracker |
-| High bugs | ≤ 3 open (with workarounds) | Bug tracker |
-| Persona sign-off | 5/7 personas approve | Written confirmation |
-| Core workflow completion | 100% for all personas | UAT execution log |
-| Performance | All endpoints < 3s (p95) | Performance benchmarks |
-| Security | All SEC tests pass | Security audit |
-| Accessibility | WCAG 2.1 AA compliant | Accessibility audit |
-| Documentation | All guides reviewed by personas | Feedback forms |
-
----
-
-## 8. Post-Launch Feedback Channels
-
-After launch, ongoing feedback is collected through:
-
-| Channel | Audience | Frequency |
-|---------|----------|-----------|
-| In-app feedback (CirculWiki) | All users | Continuous |
-| Monthly NPS survey | All active users | Monthly |
-| Quarterly business review | Enterprise clients | Quarterly |
-| Support ticket analysis | All users | Weekly |
-| Usage analytics | Platform team | Daily |
-| Feature request board | All users | Continuous |
-
----
-
-*End of User Personas and Feedback Framework*
+Owner-approved UAT acceptance must be tied to actual consenting sessions, a specific tested build/environment, agreed workflow scope, expected-vs-actual execution records, completion time and blockers, resolved/retested defects, stated exclusions and the current release gates. Clearly label or disable unverified/scaffolded workflows. Broader launch requires the report/gates and independent engineering/operational/provider/methodology evidence. This document is a recruitment and feedback plan, **not evidence of recruitment, launch readiness, employer endorsement or regulatory certification**.

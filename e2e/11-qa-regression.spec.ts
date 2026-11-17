@@ -1,23 +1,30 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test';
+import { Pool } from 'pg';
 
 const BASE='http://127.0.0.1:3001';
 test.skip(process.env.QA_LOCAL !== '1' || process.env.BASE_URL !== BASE, 'Data-writing regression requires the isolated localhost QA server');
-let owner:APIRequestContext, other:APIRequestContext, cookieState:any, battery:any;
+let owner:APIRequestContext, other:APIRequestContext, admin:APIRequestContext, cookieState:any, adminState:any, battery:any;
 const password='Local-QA-only-Password1!';
 async function rpc(api:APIRequestContext,name:string,input:any={},mutation=false){
   return mutation ? api.post(`/api/trpc/${name}`,{data:{json:input}}) : api.get(`/api/trpc/${name}`,{params:{input:JSON.stringify({json:input})}});
 }
 test.beforeAll(async({},info)=>{
   owner=await request.newContext({baseURL:BASE});other=await request.newContext({baseURL:BASE});
+  admin=await request.newContext({baseURL:BASE});
   const seed=`${Date.now()}-${info.project.name}`;
-  for(const [api,label] of [[owner,'owner'],[other,'other']] as const){
+  for(const [api,label] of [[owner,'owner'],[other,'other'],[admin,'admin']] as const){
     const r=await api.post('/api/auth/register',{data:{name:`QA ${label}`,email:`${label}-${seed}@example.invalid`,password}});expect(r.status()).toBe(201);
   }
+  const dbUrl=new URL(process.env.RENDER_DATABASE_URL || process.env.DATABASE_URL || 'https://invalid');
+  if(dbUrl.hostname!=='127.0.0.1' || dbUrl.pathname!=='/circulair_qa')throw new Error('Admin fixture requires isolated localhost QA database');
+  const pool=new Pool({connectionString:dbUrl.toString()});
+  try {const promoted=await pool.query('UPDATE users SET role = $1 WHERE email = $2 RETURNING id',['admin',`admin-${seed}@example.invalid`]);expect(promoted.rowCount).toBe(1);} finally {await pool.end();}
+  adminState=await admin.storageState();
   cookieState=await owner.storageState();
   const r=await rpc(owner,'bpan.generate',{countryCode:'IN',manufacturerId:'QAT',capacityCode:'A1',chemistryCode:'F',voltageCode:'LA',cellOriginCode:'IN',extinguisherClass:'D',mfgYear:2026,mfgMonth:11,mfgDay:16,factoryCode:info.project.name==='mobile'?'M':'D',serialNumber:Date.now().toString(36).slice(-4).toUpperCase()},true);
   expect(r.status()).toBe(200);battery=(await r.json()).result.data.json;
 });
-test.afterAll(async()=>{await owner?.dispose();await other?.dispose();});
+test.afterAll(async()=>{await owner?.dispose();await other?.dispose();await admin?.dispose();});
 test('real registration creates a usable authenticated session',async()=>{
   const me=await owner.get('/api/auth/me');expect(me.status()).toBe(200);expect((await me.json()).email).toContain('owner-');
   const current=await rpc(owner,'auth.me');expect(current.status()).toBe(200);expect((await current.json()).result.data.json).not.toHaveProperty('passwordHash');
@@ -43,12 +50,32 @@ test('authenticated dashboard renders without a runtime error',async({page})=>{
   await expect(page.locator('body')).not.toContainText('Something went wrong');
 });
 test('alert-rule filters open with valid all-options',async({page})=>{
-  await page.context().addCookies(cookieState.cookies);await page.goto('/alert-rules');
+  await page.context().addCookies(adminState.cookies);await page.goto('/alert-rules');
   const chemistry=page.getByRole('combobox').filter({hasText:'All chemistries'});
   await expect(chemistry).toBeVisible({timeout:20000});await chemistry.click();
   await expect(page.getByRole('option',{name:'All chemistries'})).toBeVisible();await page.getByRole('option',{name:'NMC',exact:true}).click();
   await page.getByRole('combobox').filter({hasText:'All metrics'}).click();await expect(page.getByRole('option',{name:'All metrics'})).toBeVisible();await page.keyboard.press('Escape');
   await expect(page.locator('body')).not.toContainText('Something went wrong');
+});
+test('ordinary users receive owner-scoped alerts without global alert requests',async({page})=>{
+  const listed=await rpc(owner,'alerts.list',{limit:100});expect(listed.status()).toBe(200);
+  const rows=(await listed.json()).result.data.json;
+  const me=await owner.get('/api/auth/me');const identity=await me.json();
+  expect(rows.length).toBeGreaterThan(0);expect(rows.every((a:any)=>a.userId===identity.id)).toBe(true);
+  expect(rows.some((a:any)=>a.bpan===battery.bpan)).toBe(true);
+  expect((await rpc(owner,'alerts.listAll',{limit:100})).status()).toBe(403);
+  const globalRequests:string[]=[];page.on('request',r=>{if(r.url().includes('alerts.listAll'))globalRequests.push(r.url());});
+  await page.context().addCookies(cookieState.cookies);await page.goto('/alerts');
+  await expect(page.getByText(`New battery ${battery.bpan} registered successfully.`,{exact:true})).toBeVisible({timeout:20000});
+  await expect(page.getByRole('button',{name:'Mark Read'}).first()).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('All systems nominal');expect(globalRequests).toEqual([]);
+});
+test('ordinary users see explicit global-rule restriction without restricted requests',async({page})=>{
+  expect((await rpc(owner,'alertRules.list',{limit:200,offset:0})).status()).toBe(403);
+  const ruleRequests:string[]=[];page.on('request',r=>{if(/alertRules\.(list|getDefaults)/.test(r.url()))ruleRequests.push(r.url());});
+  await page.context().addCookies(cookieState.cookies);await page.goto('/alert-rules');
+  await expect(page.getByRole('heading',{name:'Administrator access required'})).toBeVisible({timeout:20000});
+  await expect(page.getByRole('combobox').filter({hasText:'All chemistries'})).toHaveCount(0);expect(ruleRequests).toEqual([]);
 });
 test('public homepage fits the emulated viewport',async({page})=>{
   await page.goto('/');await expect(page.getByRole('heading',{name:/Operating System/i})).toBeVisible();

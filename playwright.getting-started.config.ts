@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testMatch: '08-forms-interactions.spec.ts',
-  grep: /getting started offers unauthenticated users a working sign-in path/,
+  grep: /(?:getting started|demo) offers unauthenticated users a working sign-in path/,
   workers: 1,
   fullyParallel: false,
   retries: 0,

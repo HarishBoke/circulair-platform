@@ -964,13 +964,20 @@ Respond with JSON only: { "triageReason": string, "maintenanceRecommendations": 
       .input(z.object({ limit: z.number().default(50) }))
       .query(({ input, ctx }) => listAlerts(ctx.user.id, input.limit)),
 
-    listAll: protectedProcedure
+    listAll: adminProcedure
       .input(z.object({ limit: z.number().default(100) }))
       .query(({ input }) => listAlerts(undefined, input.limit)),
 
     markRead: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(({ input }) => markAlertRead(input.id)),
+      .input(z.object({ id: z.number().int().positive().max(2147483647) }))
+      .mutation(async ({ input, ctx }) => {
+        // Only administrators may acknowledge alerts belonging to other users.
+        const scope = ctx.user.role === "admin" ? { admin: true as const } : { userId: ctx.user.id };
+        if (!await markAlertRead(input.id, scope)) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Alert not found" });
+        }
+        return { success: true };
+      }),
 
     unreadCount: protectedProcedure
       .query(({ ctx }) => getUnreadAlertCount(ctx.user.id)),
@@ -3128,7 +3135,8 @@ Rules:
 
   // ─── ALERT RULES ────────────────────────────────────────────────────────────
   alertRules: router({
-    list: protectedProcedure
+    // The engine applies these rules globally; createdBy is attribution, not scope.
+    list: adminProcedure
       .input(z.object({
         chemistry: z.string().optional(),
         bpan: z.string().optional(),
@@ -3141,15 +3149,15 @@ Rules:
         return listAlertRules(input);
       }),
 
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
+    getById: adminProcedure
+      .input(z.object({ id: z.number().int().positive().max(2147483647) }))
       .query(async ({ input }) => {
         const rule = await getAlertRuleById(input.id);
         if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
         return rule;
       }),
 
-    create: protectedProcedure
+    create: adminProcedure
       .input(z.object({
         name: z.string().min(1).max(255),
         description: z.string().optional(),
@@ -3173,9 +3181,9 @@ Rules:
         return rule;
       }),
 
-    update: protectedProcedure
+    update: adminProcedure
       .input(z.object({
-        id: z.number(),
+        id: z.number().int().positive().max(2147483647),
         name: z.string().min(1).max(255).optional(),
         description: z.string().optional(),
         metric: z.enum(["temperature", "voltage", "current", "soc", "soh", "cycleCount", "internalResistance"]).optional(),
@@ -3197,15 +3205,17 @@ Rules:
         return { success: true };
       }),
 
-    toggle: protectedProcedure
-      .input(z.object({ id: z.number(), enabled: z.boolean() }))
+    toggle: adminProcedure
+      .input(z.object({ id: z.number().int().positive().max(2147483647), enabled: z.boolean() }))
       .mutation(async ({ input }) => {
+        const rule = await getAlertRuleById(input.id);
+        if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
         await toggleAlertRule(input.id, input.enabled);
         return { success: true };
       }),
 
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int().positive().max(2147483647) }))
       .mutation(async ({ input }) => {
         const rule = await getAlertRuleById(input.id);
         if (!rule) throw new TRPCError({ code: "NOT_FOUND", message: "Alert rule not found" });
@@ -3214,7 +3224,7 @@ Rules:
       }),
 
     /** Returns the default recommended thresholds per chemistry */
-    getDefaults: protectedProcedure.query(() => {
+    getDefaults: adminProcedure.query(() => {
       return {
         NMC: [
           { metric: "temperature", operator: "gt", threshold: 45, severity: "warning", name: "NMC High Temp Warning" },

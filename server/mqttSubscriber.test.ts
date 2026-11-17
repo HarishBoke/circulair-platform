@@ -6,24 +6,31 @@
  * without requiring a real MQTT broker connection.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { shouldPageAlert } from "./pagerDuty";
+
+const mqttMock = vi.hoisted(() => ({
+  handlers: new Map<string, (...args: any[]) => void>(),
+  client: {
+    on: vi.fn(),
+    subscribe: vi.fn((_topic, _opts, cb) => cb?.()),
+    publish: vi.fn((_topic, _payload, _opts, cb) => cb?.()),
+    end: vi.fn(),
+  },
+}));
 
 // ─── Mock dependencies ────────────────────────────────────────────────────────
 // Mock mqtt to avoid real network connections in tests
 vi.mock("mqtt", () => {
-  const mockClient = {
-    on: vi.fn(),
-    subscribe: vi.fn(),
-    publish: vi.fn((topic: string, payload: string, opts: unknown, cb?: (err?: Error) => void) => {
-      cb?.();
-    }),
-    end: vi.fn(),
-  };
+  mqttMock.client.on.mockImplementation((event, handler) => {
+    mqttMock.handlers.set(event, handler);
+    return mqttMock.client;
+  });
   return {
     default: {
-      connect: vi.fn(() => mockClient),
+      connect: vi.fn(() => mqttMock.client),
     },
-    connect: vi.fn(() => mockClient),
+    connect: vi.fn(() => mqttMock.client),
   };
 });
 
@@ -33,6 +40,14 @@ vi.mock("./db", () => ({
   insertTelemetry: vi.fn().mockResolvedValue(undefined),
   createAlert: vi.fn().mockResolvedValue(undefined),
   updateBatteryStatus: vi.fn().mockResolvedValue(undefined),
+  updateDeviceLastSeenByBpan: vi.fn().mockResolvedValue(undefined),
+  getActiveRulesForBpan: vi.fn().mockResolvedValue([]),
+  evaluateAlertRules: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock("./alertCooldown", () => ({
+  shouldCreateAlert: vi.fn().mockResolvedValue(true),
+  recordAlert: vi.fn(),
 }));
 
 // Mock telemetrySocket
@@ -208,5 +223,143 @@ describe("MQTT Subscriber — Topic Pattern", () => {
     const bpan = "INHB30N40250627A000101";
     const topic = `${customPrefix}/${bpan}`;
     expect(topic).toBe("ev/fleet/batteries/INHB30N40250627A000101");
+  });
+});
+
+// Exercise the actual private handler through the mocked broker's message callback.
+// No broker, database, sockets, or PagerDuty delivery is started by these tests.
+describe("MQTT Subscriber — Provenance", () => {
+  const bpan = "A".repeat(19); // Existing subscriber validation; identity rules are out of scope.
+  let subscriber: typeof import("./mqttSubscriber");
+  let db: typeof import("./db");
+  let socket: typeof import("./telemetrySocket");
+
+  beforeEach(async () => {
+    subscriber = await import("./mqttSubscriber");
+    db = await import("./db");
+    socket = await import("./telemetrySocket");
+    subscriber.stopTelemetryStream();
+    subscriber.stopMqttSubscriber();
+    vi.clearAllMocks();
+    mqttMock.handlers.clear();
+    vi.mocked(db.getBatteryByBpan).mockResolvedValue({ id: 42, chemistry: "NMC" } as any);
+    vi.mocked(db.evaluateAlertRules).mockReturnValue([
+      { id: 7, metric: "temperature", severity: "critical", name: "Thermal rule", operator: "gt", threshold: "51" } as any,
+    ]);
+    subscriber.startMqttSubscriber({
+      brokerUrl: "mqtt://localhost:1883", clientId: "mock-provenance", topicPrefix: "local/telemetry",
+      username: "", password: "", caCert: "",
+    });
+    mqttMock.handlers.get("connect")!();
+  });
+
+  afterEach(() => {
+    subscriber.stopTelemetryStream();
+    subscriber.stopMqttSubscriber();
+    vi.useRealTimers();
+  });
+
+  async function receive(payload: Record<string, unknown>) {
+    mqttMock.handlers.get("message")!(
+      `local/telemetry/${bpan}`,
+      Buffer.from(JSON.stringify({ bpan, tMax: 65, sohEstimate: 60, ...payload })),
+    );
+    await vi.waitFor(() => expect(db.updateBatteryStatus).toHaveBeenCalledTimes(1));
+    expect(db.insertTelemetry).toHaveBeenCalledTimes(1);
+    expect(db.createAlert).toHaveBeenCalledTimes(2);
+    return {
+      telemetry: vi.mocked(db.insertTelemetry).mock.calls[0]![0],
+      reading: vi.mocked(socket.broadcastTelemetryReading).mock.calls[0]![0],
+      alerts: vi.mocked(db.createAlert).mock.calls.map(([alert]) => {
+        expect(alert.severity).toBeDefined();
+        return { ...alert, severity: alert.severity!, metadata: alert.metadata };
+      }),
+    };
+  }
+
+  it.each(["demo", "test", "simulator", "simulated", "flow_tester", "mqtt_demo", "BMS_SIMULATOR_V2", "integration_test"])(
+    "preserves explicit %s through persistence, dashboard classification, and every alert",
+    async source => {
+      const result = await receive({ source });
+      expect(result.telemetry.source).toBe(source);
+      expect(result.reading.source).toBe("simulated");
+      for (const alert of result.alerts) {
+        expect(alert.metadata).toMatchObject({ source });
+        expect(shouldPageAlert(alert)).toBe(false);
+      }
+      expect(result.alerts[0]).toMatchObject({ severity: "critical", type: "thermal_anomaly" });
+      expect(result.alerts[1]).toMatchObject({ type: "eol_detected" });
+    },
+  );
+
+  it.each(["demo", "simulated"])("preserves explicit boolean %s without relying on a source label", async flag => {
+    const result = await receive({ source: "mqtt", [flag]: true });
+    expect(result.telemetry.source).toBe("simulated");
+    expect(result.reading.source).toBe("simulated");
+    for (const alert of result.alerts) {
+      expect(alert.metadata).toMatchObject({ source: "simulated", [flag]: true });
+      expect(shouldPageAlert(alert)).toBe(false);
+    }
+  });
+
+  it.each([undefined, "mqtt", "bms_v2", "api", "", 123, { source: "demo" }])(
+    "retains normal MQTT eligibility for an absent/unrecognized source %j",
+    async source => {
+      const result = await receive({ source, demo: false, simulated: "true" });
+      expect(result.telemetry.source).toBe("mqtt");
+      expect(result.reading.source).toBe("mqtt");
+      expect(result.alerts[0].metadata).toMatchObject({ source: "mqtt" });
+      expect(shouldPageAlert(result.alerts[0])).toBe(true);
+      expect(shouldPageAlert(result.alerts[1])).toBe(false); // Existing warning severity.
+    },
+  );
+
+  it("classifies the existing synthetic stream label as simulated", async () => {
+    const result = await receive({ source: "stream" });
+    expect(result.telemetry.source).toBe("simulated");
+    expect(result.reading.source).toBe("simulated");
+    expect(result.alerts[0].metadata).toMatchObject({ source: "simulated" });
+    expect(shouldPageAlert(result.alerts[0])).toBe(false);
+  });
+
+  it("retains test provenance after a connectivity publisher message loops back", async () => {
+    await subscriber.publishTestMessage(bpan);
+    const [topic, body] = mqttMock.client.publish.mock.calls[0]!;
+    expect(topic).toBe(`local/telemetry/${bpan}`);
+    const published = JSON.parse(body);
+    expect(published.source).toBe("test");
+    const result = await receive({ ...published, tMax: 65, sohEstimate: 60 });
+    expect(result.telemetry.source).toBe("test");
+    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
+  });
+
+  it("forces non-live flow-tester provenance even if custom payload includes a live label", async () => {
+    await subscriber.publishTelemetryMessage(bpan, {
+      bpan, vPack: 350, current: -40, tMax: 65, tMin: 25, tAvg: 40, soc: 50,
+      sohEstimate: 60, cycleCount: 200, internalResistance: 20, source: "mqtt",
+    } as any);
+    const [topic, body] = mqttMock.client.publish.mock.calls[0]!;
+    expect(topic).toBe(`local/telemetry/${bpan}`);
+    const published = JSON.parse(body);
+    expect(published.source).toBe("flow_tester");
+    const result = await receive(published);
+    expect(result.telemetry.source).toBe("flow_tester");
+    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
+  });
+
+  it("marks every generated stream scenario as simulated and keeps a thermal loopback non-pageable", async () => {
+    vi.useFakeTimers();
+    subscriber.startTelemetryStream([bpan], 1000);
+    vi.advanceTimersByTime(6000);
+    subscriber.stopTelemetryStream();
+    vi.useRealTimers();
+    const published = mqttMock.client.publish.mock.calls.map(([, body]) => JSON.parse(body));
+    expect(published).toHaveLength(6);
+    expect(published.every(payload => payload.source === "simulated")).toBe(true);
+    const thermal = published.find(payload => payload.tMax > 51);
+    expect(thermal).toBeDefined();
+    const result = await receive({ ...thermal!, sohEstimate: 60 });
+    expect(result.telemetry.source).toBe("simulated");
+    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
   });
 });

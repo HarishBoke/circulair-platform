@@ -1,6 +1,7 @@
 /**
  * batterySimulator.ts
- * Physics-based battery telemetry simulator for Circul-AI-r Platform.
+ * Physics-inspired demo battery telemetry simulator for Circul-AI-r Platform.
+ * Simplified profiles are not calibrated battery models or safety validation.
  *
  * Models realistic electrochemical behaviour per chemistry:
  *   - NMC  (Nickel Manganese Cobalt)   — 3.0–4.2 V/cell, 96s packs
@@ -32,7 +33,7 @@ interface ChemistryProfile {
   iMaxDischarge: number;
   /** Typical max charge current (A) */
   iMaxCharge: number;
-  /** Base internal resistance (mΩ) */
+  /** Base internal resistance of the whole pack (mΩ), not per cell */
   irBase: number;
   /** Thermal coefficient — temperature rise per amp (°C/A) */
   thermalCoeff: number;
@@ -236,9 +237,11 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
   }
 
   // ── Voltage ───────────────────────────────────────────────────────────────
-  const irOhm = ((profile.irBase + (100 - state.soh) * 0.4) * (1 + Math.random() * 0.05)) / 1000;
+  const irPackOhm = ((profile.irBase + (100 - state.soh) * 0.4) * (1 + Math.random() * 0.05)) / 1000;
+  // R_pack = seriesCells * R_cell; apply I * R_pack only once across the pack.
+  const irCellOhm = irPackOhm / profile.seriesCells;
   const ocvCell = ocvFromSoc(state.soc, profile);
-  const vDrop = irOhm * Math.abs(iPack);
+  const vDrop = irCellOhm * Math.abs(iPack);
   const vCell = state.isCharging ? ocvCell + vDrop : ocvCell - vDrop;
   const vPack = parseFloat((vCell * profile.seriesCells).toFixed(2));
   const cellSpread = 0.02 + (100 - state.soh) * 0.001; // imbalance grows with age
@@ -246,7 +249,7 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
   const vMax = parseFloat((vCell + cellSpread / 2 + Math.random() * 0.01).toFixed(3));
 
   // ── Internal resistance ───────────────────────────────────────────────────
-  const irPack = parseFloat((irOhm * 1000 + Math.random() * 0.5).toFixed(3)); // mΩ
+  const irPack = parseFloat((irPackOhm * 1000 + Math.random() * 0.5).toFixed(3)); // pack mΩ
 
   // ── Temperature ──────────────────────────────────────────────────────────
   const loadHeat = Math.abs(iPack) * profile.thermalCoeff;

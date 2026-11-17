@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Bell, AlertTriangle, Info, CheckCircle2, RefreshCw, Thermometer, Zap, Truck, Shield } from "lucide-react";
+import { Bell, AlertTriangle, Info, RefreshCw, Thermometer, Zap, Truck, Shield } from "lucide-react";
 
 const SEVERITY_STYLES: Record<string, string> = {
   critical: "bg-destructive/10 text-destructive border-destructive/20",
@@ -27,17 +28,28 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 export default function Alerts() {
   usePageTitle("Alerts");
 
+  const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const canLoadAlerts = !authLoading && !authError && !!user;
   const [severity, setSeverity] = useState("all");
   const [read, setRead] = useState("all");
 
-  const { data, isLoading, refetch } = trpc.alerts.listAll.useQuery({ limit: 100 });
+  const ownerAlertsQuery = trpc.alerts.list.useQuery({ limit: 100 }, {
+    enabled: canLoadAlerts && !isAdmin,
+  });
+  const adminAlertsQuery = trpc.alerts.listAll.useQuery({ limit: 100 }, {
+    enabled: canLoadAlerts && isAdmin,
+  });
+  const { data, isPending, isFetching, isSuccess, error, refetch } = isAdmin ? adminAlertsQuery : ownerAlertsQuery;
+  const isLoading = authLoading || (canLoadAlerts && isPending);
+  const hasAlertData = canLoadAlerts && isSuccess;
 
   const markReadMutation = trpc.alerts.markRead.useMutation({
     onSuccess: () => { toast.success("Alert marked as read"); refetch(); },
     onError: (e: { message: string }) => toast.error(e.message),
   });
 
-  const allAlerts = data ?? [];
+  const allAlerts = hasAlertData ? data ?? [] : [];
   const alerts = allAlerts.filter((a: { severity: string; read: boolean }) => {
     const sevMatch = severity === "all" || a.severity === severity;
     const readMatch = read === "all" || (read === "unread" && !a.read) || (read === "read" && a.read);
@@ -56,8 +68,8 @@ export default function Alerts() {
         </div>
         <div className="flex gap-2">
 
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-border h-8">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={!canLoadAlerts || isFetching} aria-label="Refresh alerts" className="border-border h-8">
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -75,7 +87,7 @@ export default function Alerts() {
               <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest">{s.label}</span>
               <s.icon className={`w-4 h-4 ${s.color} opacity-50`} />
             </div>
-            <div className={`font-display text-2xl font-bold ${s.color}`}>{s.value}</div>
+            <div className={`font-display text-2xl font-bold ${s.color}`}>{hasAlertData ? s.value : "—"}</div>
           </div>
         ))}
       </div>
@@ -105,14 +117,36 @@ export default function Alerts() {
       {/* Alert List */}
       <div className="space-y-2">
         {isLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse h-20" />
-          ))
+          <div role="status" className="space-y-2">
+            <p className="text-sm text-muted-foreground">Loading alerts...</p>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse h-20" />
+            ))}
+          </div>
+        ) : authError || error ? (
+          <div role="alert" className="bg-card border border-destructive/20 rounded-xl p-8 text-center">
+            <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
+            <h3 className="font-display text-lg font-bold mb-2">Unable to load alerts</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              {authError ? "Your account could not be verified." : "The alert request failed."} Alert status is unavailable. Please retry.
+            </p>
+            <Button variant="outline" size="sm" disabled={isFetching} onClick={() => authError ? refreshAuth() : refetch()}>
+              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+              Retry
+            </Button>
+          </div>
+        ) : !user ? (
+          <div className="bg-card border border-border rounded-xl p-8 text-center">
+            <h3 className="font-display text-lg font-bold mb-2">Sign in to view alerts</h3>
+            <p className="text-muted-foreground text-sm">Alert status is unavailable until you sign in.</p>
+          </div>
         ) : alerts.length === 0 ? (
           <div className="bg-card border border-border rounded-xl p-16 text-center">
             <Bell className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="font-display text-lg font-bold mb-2">No Alerts</h3>
-            <p className="text-muted-foreground text-sm">All systems nominal. No alerts matching your filters.</p>
+            <p className="text-muted-foreground text-sm">
+              {allAlerts.length > 0 ? "No alerts match your selected filters." : isAdmin ? "No alerts were returned." : "No alerts were returned for your account."}
+            </p>
           </div>
         ) : (
           alerts.map((alert) => {

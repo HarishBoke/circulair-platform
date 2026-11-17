@@ -1,293 +1,217 @@
-# Circul-AI-r Platform — Delivery Document
+# Circul-AI-r Platform — Delivery and Handoff Document
 
-**Document Version:** 2.0  
-**Delivery Date:** July 25, 2026  
-**Prepared by:** Setoo Engineering  
-**Client:** Circul-AI-r / Setoo  
-**Production URL:** [https://circulair.energy](https://circulair.energy)
+**Document Version:** 3.0 — bounded handoff refresh
+**Document Date:** 17 November 2026
+**Historical delivery record:** 25 July 2026 (superseded acceptance claims)
+**Prepared for:** Circul-AI-r / Setoo engineering handoff
+**Application URL:** https://circulair.energy
+**Acceptance status:** Limited production smoke verification; broad launch blocked
 
----
+## 1. Handoff Summary — Not a Sign-Off Certificate
 
-## 1. Delivery Summary
+This document records available implementation inventory and the evidence boundary for the current handoff. It does **not** confirm that all components are fully developed, tested, deployed, production-grade or operational end-to-end. The July claims of 71 completed development phases, route/procedure/tool totals and universal PASS status were historical inventory/completion assertions, not independently validated acceptance certificates. No guaranteed uptime, 100% functionality, platform-wide security/compliance or neural-model accuracy is established.
 
-This document formally records the delivery of the Circul-AI-r Platform — a production-grade Battery Circular Economy SaaS application. The platform has been fully developed, tested, migrated to Render infrastructure, and is live at [circulair.energy](https://circulair.energy).
+The current [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) is authoritative for consolidated results, known defects and verification limits; [RELEASE_GATES.md](RELEASE_GATES.md) governs release decisions. Use the dated report and evidence summary to identify the exact verified snapshot. The November 16 baseline is superseded only for specific observations supported by November 17 evidence, not for whole-module acceptance.
 
-The delivery encompasses **71 development phases**, **420+ automated tests**, **50+ pages/routes**, **100+ tRPC procedures**, a **REST API v1** with OpenAPI 3.1 documentation, and a **Model Context Protocol (MCP) server** with 20 tools. The platform supports 7 stakeholder roles across 7 regulatory jurisdictions with 5 language translations.
+### 1.1 Production snapshot: recorded 17 November 2026
 
----
+| Item | Evidence-backed state | Open boundary |
+|---|---|---|
+| Render release | Commit `54920faa9c392fa03a1689e4cbe151d67323edda` live; configuration deploy `dep-dbu0nbg8v5cc73bj680g` observed live at **08:11:24 UTC** on 17 November | Later local remediation is not deployed. |
+| AutoDeploy | **Off** | No automatic rollout should be assumed. |
+| Managed PostgreSQL | `DATABASE_URL` repaired; connection verified with new login/session user `circulair_runtime_20261117` (execution role `circulair_user`) | Old exposed credential remains valid, **not revoked**; external allow-all access unchanged. |
+| JWT/application URL | New random 64-character JWT secret rotated; canonical `APP_URL` verified | Successful production email/password login and recovery delivery **not verified**. |
+| Protective export | Render logical export ready at **07:41 UTC** on 17 November | **Not downloaded or restore-tested**; no recovery certificate. |
+| Outbox schema | Additive outbox table and due index applied/verified; migration did not modify customer data | Schema readiness is not PagerDuty acceptance. |
+| PagerDuty | Disabled (`false`) | No real incident/on-call message; no billable retry Cron created. |
+| Limited smoke checks | Production HTTP **14/14**; anonymous telemetry handshake rejected with `Unauthorized` | Invalid-input/rejection/readiness probes do not verify successful authentication or owned workflows. |
 
-## 2. Delivered Components
+Sources: `/home/ubuntu/retest-evidence/production-config-repair.json`, `production-after-config-repair-security-smoke.json`, `production-after-54920fa-socket.json`. No secret values are reproduced here.
 
-### 2.1 Frontend Application
+### 1.2 Local-only work
 
-The frontend is a React 19 Single Page Application with TypeScript, Tailwind CSS 4, and shadcn/ui components. It is fully responsive (mobile-first design) and supports dark theme.
+The November 17 development fixes cover alert authorization, MQTT synthetic-source preservation, simulator resistance units, role-aware alert UI, environment-only PostgreSQL resolution, explicit-input admin bootstrap scripts and gateway REST transport. Final local verification is complete; these newer fixes are **not deployed to Render**. The saved development identifier is recorded in the evidence summary; the live release remains `54920faa`. Consult [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) for exact counts, commands, warnings and remaining defects.
 
-| Category | Pages Delivered | Key Routes |
-|----------|----------------|------------|
-| Authentication | 4 | `/login`, `/register`, `/forgot-password`, `/reset-password` |
-| Dashboard & Overview | 2 | `/dashboard`, `/analytics` |
-| Battery Management | 4 | `/batteries`, `/batteries/register`, `/batteries/:bpan`, `/onboarding` |
-| Telemetry & IoT | 5 | `/telemetry`, `/data-integration`, `/mqtt-flow-tester`, `/device-provisioning`, `/demo` |
-| AI & Prediction | 4 | `/ai-soh`, `/digital-twin`, `/federated-learning`, `/autonomous-triage` |
-| Marketplace | 5 | `/marketplace`, `/marketplace/create`, `/marketplace/:id`, `/marketplace/orders`, `/marketplace/payment-success` |
-| Compliance | 4 | `/epr-compliance`, `/compliance`, `/carbon-accounting`, `/passport/EU/:localId` |
-| Logistics | 2 | `/logistics`, `/yield-verification` |
-| Warranty | 3 | `/warranty`, `/warranty/register`, `/warranty/check` |
-| Admin | 4 | `/admin/users`, `/admin/system`, `/admin/feedback`, `/settings/platform` |
-| Developer | 5 | `/developer-hub`, `/developer-portal`, `/api-reference`, `/mcp-server`, `/gateway-docs` |
-| Knowledge & Help | 4 | `/wiki`, `/getting-started`, `/faq`, `/glossary` |
-| Public & Legal | 5 | `/`, `/how-it-works`, `/privacy`, `/terms`, `/coming-soon` |
-| Misc | 5 | `/alerts`, `/alert-rules`, `/documents`, `/service-history`, `/health` |
+Global alert-rule operations, including reads/defaults and all mutations, are administrator-only in the tested development source. Ordinary users request administrator changes. Alert acknowledgements use authenticated owner/admin context; marking read does not resolve PagerDuty. The focused local browser suite verifies real owned-alert visibility and admin-rule access; this is not live-production or platform-wide tenant acceptance. MQTT labels exclude declared synthetic traffic from paging but do not authenticate hardware or isolate all synthetic state changes. The simulator remains an uncalibrated demo.
 
-**Total: 56 distinct routes delivered.**
+## 2. Implementation Inventory — Historical, Not Accepted Delivery
 
-### 2.2 Backend API
+The following inventories retain useful July navigation details. Counts, route presence, seeded rows, integration configuration and descriptive labels were **not re-counted or certified in this documentation-only refresh**. Treat each surface as unverified/blocked unless the current retest report identifies its precise accepted scope.
 
-The backend is an Express 4 server with tRPC 11 for type-safe RPC and a REST API v1 layer for external integrations.
+### 2.1 Frontend inventory
 
-**tRPC Routers Delivered:**
+Historical frontend: React 19 SPA, TypeScript, Tailwind CSS 4, shadcn/ui and wouter. Responsive layouts/dark styling are implementation intentions; all-page, accessibility and real-device acceptance are open.
 
-| Router | Procedures | Purpose |
-|--------|-----------|---------|
-| `auth` | 2 | Session management (me, logout) |
-| `bpan` | 8 | Battery registry CRUD, BPAN generation |
-| `telemetry` | 5 | Telemetry ingestion, history, stats |
-| `soh` | 4 | SOH prediction, triage, history |
-| `marketplace` | 14 | Listings, offers, photos, orders |
-| `logistics` | 6 | Shipments, dispatch, tracking |
-| `epr` | 7 | EPR tokens, compliance, reports |
-| `warranty` | 8 | Registration, claims, check, dashboard |
-| `alerts` | 5 | Alert CRUD, acknowledgement |
-| `alertRules` | 7 | Rule configuration, defaults |
-| `analytics` | 4 | KPIs, charts, sustainability metrics |
-| `documents` | 4 | Upload, list, download, delete |
-| `wiki` | 4 | Articles, search, chat, feedback |
-| `wikiFeedback` | 4 | Submit, list, review, stats |
-| `admin` | 6 | User management, role audit |
-| `agent` | 8 | Agentic operations, system health |
-| `mqtt` | 7 | Broker status, publish, demo control |
-| `device` | 7 | IoT device provisioning |
-| `regulatory` | 6 | Carbon footprint, recycled content |
-| `platformSettings` | 3 | Locale, currency, jurisdictions |
-| `pdf` | 4 | Health passport, CPCB, EPR, certificate |
-| `system` | 2 | Notify owner, health |
-| `triage` | 5 | Autonomous triage, queue, approve |
-| `tutorial` | 3 | Progress tracking, complete, reset |
+| Category | Historical pages | Key routes | Acceptance limitation |
+|---|---:|---|---|
+| Authentication | 4 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Successful production login/recovery unverified |
+| Dashboard/overview | 2 | `/dashboard`, `/analytics` | Data isolation and KPI correctness require tests |
+| Battery management | 4 | `/batteries`, `/batteries/register`, `/batteries/:bpan`, `/onboarding` | BPAN contracts/canonical IDs remain blockers |
+| Telemetry/IoT | 5 | `/telemetry`, `/data-integration`, `/mqtt-flow-tester`, `/device-provisioning`, `/demo` | Broker/device/safety acceptance open |
+| AI/prediction | 4 | `/ai-soh`, `/digital-twin`, `/federated-learning`, `/autonomous-triage` | Formula, contract and scaffold blockers |
+| Marketplace | 5 | `/marketplace`, `/marketplace/create`, `/marketplace/:id`, `/marketplace/orders`, `/marketplace/payment-success` | No real-money acceptance; success page is not settlement evidence |
+| Compliance | 4 | `/epr-compliance`, `/compliance`, `/carbon-accounting`, `/passport/EU/:localId` | Draft/demo outputs, not certification |
+| Logistics | 2 | `/logistics`, `/yield-verification` | Identity, authorization, yield/dispatch blockers |
+| Warranty | 3 | `/warranty`, `/warranty/register`, `/warranty/check` | Public privacy and claim-route blockers |
+| Admin | 4 | `/admin/users`, `/admin/system`, `/admin/feedback`, `/settings/platform` | Explicit privilege/audit verification required |
+| Developer | 5 | `/developer-hub`, `/developer-portal`, `/api-reference`, `/mcp-server`, `/gateway-docs` | Scopes, interfaces/SDK claims unverified |
+| Knowledge/help | 4 | `/wiki`, `/getting-started`, `/faq`, `/glossary` | Workflow/translation acceptance not implied |
+| Public/legal | 5 | `/`, `/how-it-works`, `/privacy`, `/terms`, `/coming-soon` | Claims/legal review still required |
+| Other | 5 | `/alerts`, `/alert-rules`, `/documents`, `/service-history`, `/health` | Local UI/admin fixes; broader data/privacy gates remain |
 
-**REST API v1 Endpoints:**
+The July total of 56 routes is a historical navigation claim, not a current exhaustive count or proof that 56 workflows work.
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/v1/batteries` | List batteries with pagination |
-| GET | `/api/v1/batteries/:bpan` | Get battery by BPAN |
-| POST | `/api/v1/batteries` | Register new battery |
-| GET | `/api/v1/batteries/:bpan/telemetry` | Get telemetry readings |
-| POST | `/api/v1/batteries/:bpan/telemetry` | Ingest telemetry reading |
-| GET | `/api/v1/batteries/:bpan/soh` | Get SOH predictions |
-| GET | `/api/v1/marketplace/listings` | Browse marketplace |
-| GET | `/api/v1/compliance/epr-tokens` | List EPR tokens |
-| GET | `/api/v1/warranty/:bpan` | Check warranty status |
-| GET | `/api/docs` | Swagger/OpenAPI documentation UI |
+### 2.2 Backend inventory
 
-### 2.3 Database Schema
+Historical backend: Express with tRPC and REST v1. Procedure totals below describe the earlier inventory, not verified current counts or authorization across every surface.
 
-The PostgreSQL database contains **28 tables** with full referential integrity:
+| Router | Historical procedures | Intended purpose |
+|---|---:|---|
+| `auth` | 2 | Session identity/logout |
+| `bpan` | 8 | Registry, BPAN generation |
+| `telemetry` | 5 | Ingestion/history/statistics |
+| `soh` | 4 | Prediction/triage/history |
+| `marketplace` | 14 | Listings/offers/photos/orders |
+| `logistics` | 6 | Shipment/dispatch/tracking |
+| `epr` | 7 | Tokens/draft reports |
+| `warranty` | 8 | Registration/claims/check/dashboard |
+| `alerts` | 5 | Owner/admin alert operations (new bounded repair local) |
+| `alertRules` | 7 | Global rules/defaults (admin-only local repair) |
+| `analytics` | 4 | KPIs/charts |
+| `documents` | 4 | Upload/list/download/delete |
+| `wiki`, `wikiFeedback` | 4 each | Articles/chat and feedback |
+| `admin` | 6 | Users/roles/audit |
+| `agent` | 8 | Agent interfaces; actual execution unverified |
+| `mqtt`, `device` | 7 each | Broker/demo and provisioning |
+| `regulatory` | 6 | Declarations |
+| `platformSettings` | 3 | Locale/currency/jurisdictions |
+| `pdf` | 4 | Draft passports/reports/certificates |
+| `system` | 2 | Owner notice/health |
+| `triage` | 5 | Queue/approval scaffold |
+| `tutorial` | 3 | Progress/complete/reset |
 
-| Table | Purpose | Row Count (Seed) |
-|-------|---------|-----------------|
-| `users` | User accounts with roles | Dynamic |
-| `batteries` | Battery registry | 40 |
-| `telemetry_readings` | IoT sensor data | 480+ |
-| `soh_predictions` | AI SOH results | 25 |
-| `marketplace_listings` | Second-life listings | 18 |
-| `marketplace_offers` | Buyer offers | Dynamic |
-| `listing_photos` | Listing images | Dynamic |
+| Method | REST endpoint inventory | Intended purpose |
+|---|---|---|
+| GET | `/api/v1/batteries` | Paginated battery list |
+| GET | `/api/v1/batteries/:bpan` | Battery detail |
+| POST | `/api/v1/batteries` | Register battery |
+| GET | `/api/v1/batteries/:bpan/telemetry` | Telemetry history |
+| POST | `/api/v1/batteries/:bpan/telemetry` | Ingestion |
+| GET | `/api/v1/batteries/:bpan/soh` | Predictions |
+| GET | `/api/v1/marketplace/listings` | Listings |
+| GET | `/api/v1/compliance/epr-tokens` | Token records |
+| GET | `/api/v1/warranty/:bpan` | Warranty lookup (privacy gate open) |
+| GET | `/api/docs` | OpenAPI documentation UI |
+
+The historical MCP claim was 20 tools; all-tool behavior and current count were not revalidated. Disabled unpaid purchase and rejected browser-socket ingestion must not be documented as functional buying/ingestion paths.
+
+### 2.3 Historical schema and seed inventory
+
+The earlier “28 tables with full referential integrity” assertion was not verified. This table preserves the listed entities and synthetic seed examples, **not production row counts or migration reconciliation**. The baseline retest described a larger isolated QA schema; the current production outbox addition is separately verified above. Use reviewed schema/migration evidence rather than assuming this historical list is exhaustive.
+
+| Historical entity | Intended purpose | Historical seed example only |
+|---|---|---|
+| `users` | Accounts/roles | Dynamic |
+| `batteries` | Registry | 40 |
+| `telemetry_readings` | Sensor/demo data | 480+ |
+| `soh_predictions` | Health outputs | 25 |
+| `marketplace_listings` | Listings | 18 |
+| `marketplace_offers`, `listing_photos` | Offers/photos | Dynamic |
 | `logistics_orders` | Shipment records | 20 |
-| `epr_tokens` | Compliance tokens | 22 |
-| `alerts` | System alerts | 35 |
-| `alert_rules` | Configurable rules | Dynamic |
+| `epr_tokens` | Draft token records | 22 |
+| `alerts` | Alerts | 35 |
+| `alert_rules` | Global rules | Dynamic |
 | `service_history` | Maintenance records | 89 |
-| `documents` | File metadata | Dynamic |
-| `warranty_records` | Warranty data | Dynamic |
-| `carbon_footprint_declarations` | EU Annex II | Dynamic |
-| `recycled_content_declarations` | EU 2031 targets | Dynamic |
-| `regulatory_profiles` | Jurisdiction profiles | Dynamic |
-| `platform_settings` | Org configuration | Dynamic |
-| `role_audit_log` | Admin audit trail | Dynamic |
-| `agent_actions` | Agentic operations log | Dynamic |
-| `iot_devices` | Device registry | Dynamic |
-| `password_reset_tokens` | Auth tokens | Dynamic |
-| `stripe_payment_intents` | Payment records | Dynamic |
-| `wiki_feedback` | Knowledge base feedback | Dynamic |
-| `tutorial_progress` | Onboarding progress | Dynamic |
-| `triage_jobs` | Triage workflow | Dynamic |
-| `bulk_onboarding_jobs` | CSV import jobs | Dynamic |
-| `marketplace_listings_currency` | Multi-currency | Dynamic |
+| `documents`, `warranty_records` | Files/warranties | Dynamic |
+| `carbon_footprint_declarations`, `recycled_content_declarations` | Draft declarations | Dynamic |
+| `regulatory_profiles`, `platform_settings` | Configuration | Dynamic |
+| `role_audit_log`, `agent_actions` | Audit/action metadata | Dynamic |
+| `iot_devices`, `password_reset_tokens` | Device/auth records | Dynamic |
+| `stripe_payment_intents` | Payment metadata | Dynamic |
+| `wiki_feedback`, `tutorial_progress`, `triage_jobs`, `bulk_onboarding_jobs` | Workflows | Dynamic |
+| `marketplace_listings_currency` | Historical currency inventory entry | Existence/current schema not revalidated |
 
-### 2.4 Real-Time Systems
+The additive PagerDuty outbox table/index are not evidence of full-table referential integrity, complete data migration or historic seed totals in production.
 
-| System | Technology | Purpose |
-|--------|-----------|---------|
-| WebSocket | Socket.io | Live telemetry streaming to browser |
-| MQTT | mqtt.js v5 + EMQX Cloud | IoT device telemetry ingestion |
-| Alert Engine | In-memory + DB | Dynamic rule evaluation on every reading |
-| Cooldown | In-memory map | 5-minute alert deduplication |
-| Simulator | Physics-based | Demo mode with realistic battery curves |
+### 2.4 Realtime/provider inventory
 
-### 2.5 Integrations
+| Component | Implementation intention | Verification boundary |
+|---|---|---|
+| Socket.IO | Authenticated live telemetry | Live anonymous rejection recorded; ownership tests are scoped, not broad tenant certification |
+| MQTT subscriber | Device ingestion | Local provenance declarations preserved; ACL/topic/payload/BPAN/device trust unresolved |
+| Alert engine/cooldown | Thresholds and deduplication | In-memory/DB paths need safety, durability and ingest-consistency acceptance |
+| Simulator | Demo telemetry | Pack/cell resistance corrected locally; not calibrated physics or safety protection |
+| Stripe | Checkout/webhook adapter | Historical test-sandbox label not reverified; real payments blocked |
+| Resend/email | Transactional/recovery adapter | Delivery/domain acceptance unverified |
+| S3 | Storage adapter | Private object/metadata/download authorization unverified; no blanket “active/secure” claim |
+| EMQX | MQTT broker adapter | No real broker/hardware acceptance in new repairs |
+| Maps | Location interface | Current delivery/credentials unverified |
+| AI assistant | Direct AI integration and qualitative outputs | Provider delivery, isolation and numeric accuracy unverified |
+| PagerDuty | Events API v2/outbox implementation | Disabled; mocked delivery tests are not on-call acceptance |
 
-| Service | Purpose | Status |
-|---------|---------|--------|
-| Stripe | Marketplace payments | Configured (test sandbox) |
-| Resend | Transactional email | Configured (domain verification pending) |
-| AWS S3 | File/document storage | Active |
-| EMQX Cloud | MQTT broker | Active |
-| Google Maps | Location services | Configured |
-| LLM (Built-in) | AI assistant, SOH qualitative | Active |
+### 2.5 Documentation inventory
 
-### 2.6 Documentation Suite
+README.md, DEPLOYMENT.md and API.md in the project root and PLATFORM_GUIDE.md, FEATURES.md, COMPLIANCE_GUIDE.md, API_REFERENCE.md, MCP_GUIDE.md, ARCHITECTURE.md and HOW_TO_GUIDES.md under `docs/` were listed historically. They are reference/inventory documents, not ISO 27001, SOC 2, GDPR or battery-regulation certificates. Review stale deployment, feature and compliance instructions against current evidence before use.
 
-| Document | Location | Content |
-|----------|----------|---------|
-| README.md | Project root | Architecture, setup, env vars, deployment |
-| DEPLOYMENT.md | Project root | Pre-deployment checklist, DNS, secrets, ops |
-| API.md | Project root | All 100+ tRPC procedures, REST API, MCP |
-| docs/PLATFORM_GUIDE.md | /docs | Product overview, stakeholders, features |
-| docs/FEATURES.md | /docs | 25 features documented in detail |
-| docs/COMPLIANCE_GUIDE.md | /docs | ISO 27001, SOC 2, GDPR guidance |
-| docs/API_REFERENCE.md | /docs | Full API reference with examples |
-| docs/MCP_GUIDE.md | /docs | MCP server integration guide |
-| docs/ARCHITECTURE.md | /docs | Data model, system architecture |
-| docs/HOW_TO_GUIDES.md | /docs | 12 step-by-step guides |
+This handoff includes refreshed project, delivery, QA and persona documents, together with the retest report, release gates, PagerDuty runbook and sanitized evidence summary.
 
----
+## 3. Deployment and Configuration Handoff
 
-## 3. Deployment Details
+The former hardcoded database fallback is removed from the tested development source. PostgreSQL resolution now requires a valid explicit environment URL, with reviewed priority and fail-closed behavior. Both admin scripts require validated operator-supplied identity/password inputs, create fresh hashes and print no dynamic credentials; neither script was executed. Their conflict path can promote/reset the explicitly named account and must be used only under separate account-change authorization. Old credentials remain in source history and valid until controlled revocation. Historical MySQL/TiDB migration assumptions are not recovery design.
 
-### 3.1 Production Environment
+The historical “24 variables configured” total and all-provider readiness are unverified. Relevant configuration names include `DATABASE_URL`/`RENDER_DATABASE_URL`, `JWT_SECRET`, `APP_URL`, payment/webhook, email, MQTT and storage keys plus disabled PagerDuty settings. No values, passwords, signed URLs or tokens belong in public handoff documents.
 
-| Component | Service | Region | Details |
-|-----------|---------|--------|---------|
-| Web Service | Render | Oregon (US) | Auto-deploy from GitHub main branch |
-| Database | Render PostgreSQL | Oregon (US) | Internal networking, auto-backups |
-| MQTT Broker | EMQX Cloud | Asia-Southeast-1 | TLS, username/password auth |
-| File Storage | AWS S3 | ap-south-1 | Public bucket for documents/photos |
-| Domain | circulair.energy | — | Custom domain on Render |
+AutoDeploy is Off. Any future release requires explicit owner authorization, reviewed changes, final test/build evidence, protective export/rollback access, environment checks, a controlled deployment and post-release scoped checks. No guaranteed zero-downtime update is claimed. Render readiness showing a successful database query does not prove email, storage, MQTT, AI, payments or external uptime monitoring.
 
-### 3.2 Environment Variables (24 configured)
+## 4. Acceptance Matrix — Replace July Blanket PASS Claims
 
-All secrets are configured in Render's environment variable panel:
+| Criterion | Current disposition | Required evidence |
+|---|---|---|
+| Application/readiness accessible | **Limited verification** | Recorded 17 November homepage/readiness smoke, not uptime history |
+| Registration/login/recovery | **Production successful login unverified** | Authorized successful login/session/logout and separate recovery-delivery test |
+| Battery registration/BPAN | **Local bounded evidence; downstream blocked** | Canonical identity across all consumers and ownership/validation tests |
+| Telemetry/alerts | **Partially restricted; newer fixes local** | Owned/admin browser tests, real staging broker/hardware and safety-rule acceptance |
+| SOH/triage/advanced AI | **Blocked/unverified** | Calibrated fixtures, correct contracts and durable authorized state; no neural claim |
+| Marketplace/payments | **Blocked for real money** | Binding, currency, reservation, idempotency, settlement, payouts/refunds and privacy tests |
+| EPR/passport/carbon | **Draft/demo; blocked for certification** | Correct scope/units and independent regulatory/methodology review |
+| Role/tenant isolation | **Incomplete** | Every private surface and alternative API tested with two accounts/admin |
+| Responsive/accessibility | **Unverified beyond scoped emulation** | Real-device/Safari and accessibility review; no blanket WCAG claim |
+| Unit/build/typecheck/browser | **Final local runs passed; bounded acceptance only** | Current retest report and exact snapshot/configuration, not historical totals |
+| Security | **Open blockers** | Credential revocation, resource/PDF/storage/payment hardening, advisory remediation and authorized scanner follow-up |
+| Documentation | **Current handoff refreshed** | Remaining historical guides/public claims require review; documents are not functionality evidence |
+| Backup/recovery | **Export ready only** | Protected download and restore/rollback exercise |
+| PagerDuty/availability | **Disabled; acceptance open** | Runbook gates, intended service, authorized test and independent outage detection |
 
-- `DATABASE_URL` — PostgreSQL connection (auto-overridden in code)
-- `JWT_SECRET` — Session signing key
-- `STRIPE_SECRET_KEY` — Stripe API key
-- `STRIPE_WEBHOOK_SECRET` — Webhook signature verification
-- `RESEND_API_KEY` — Email service
-- `MQTT_BROKER_URL` — EMQX connection string
-- `MQTT_USERNAME` / `MQTT_PASSWORD` — Broker credentials
-- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — S3 access
-- `GOOGLE_MAPS_API_KEY` — Maps integration
-- Plus 13 additional platform configuration variables
+Strix has **not run**. Dependency advisories remain. Passing focused tests or Semgrep zero matches does not close broad security gates.
 
-### 3.3 CI/CD Pipeline
+## 5. Operational Responsibilities — Proposals, Not SLAs
 
-The deployment pipeline is fully automated:
+| Responsibility | Suggested owner/action | Current limitation |
+|---|---|---|
+| Health/availability | Operations: measure application and external uptime separately | No measured service objective or uptime guarantee established |
+| Backup/restore | Operations: protect export, download and practice restore | Export-ready state only; restore not tested |
+| Credentials | Engineering/operations: rotate and then revoke old exposed credentials with rollback plan | Old DB credential still valid |
+| Dependencies/security | Engineering: triage compatible updates and regressions | Advisories and launch blockers persist |
+| Provider delivery | Operations/product: authorize staging identities and failure tests | Mocked/disabled tests do not certify providers |
+| Incident delivery | Operations: follow PAGERDUTY_RUNBOOK.md | PagerDuty false; no live on-call test |
+| Scaling/performance | Engineering: define representative load and resource metrics | July user/device/database thresholds are planning ideas, not capacity measurements |
 
-1. Developer pushes to `main` branch on GitHub
-2. Render detects the push via webhook
-3. Build process: `pnpm install` → `pnpm build` (Vite + TypeScript)
-4. Deploy: New container replaces old with zero-downtime rolling update
-5. Health check: Render verifies `/api/health` returns 200
+Historical claims of daily backup coverage, automatic log rotation, fully operational CI/CD or pre-verified scale are not carried forward without service-specific evidence and ownership.
 
-### 3.4 Database Resilience
+## 6. Handover Checklist and Sign-Off Boundary
 
-The server code includes hardened database connection logic:
+| Item | Handoff status |
+|---|---|
+| Repository and historical inventory | Available reference; not full feature acceptance |
+| Live Render build/configuration | Recorded specific commit/config deploy above |
+| Later development repairs | Tested locally and included in the handoff checkpoint; not deployed to Render |
+| Database/outbox | New login connectivity and additive table/index verified; broad migration/rows not certified |
+| Old exposed credentials | Still valid; revocation gate open |
+| Protective export | Ready, not downloaded/restored |
+| Tests/security scans | Consult current retest report; no Strix run or clean-security certificate |
+| Integrations | Provider/hardware acceptance open; PagerDuty disabled |
+| Admin access | Use explicit authorized provisioning; do not rely on first-user auto-promotion |
+| UAT/feedback | Fictional composites only; no recruited-participant approval evidence |
+| Commercial launch | **Not signed off**; release gates remain |
 
-- **Priority-based URL resolution:** `RENDER_DATABASE_URL` > `DATABASE_URL` (if PostgreSQL) > hardcoded fallback
-- **Connection retry:** Up to 5 automatic reconnection attempts
-- **Pool error handling:** Catches pool-level errors without crashing the process
-- **Connection verification:** Tests connection on first use
-
----
-
-## 4. Acceptance Criteria Verification
-
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Platform accessible at circulair.energy | PASS | Health endpoint returns `{"status":"ok","db":"connected","dbType":"postgresql"}` |
-| User registration and login | PASS | JWT auth with bcrypt, forgot/reset password flow |
-| Battery registration with BPAN | PASS | 21-char BPAN generation, QR codes, bulk CSV |
-| Real-time telemetry display | PASS | Socket.io + MQTT, live charts, configurable alerts |
-| AI SOH prediction | PASS | Physics-informed model, triage routing |
-| Marketplace with payments | PASS | Stripe checkout, offers, orders |
-| EPR compliance reporting | PASS | CPCB Form BW-3 PDF, EU Battery Passport |
-| Multi-role access control | PASS | 7 platform roles, admin audit log |
-| Mobile responsive | PASS | All pages responsive, mobile sidebar |
-| 420+ automated tests passing | PASS | `pnpm test` — all green |
-| Zero TypeScript errors | PASS | `tsc --noEmit` — clean |
-| Security hardening | PASS | CSP, rate limiting, HSTS, bcrypt |
-| Documentation complete | PASS | 10 documentation files delivered |
-
----
-
-## 5. Post-Delivery Support
-
-### 5.1 Monitoring
-
-- **Health endpoint:** `GET /api/health` — returns DB status, type, environment
-- **Render dashboard:** CPU, memory, request count, error rate
-- **Structured logging:** JSON logs with correlation IDs (SIEM-ready)
-
-### 5.2 Maintenance Tasks
-
-| Task | Frequency | Method |
-|------|-----------|--------|
-| Database backups | Daily (automatic) | Render managed |
-| Dependency updates | Monthly | `pnpm update` + test suite |
-| SSL certificate renewal | Automatic | Render managed |
-| Log rotation | Automatic | Render managed |
-| Security patches | As needed | GitHub Dependabot alerts |
-
-### 5.3 Scaling Path
-
-| Trigger | Action |
-|---------|--------|
-| > 1000 concurrent users | Upgrade Render plan (more RAM/CPU) |
-| > 10GB database | Upgrade PostgreSQL plan |
-| Multi-region requirement | Deploy additional Render instances per region |
-| > 100 MQTT devices | Upgrade EMQX Cloud plan |
-
----
-
-## 6. Handover Checklist
-
-| Item | Delivered | Notes |
-|------|-----------|-------|
-| Source code (GitHub) | Yes | Full repository with history |
-| Production deployment | Yes | Live at circulair.energy |
-| Database with seed data | Yes | 28 tables, 8,681+ rows |
-| Environment variables | Yes | 24 secrets configured in Render |
-| Documentation | Yes | 10 documents (README, API, Deployment, etc.) |
-| Test suite | Yes | 420+ tests, all passing |
-| CI/CD pipeline | Yes | GitHub → Render auto-deploy |
-| Domain configuration | Yes | circulair.energy with SSL |
-| MQTT broker | Yes | EMQX Cloud configured |
-| Payment gateway | Yes | Stripe test sandbox |
-| Email service | Yes | Resend configured |
-| Admin access | Yes | First registered user is admin |
-
----
-
-## 7. Sign-Off
-
-This delivery document confirms that all components of the Circul-AI-r Platform have been developed, tested, deployed, and verified as operational. The platform is ready for pilot user onboarding.
-
-| Role | Name | Date | Signature |
-|------|------|------|-----------|
-| Delivery Lead | Setoo Engineering | July 25, 2026 | ________________ |
-| Product Owner | | | ________________ |
-| Technical Reviewer | | | ________________ |
-
----
-
-*End of Delivery Document*
+Acknowledging receipt of this handoff is not acceptance of functionality, safety, regulatory compliance or availability. No pilot/commercial readiness sign-off is inferred. A future sign-off must name the responsible approver, date, deployed snapshot, tested scope, exclusions, unresolved issues and evidence links, and must satisfy the current release gates. Do not backdate signatures or imply fictional personas approved delivery.

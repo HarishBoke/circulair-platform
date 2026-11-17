@@ -1,6 +1,7 @@
 import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "drizzle-orm";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { resolvePostgresConnectionUrl } from "../shared/databaseEnv.cjs";
 import { pagerDutyConfig, shouldPageAlert, makePagerDutyEvent } from "./pagerDuty";
 import { pagerDutyOutbox } from "../drizzle/pagerDutySchema";
 import {
@@ -31,39 +32,13 @@ let _pool: Pool | null = null;
 let _connectionAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
-// Render PostgreSQL internal URL (fallback when DATABASE_URL is MySQL/TiDB)
-const RENDER_PG_INTERNAL = 'postgresql://circulair_user:wKbtM8fh9EfLkjnLkoYqzL7EouQlTTSC@dpg-d95qdlcvikkc73e2aeig-a/circulair_production';
-
-function resolveConnectionUrl(): string {
-  // Priority order:
-  // 1. RENDER_DATABASE_URL (explicit Render PostgreSQL URL if set)
-  // 2. DATABASE_URL (if it's already PostgreSQL)
-  // 3. Hardcoded Render internal URL (if DATABASE_URL is MySQL/TiDB)
-  const renderDbUrl = process.env.RENDER_DATABASE_URL;
-  if (renderDbUrl && renderDbUrl.startsWith('postgres')) {
-    return renderDbUrl;
-  }
-  
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (dbUrl.startsWith('postgres')) {
-    return dbUrl;
-  }
-  
-  // DATABASE_URL is MySQL/TiDB or empty — use Render PostgreSQL internal URL
-  if (dbUrl.startsWith('mysql://') || dbUrl.includes('tidbcloud.com') || !dbUrl) {
-    console.log('[Database] Using Render PostgreSQL internal URL (DATABASE_URL is MySQL or empty)');
-    return RENDER_PG_INTERNAL;
-  }
-  
-  return dbUrl;
-}
-
 export async function getDb() {
   if (!_db) {
-    const connectionUrl = resolveConnectionUrl();
-    
-    if (!connectionUrl) {
-      console.warn('[Database] No DATABASE_URL configured');
+    let connectionUrl: string;
+    try {
+      connectionUrl = resolvePostgresConnectionUrl(process.env);
+    } catch {
+      console.warn('[Database] A valid PostgreSQL URL is required in RENDER_DATABASE_URL or DATABASE_URL');
       return null;
     }
     
@@ -77,8 +52,8 @@ export async function getDb() {
       });
       
       // Handle pool-level errors gracefully to prevent process crashes
-      _pool.on('error', (err) => {
-        console.error('[Database] Pool error (will attempt reconnect on next query):', err.message);
+      _pool.on('error', () => {
+        console.error('[Database] Pool error (will attempt reconnect on next query)');
         _db = null; // Force reconnection on next getDb() call
         _pool = null;
       });
@@ -92,7 +67,7 @@ export async function getDb() {
       console.log('[Database] Connected successfully to PostgreSQL');
     } catch (error) {
       _connectionAttempts++;
-      console.warn(`[Database] Failed to connect (attempt ${_connectionAttempts}/${MAX_RECONNECT_ATTEMPTS}):`, (error as Error).message);
+      console.warn(`[Database] Failed to connect (attempt ${_connectionAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
       _db = null;
       _pool = null;
       
@@ -421,10 +396,17 @@ export async function listAlerts(userId?: number, limit = 50) {
   return db.select().from(alerts).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(alerts.createdAt)).limit(limit);
 }
 
-export async function markAlertRead(id: number) {
+export async function markAlertRead(id: number, scope: { userId: number; admin?: never } | { admin: true; userId?: never }) {
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647 ||
+      !scope || (scope.admin !== true && (!Number.isInteger(scope.userId) || scope.userId! <= 0))) {
+    throw new Error("Invalid alert acknowledgement scope");
+  }
   const db = await getDb();
-  if (!db) return;
-  await db.update(alerts).set({ read: true }).where(eq(alerts.id, id));
+  if (!db) throw new Error("Database not available");
+  // Ownership is checked in the UPDATE itself, never in a separate read.
+  const predicate = scope.admin === true ? eq(alerts.id, id) : and(eq(alerts.id, id), eq(alerts.userId, scope.userId));
+  const updated = await db.update(alerts).set({ read: true }).where(predicate).returning({ id: alerts.id });
+  return updated.length > 0;
 }
 
 export async function getUnreadAlertCount(userId?: number) {

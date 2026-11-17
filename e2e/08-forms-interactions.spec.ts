@@ -76,12 +76,16 @@ test.describe("Wiki Interaction", () => {
 });
 
 test.describe("Demo Mode", () => {
-  test("demo mode page loads and shows content", async ({ page }) => {
+  test("demo offers unauthenticated users a working sign-in path", async ({ page }) => {
     await page.goto("/demo");
-    await expect(page.locator("body")).toBeVisible();
-    const bodyText = await page.locator("body").textContent();
-    expect(bodyText).not.toContain("Internal Server Error");
-    expect(bodyText!.trim().length).toBeGreaterThan(50);
+    // Await resolved authentication, not body visibility during the loading screen.
+    // This verifies only the sign-in gate; it does not start a simulator.
+    await expect(page.getByRole("heading", { name: "Welcome Back", exact: true })).toBeVisible();
+    const signIn = page.getByRole("button", { name: "Sign In to Platform" });
+    await expect(signIn).toBeVisible();
+    await signIn.click();
+    await expect(page).toHaveURL(/\/login(?:\?|$)/);
+    await expect(page.locator("input[type='email']")).toBeVisible();
   });
 });
 

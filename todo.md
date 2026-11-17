@@ -1413,7 +1413,7 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Create comprehensive Project Brief (docs/PROJECT_BRIEF.md) — executive summary, problem statement, solution overview, architecture, feature inventory, deployment, success metrics
 - [x] Create Delivery Document (docs/DELIVERY_DOCUMENT.md) — all delivered components, 56 routes, 28 tables, integrations, CI/CD, acceptance criteria, handover checklist
 - [x] Create QA Documentation (docs/QA_DOCUMENTATION.md) — test strategy, 420+ automated tests, 60+ manual test cases, performance benchmarks, security tests, regression protocol, bug template
-- [x] Create User Personas & Feedback Framework (docs/USER_PERSONAS_AND_FEEDBACK.md) — 7 real personas, UAT workflows, feedback forms, aggregation scorecard, feedback-to-action pipeline, cross-persona scenarios, launch criteria
+- [x] Create User Personas & Feedback Framework (docs/USER_PERSONAS_AND_FEEDBACK.md) — historical fictional composites (not recruited real users), UAT workflows, feedback forms, aggregation scorecard, feedback-to-action pipeline, cross-persona scenarios, launch criteria
 
 
 ## Phase 73: Full regression, authorized security assessment, and messaging
@@ -1422,14 +1422,30 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [x] Evaluate Strix prerequisites and execute alternate scoped assessment; Strix itself was not run
 - [x] Review auth/RBAC, REST/tRPC/MCP, secrets/configuration, realtime, and tenant isolation
 - [x] Fix prioritized verified vulnerabilities and add 33 security regression tests
-- [ ] Verify Render PostgreSQL environment configuration before removing embedded credential fallback
+- [x] Verify new Render environment-only PostgreSQL login before removing embedded credential fallback (17 November approved repair)
 - [x] Execute existing browser suite and isolated real-data regressions; report failures and limitations
 - [ ] Complete functional acceptance across all lifecycle modules and real external integrations
 - [x] Clarify intended pager functionality: PagerDuty incident alerts
 - [x] Implement native PagerDuty Events v2 adapter, durable outbox, admin status, tests and operator runbook
 - [x] Remove remaining runtime plugin and obsolete provider/auth adapters from the independent application
-- [ ] Configure the PagerDuty routing key/region and apply the additive migration on Render
+- [x] Apply and verify checksum-reviewed additive outbox table/index on Render after protective export
+- [ ] Configure PagerDuty routing key/region and verify activation gates; paging remains disabled
 - [ ] Approve/create the optional billable Render retry Cron job and verify controlled on-call delivery
 - [x] Save the tested development checkpoint
-- [ ] Verify actual Render deployment separately from the checkpoint/preview
+- [x] Verify actual Render54920faa deployment separately from preview; approved configuration redeploy live17November
 - [x] Publish a retest report with results, limitations, unresolved blockers, and credential-rotation actions
+
+## Phase 74: Controlled repair and truthful handoff — November 2026
+- [x] Create protective Render logical export and verify ready (not downloaded/restored)
+- [x] Create new managed PostgreSQL credential, preserve original for rollback, verify new session login
+- [x] Rotate JWT to64random characters with approved user sign-outs; canonical APP_URL and PagerDutyfalse verified
+- [x] Save Auto-DeployOff and verify controlled existing-commit redeploy live
+- [x] Implement103alert authorization and21MQTT provenance regressions in development
+- [x] Repair simulator pack/cell resistance units with49deterministic regressions; retain uncalibrated-model warning
+- [x] Repair role-aware alert UI and honest unavailable/global-rule access states
+- [x] Complete environment-only source cleanup and matching full unit/typecheck/clean build/browser evidence; bootstrap and gateway transport tests included
+- [ ] Controlled production release of the new tested source only after login and release-gate review; verify production commit separately
+- [ ] Verify authorized existing-user production email/password login and session
+- [ ] Retire old exposed database login and rotate deploy hook after separate approval/client checks
+- [ ] Download/secure backup and exercise restore to isolated instance
+- [ ] Recruit consenting real-user reviewers and collect evidence-linked feedback (seven profiles are fictional composites)

@@ -1,275 +1,290 @@
 # Circul-AI-r Platform — QA Documentation
 
-**Document Version:** 2.0  
-**Date:** July 25, 2026  
-**Prepared by:** Setoo Engineering  
-**Platform:** [https://circulair.energy](https://circulair.energy)
+**Document Version:** 3.0 — bounded handoff refresh
+**Date:** 17 November 2026
+**Prepared for:** Circul-AI-r / Setoo engineering handoff
+**Application URL:** https://circulair.energy
+**QA disposition:** Final bounded local verification complete; production rollout and unrestricted launch blocked
 
----
+## 1. Evidence Boundary and Current Status
 
-## 1. QA Overview
+This document defines a test plan and retains manual cases; it is **not an executed test ledger or acceptance certificate**. The July test totals, all-PASS security table, performance figures and real-persona UAT language are superseded. A test's expected result describes a requirement, not a verified outcome. No guaranteed uptime, 100% functionality, platform-wide security/compliance, calibrated battery safety or neural accuracy is established.
 
-This document defines the quality assurance framework for the Circul-AI-r Platform, including test strategy, automated test coverage, manual test cases, acceptance criteria, and the user acceptance testing (UAT) protocol for real user personas. The platform currently maintains **420+ automated tests** across 28 test files with zero TypeScript errors.
+For **current totals, exact snapshots, latest typecheck/build/browser results and defects**, use [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md). For release decisions use [RELEASE_GATES.md](RELEASE_GATES.md). Use their dated results and evidence summary to identify the exact verified snapshot. Do not hardcode an intermediate test/file count as the latest result.
 
----
+### 1.1 Dated live/local distinction
 
-## 2. Test Strategy
+| Scope | Recorded 17 November 2026 state | Limit |
+|---|---|---|
+| Production build | Render commit `54920faa9c392fa03a1689e4cbe151d67323edda` live; configuration redeploy `dep-dbu0nbg8v5cc73bj680g` observed live at 08:11:24 UTC | Newer local changes are not this release |
+| Production config | Managed PostgreSQL/new login/session user `circulair_runtime_20261117` verified; random 64-character JWT secret rotated; canonical `APP_URL` verified; AutoDeploy Off | Old credential still valid/not revoked; external allow-all unchanged; successful email/password login not verified |
+| Production smoke | Recorded **14/14** HTTP readiness/rejection checks; anonymous telemetry handshake rejected with `Unauthorized` | No successful login, owned workflow, payment, hardware or provider acceptance inferred |
+| Backup/outbox | Render protective export ready 07:41 UTC; additive outbox table/due index applied and verified | Export not downloaded/restored; not complete schema/recovery acceptance |
+| PagerDuty | Disabled (`false`) | No real incident/on-call test or billable retry Cron created |
+| Later development repairs | Alert authorization/provenance, simulator/UI, database resolver, admin bootstrap and gateway REST fixes tested locally | Not deployed to Render; provider/hardware/full-module acceptance remains open |
+| Final consolidated QA | Full local unit/typecheck/build, focused and existing Chromium, gateway offline, outbox and HTTP results recorded | Consult current report for actual counts, warnings, prior failures and verification limits |
 
-### 2.1 Testing Pyramid
+Evidence includes the sanitized production configuration facts, rejection/readiness/socket observations, seven bounded remediation reports and final result summary. Exact machine-readable counts and command exit codes are in the evidence archive; raw logs/session traces/customer data are excluded. This plan retains manual cases rather than marking them passed merely because related automated tests ran.
 
-The Circul-AI-r platform follows a layered testing approach:
+Strix **did not run**. Semgrep zero matches are not proof of no vulnerabilities; dependency advisories and broad launch blockers persist. Prior browser acceptance used isolated PostgreSQL and disabled/mocked integrations; mobile Chromium emulation is not real iPhone/Safari acceptance.
 
-| Layer | Tool | Coverage | Purpose |
-|-------|------|----------|---------|
-| Unit Tests | Vitest | 420+ tests | Individual functions, utilities, models |
-| Integration Tests | Vitest + tRPC | Included above | API procedure correctness, DB interactions |
-| Component Tests | Manual | Per feature | UI component behavior verification |
-| End-to-End Tests | Manual UAT | Per persona | Full workflow validation by real users |
-| Performance Tests | curl + timing | Per endpoint | Response time < 3s target |
-| Security Tests | Manual + automated | CSP, rate limit | Vulnerability scanning |
+## 2. Test Strategy and Inventory
 
-### 2.2 Automated Test Inventory
+| Layer | Method | Evidence requirement / boundary |
+|---|---|---|
+| Unit/regression | Vitest | Exact snapshot, command, environment, test/file totals and failures in current report; mocks identified |
+| Data-backed integration | Isolated PostgreSQL and API callers | Readback, transaction/ownership assertions, synthetic records, no production schema mutation |
+| Component/UI | Mocked render plus later browser checks | Mocked hook/access states are not network/cache/browser acceptance |
+| End-to-end | Compiled QA server, desktop/mobile browser | Stable harness, explicit browser/device, separate negative/positive paths and no hidden skips |
+| Real-user UAT | Consenting recruited participants in staging | Fictional composites are planning aids, not participant evidence |
+| Performance | Controlled representative workload | Samples, percentiles, cache/network/config and load; no single-request SLA claim |
+| Security | Source review, regressions, static/dependency scans | Resource-level authorization, failure cases and scanner limits; Strix remains a follow-up |
+| Provider/hardware | Separately authorized staging accounts/devices | Real delivery/ACL/failure evidence cannot be inferred from mocks |
+| Operations | Backup/restore, rollout/rollback and outage detection | Export readiness and app health response are insufficient |
 
-| Test File | Tests | Module Covered |
-|-----------|-------|----------------|
-| `server/auth.logout.test.ts` | 1 | Authentication logout |
-| `server/platform.test.ts` | 23 | Core platform procedures |
-| `server/telemetrySocket.test.ts` | 15 | WebSocket telemetry |
-| `server/mqtt.test.ts` | 19 | MQTT subscriber logic |
-| `server/alertCooldown.test.ts` | 17 | Alert deduplication |
-| `server/pdfGenerator.test.ts` | 14 | PDF generation |
-| `server/adminUsers.test.ts` | 23 | Admin user management |
-| `server/carbonClass.test.ts` | 32 | Carbon performance class |
-| `server/i18n.test.ts` | 26 | Internationalization |
-| `server/warranty.test.ts` | 17 | Warranty procedures |
-| `server/agent.test.ts` | 12 | Agentic operations |
-| `server/wikiFeedback.test.ts` | 16 | Wiki feedback system |
-| `server/marketplace.test.ts` | 18 | Marketplace CRUD |
-| `server/alertRules.test.ts` | 19 | Dynamic alert rules |
-| `server/email.test.ts` | 7 | Email helper (mocked) |
-| `server/sohModel.test.ts` | 16 | Physics SOH model |
-| `server/simulator.test.ts` | 16 | Battery simulator |
-| `server/deviceProvisioning.test.ts` | 10 | IoT device management |
-| `server/eprPdf.test.ts` | 8 | EPR compliance PDF |
-| `server/restApi.test.ts` | 14 | REST API v1 endpoints |
-| `server/gatewayPhysics.test.ts` | 18 | Gateway firmware validation |
-| `server/triageQueue.test.ts` | 8 | Triage approval workflow |
-| Additional test files | 65+ | Various modules |
+### 2.1 Historical automated inventory
 
----
+The July inventory included the following test files/areas. This is a navigation aid, not an exhaustive current list, a latest count or evidence all listed contracts pass. Check current source/report for names and scope.
 
-## 3. Manual Test Cases
+| Historical file / area | Intended coverage |
+|---|---|
+| `server/auth.logout.test.ts`, `server/platform.test.ts` | Logout/core procedures |
+| `server/telemetrySocket.test.ts`, `server/mqtt.test.ts` | Socket/subscriber behavior |
+| `server/alertCooldown.test.ts`, `server/alertRules.test.ts` | Cooldown/global rules |
+| `server/pdfGenerator.test.ts`, `server/eprPdf.test.ts` | PDF rendering/draft reports |
+| `server/adminUsers.test.ts`, `server/agent.test.ts` | Users/role/audit and agent interfaces |
+| `server/carbonClass.test.ts`, `server/i18n.test.ts` | Carbon labels/translations |
+| `server/warranty.test.ts`, `server/marketplace.test.ts` | Warranty/marketplace procedures |
+| `server/wikiFeedback.test.ts`, `server/email.test.ts` | Feedback and mocked email helpers |
+| `server/sohModel.test.ts`, `server/simulator.test.ts` | SOH/demo model bounds |
+| `server/deviceProvisioning.test.ts`, `server/gatewayPhysics.test.ts` | Device/gateway interfaces |
+| `server/restApi.test.ts`, `server/triageQueue.test.ts` | REST and triage interfaces |
 
-### 3.1 Authentication Module
+The November remediation evidence identifies `server/alertAuthorization.test.ts`, `server/mqttSubscriber.test.ts`, `server/batterySimulatorUnits.test.ts`, `server/databaseEnv.test.ts` and `server/adminBootstrap.test.ts`, plus gateway REST transport offline tests and unchanged PagerDuty/gateway bounds. Counts and acceptance scope belong in the current retest report. Normal project typechecking excludes tests; explicit focused strict typechecks are documented in the remediation notes. Passing assertions does not calibrate a model or certify regulatory methodology.
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| AUTH-01 | User registration | 1. Navigate to /register 2. Enter name, email, password 3. Submit | Account created, redirect to /login with success toast | Critical |
-| AUTH-02 | User login | 1. Navigate to /login 2. Enter email/password 3. Submit | JWT cookie set, redirect to /dashboard | Critical |
-| AUTH-03 | Invalid login | 1. Navigate to /login 2. Enter wrong password 3. Submit | Error message "Invalid email or password" | Critical |
-| AUTH-04 | Forgot password | 1. Click "Forgot password?" 2. Enter email 3. Submit | Success message, email sent (if Resend verified) | High |
-| AUTH-05 | Reset password | 1. Click reset link from email 2. Enter new password 3. Submit | Password updated, redirect to /login | High |
-| AUTH-06 | Session expiry | 1. Login 2. Wait for JWT expiry 3. Navigate | Toast "Session expired", redirect to /login | Medium |
-| AUTH-07 | Logout | 1. Click user avatar 2. Click "Sign Out" | Cookie cleared, redirect to /login | Critical |
-| AUTH-08 | Role-based access | 1. Login as non-admin 2. Navigate to /admin/users | Access denied or redirect | High |
+## 3. Manual Cases — Retained Plan, Not Results
 
-### 3.2 Battery Registry Module
+**All cases below are unexecuted/not accepted by this document.** Known defects make some **blocked**; other cases are **unverified** until an evidence record is attached. Even when a scoped retest has evidence, its environment/steps must be matched before marking a manual case passed. Record Pass/Fail/Blocked/Not run, actual result, build/date, duration and evidence for each execution.
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| BAT-01 | Register single battery | 1. Navigate to /batteries/register 2. Fill all fields 3. Submit | BPAN generated, battery appears in registry | Critical |
-| BAT-02 | BPAN format validation | 1. Register battery 2. Check BPAN format | 21-character alphanumeric, encodes manufacturer/chemistry/capacity | Critical |
-| BAT-03 | Battery detail view | 1. Click battery in registry 2. View detail page | Full lifecycle timeline, telemetry, SOH, warranty displayed | High |
-| BAT-04 | Battery search | 1. Enter search term in registry 2. Apply filters | Results filtered by chemistry, status, manufacturer | High |
-| BAT-05 | Bulk CSV import | 1. Navigate to /onboarding 2. Upload CSV 3. Preview 4. Confirm | All batteries registered with auto-BPANs, progress shown | High |
-| BAT-06 | QR code generation | 1. Open battery detail 2. Click QR code button | Scannable QR code displayed with BPAN URL | Medium |
-| BAT-07 | Battery status change | 1. Open battery detail 2. Change status to "End of Life" | Status updated, EPR reporting triggered | High |
+Use a reviewed isolated staging/QA environment with synthetic accounts and data. Do not invite users to mutate production or use production payment cards, brokers, submissions or on-call services. Admin accounts must be explicitly provisioned by an authorized administrator; do not rely on “first registrant becomes admin.” Global alert rules are **admin-only in the local repair**; ordinary users request changes. No testing below authorizes provider actions or production traffic.
 
-### 3.3 Telemetry Module
+### 3.1 Authentication
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| TEL-01 | Live telemetry display | 1. Navigate to /telemetry 2. Select battery 3. Start monitoring | Live voltage, temperature, current charts update every 2s | Critical |
-| TEL-02 | MQTT message ingestion | 1. Publish MQTT message to broker 2. Check telemetry page | Reading appears in live chart and DB within 3s | Critical |
-| TEL-03 | Thermal anomaly alert | 1. Send temperature > threshold 2. Check alerts | Alert created, toast notification, cooldown starts | High |
-| TEL-04 | Alert rule evaluation | 1. Configure custom rule 2. Send violating reading | Alert fires based on custom threshold | High |
-| TEL-05 | Demo mode | 1. Navigate to /demo 2. Click "Start All" | Simulated readings for all batteries, realistic physics curves | Medium |
-| TEL-06 | REST telemetry ingest | 1. POST to /api/v1/batteries/:bpan/telemetry 2. Check dashboard | Reading persisted and broadcast via Socket.io | High |
-| TEL-07 | Connection status indicator | 1. View telemetry page 2. Disconnect network 3. Reconnect | Status shows connected → disconnected → reconnecting → connected | Medium |
+Production successful login/recovery remains unverified; malformed-input rejection is not positive-path acceptance.
 
-### 3.4 AI SOH Prediction Module
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| AUTH-01 | Register approved synthetic account in QA | Account persists; documented session/navigation behavior, no accidental admin role | Critical |
+| AUTH-02 | Email/password login with approved test identity | Valid cookie/session, dashboard access; independently verify identity and logout | Critical |
+| AUTH-03 | Wrong password and malformed value types | Honest rejection, no 500, hash or account-data leak | Critical |
+| AUTH-04 | Forgot password in approved email sandbox | Generic response; canonical trusted link; no token in response/log; delivery separately evidenced | High |
+| AUTH-05 | Redeem synthetic reset token and try reuse/expiry | Password updated; invalid/reused/expired tokens rejected | High |
+| AUTH-06 | Controlled session expiry in QA | Access denied and explicit signed-out/session-expired state | Medium |
+| AUTH-07 | Sign out and retry protected request | Cookie/session no longer grants access; login route reachable | Critical |
+| AUTH-08 | Ordinary user opens admin route/API | Server denies privilege; UI explains denial rather than implies empty success | High |
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| SOH-01 | SOH prediction | 1. Navigate to /ai-soh 2. Select battery 3. Run prediction | SOH %, RUL cycles, confidence interval, triage path displayed | Critical |
-| SOH-02 | Triage routing | 1. Run prediction on battery with SOH < 60% | Triage path = "Material Recycling" | High |
-| SOH-03 | Prediction history | 1. Run multiple predictions 2. View history | All predictions listed with timestamps | Medium |
-| SOH-04 | Chemistry-specific model | 1. Predict SOH for NMC battery 2. Predict for LFP | Different degradation curves per chemistry | High |
-| SOH-05 | Breakdown display | 1. Run prediction 2. Check breakdown | Calendar fade, cycle fade, IR correction shown | Medium |
+### 3.2 Battery registry
 
-### 3.5 Marketplace Module
+Known gates: 19-/21-character contracts, canonical IDs, physical/date validation and resource authorization.
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| MKT-01 | Create listing | 1. Navigate to /marketplace/create 2. Select battery 3. Set price 4. Upload photos 5. Submit | Listing appears in marketplace browse | Critical |
-| MKT-02 | Browse marketplace | 1. Navigate to /marketplace 2. Apply filters | Listings filtered by chemistry, SOH, price range | High |
-| MKT-03 | Make offer | 1. Open listing detail 2. Click "Make Offer" 3. Enter amount 4. Submit | Offer recorded, Stripe checkout opens in new tab | Critical |
-| MKT-04 | Stripe payment | 1. Complete Stripe checkout (4242 4242 4242 4242) | Payment success page, order created | Critical |
-| MKT-05 | My orders | 1. Navigate to /marketplace/orders | All user's completed purchases listed | High |
-| MKT-06 | Withdraw listing | 1. Go to "My Listings" tab 2. Click "Withdraw" | Listing removed from browse, status updated | Medium |
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| BAT-01 | Register one synthetic battery | Canonical identifier/ID persists and can be read back by authorized account | Critical |
+| BAT-02 | Exercise identifier generator/decoder and consumers | Single agreed BPAN contract across all consumers; reject inconsistent values | Critical |
+| BAT-03 | Open authorized and foreign battery detail | Correct scoped records; foreign private access denied | High |
+| BAT-04 | Search/filter synthetic registry | Accurate chemistry/status/manufacturer filtering within authorized scope | High |
+| BAT-05 | Import small reviewed CSV; include invalid/duplicate rows | Preview, bounded validation, correct persistence and honest partial/error reporting | High |
+| BAT-06 | Generate/scan synthetic QR | Resolves to intended identifier with appropriate public/private projection | Medium |
+| BAT-07 | Change synthetic lifecycle status; test forbidden transition/account | Authorized, valid atomic transition; no unsupported claim of regulatory filing | High |
 
-### 3.6 Compliance Module
+### 3.3 Telemetry, alerts and simulator
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| COM-01 | CPCB Form BW-3 export | 1. Navigate to /epr-compliance 2. Click "Export Report" 3. Select India CPCB 4. Fill details 5. Generate | PDF downloaded with all regulatory fields | Critical |
-| COM-02 | EU Battery Passport | 1. Navigate to /passport/EU/:localId (public URL) | Public passport page with carbon, recycled content, SOH | Critical |
-| COM-03 | Carbon footprint declaration | 1. Open battery detail 2. Fill 4 lifecycle stages 3. Submit | Carbon class (A-E) calculated, declaration stored | High |
-| COM-04 | Recycled content declaration | 1. Open battery detail 2. Fill material percentages 3. Submit | EU threshold compliance shown | High |
-| COM-05 | EPR token issuance | 1. Complete yield verification 2. Check EPR tokens | Token issued with audit trail | High |
-| COM-06 | Compliance dashboard | 1. Navigate to /compliance | Per-jurisdiction status cards, active/pending/overdue | High |
+Hardware ingestion/threshold acceptance is blocked/unverified. Synthetic provenance suppression is not authenticated hardware provenance or synthetic data/state isolation; simulated readings can still persist/change state. Use isolated fixtures only.
 
-### 3.7 Warranty Module
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| TEL-01 | View authorized synthetic telemetry | Correct data/timestamps/units; updates without auto-starting simulation; no asserted 2s SLA | Critical |
+| TEL-02 | Authorized staging-only MQTT fixture, after broker gates | Topic/payload/device/BPAN binding and persistence; reject spoofed/revoked identity | Critical |
+| TEL-03 | Inject isolated threshold fixture with PagerDuty disabled | Correct persisted alert/severity/cooldown; no page or safety certification | High |
+| TEL-04 | Admin configures QA rule; ordinary user requests change and attempts denied API | Admin-only list/defaults/create/update/toggle/delete; correct evaluation; positive-ID and missing-rule errors | High |
+| TEL-05 | Start isolated demo fixtures | Clearly marked simulated; correct pack/cell resistance units; known demo cutoffs/nonphysical limits disclosed | Medium |
+| TEL-06 | Authorized REST ingest and unauthorized/foreign/invalid fixtures | Accepted authorized readings persist/broadcast; forbidden or invalid inputs rejected, no false-success browser ingestion | High |
+| TEL-07 | Disconnect/reconnect QA browser | Accurate connection/loading/error states; empty results do not mean system health | Medium |
+| TEL-08 | Ordinary/admin alert list, missing/foreign/read operation | Ordinary owner scope; admin global scope; authenticated acknowledgement predicate; denied/missing rows not reported success | Critical |
+| TEL-09 | Force alert/rule/default errors; Retry and mark-read refresh | No false zero/healthy summary; proper selected query refreshed; nonadmins make no global-rule requests | High |
+| TEL-10 | Demo/test/stream/source flags through MQTT callback fixtures | Declared synthetic provenance preserved and excluded from paging; no inference that unlabeled traffic is hardware-authentic | Critical |
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| WAR-01 | Register warranty | 1. Navigate to /warranty/register 2. Fill all fields 3. Submit | Warranty record created, linked to BPAN | Critical |
-| WAR-02 | Public warranty check | 1. Navigate to /warranty/check 2. Enter BPAN or phone 3. Search | Warranty status displayed (active/expired/voided) | Critical |
-| WAR-03 | Warranty claim | 1. Open warranty dashboard 2. Initiate claim 3. Describe issue | Claim created with status tracking | High |
-| WAR-04 | Warranty expiry calculation | 1. Register warranty with known dates 2. Check status | Days remaining calculated correctly | Medium |
+TEL-08–10 capture newer local repairs. Integrated browser QA and staging hardware tests remain open. Mark-read is not PagerDuty acknowledgement/resolution.
 
-### 3.8 Admin Module
+### 3.4 SOH and triage
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| ADM-01 | User role management | 1. Navigate to /admin/users 2. Change user role 3. Save | Role updated, audit log entry created | Critical |
-| ADM-02 | Self-demotion guard | 1. Try to remove own admin access | Error: "Cannot remove your own admin access" | High |
-| ADM-03 | Last-admin guard | 1. Try to demote the only admin | Error: "Cannot demote the last admin" | High |
-| ADM-04 | Audit log | 1. Navigate to /admin/users 2. Click "Audit Log" tab | Full history of role changes with timestamps | High |
-| ADM-05 | Platform settings | 1. Navigate to /settings/platform 2. Change locale/currency 3. Save | Settings persisted, UI reflects changes | Medium |
-| ADM-06 | Super admin dashboard | 1. Navigate to /admin/system | System health, MQTT status, user growth, API usage displayed | Medium |
+Blocked/unverified due to formula, contract and approval defects. Outcomes are model outputs, not validated accuracy or real operational recommendations.
 
-### 3.9 Cross-Cutting Concerns
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| SOH-01 | Run estimate on known synthetic fixture | Documented units/inputs/output fields, no crash; confidence/accuracy not invented | Critical |
+| SOH-02 | Test known low-health boundary fixture | Correct documented recommendation; display/approval use same result; no real routing | High |
+| SOH-03 | Read repeated prediction history | Authorized, timestamped, correct record/input binding | Medium |
+| SOH-04 | Compare chemistry fixtures | Correct numerical formulas and units; differences not evidence of calibrated accuracy | High |
+| SOH-05 | Check degradation/IR breakdown | Values reconcile with independently reviewed fixture calculations | Medium |
 
-| TC-ID | Test Case | Steps | Expected Result | Priority |
-|-------|-----------|-------|-----------------|----------|
-| XC-01 | Mobile responsiveness | 1. Open any page on mobile viewport (375px) | Layout adapts, sidebar collapses, content readable | Critical |
-| XC-02 | Rate limiting | 1. Send 121 requests to /api/ within 1 minute | 429 Too Many Requests after 120th | High |
-| XC-03 | CSP headers | 1. Check response headers in production | Content-Security-Policy header present | High |
-| XC-04 | 404 handling | 1. Navigate to /nonexistent-page | Custom 404 page with back-to-dashboard link | Medium |
-| XC-05 | Error boundary | 1. Trigger a component error | Error boundary catches, shows fallback UI | Medium |
-| XC-06 | Cookie consent | 1. First visit to platform | Cookie consent banner appears | Medium |
-| XC-07 | Language switching | 1. Click language selector 2. Choose German | UI labels switch to German translations | Medium |
-| XC-08 | Dark theme consistency | 1. Navigate through all pages | Consistent dark theme, no white flashes, readable text | High |
-| XC-09 | WCAG 2.1 AA | 1. Tab through page 2. Check focus rings 3. Check contrast | Visible focus rings, 4.5:1 contrast ratio, skip-to-content link | High |
-| XC-10 | Session persistence | 1. Login 2. Close browser 3. Reopen | Session maintained via httpOnly cookie | High |
+### 3.5 Marketplace
 
----
+**Real-money launch blocked.** Use no checkout/payment in real-user sessions; if separately authorized engineering tests use Stripe, prove isolated test mode first. The former public test-card instruction does not authorize payment activity. A payment-success page is not evidence of paid settlement.
 
-## 4. Performance Benchmarks
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| MKT-01 | Create synthetic listing and photos in QA | Only authorized battery; correct persistence and owner-scoped photo mutation | Critical |
+| MKT-02 | Browse/filter synthetic listings | Correct chemistry/SOH/price filters; condition claims explicitly qualified | High |
+| MKT-03 | Review synthetic offer draft without payment | Exact listing/offer/seller/amount/currency binding; approved acceptance state before checkout | Critical |
+| MKT-04 | Separately approved test-mode payment harness only | Atomic reservation, authenticated webhook, idempotent monotonic settlement, refund/payout behavior; unpaid path rejected | Critical |
+| MKT-05 | Review synthetic orders/negative success case | Only user's real test-settled orders; unpaid/failed/canceled page cannot claim success | High |
+| MKT-06 | Withdraw synthetic listing; try foreign mutation | Authorized status change; foreign deletion/update rejected | Medium |
 
-| Endpoint | Target | Measured | Status |
-|----------|--------|----------|--------|
-| GET /api/health | < 500ms | ~200ms | PASS |
-| GET / (homepage) | < 2s | ~1.5s | PASS |
-| GET /api/trpc/bpan.list | < 3s | ~2.5s | PASS |
-| POST /api/auth/login | < 2s | ~1s | PASS |
-| POST /api/v1/batteries/:bpan/telemetry | < 1s | ~500ms | PASS |
-| WebSocket connection | < 3s | ~1s | PASS |
-| PDF generation | < 15s | ~8s | PASS |
+### 3.6 Compliance and declarations
 
----
+Draft/test documents only; **no regulatory submissions, certification or official endorsement**. Numeric/methodology, period/organization scope and output-field gates remain.
 
-## 5. Security Test Cases
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| COM-01 | Generate synthetic CPCB-style BW-3 draft in QA | Fields/scope reconcile with fixture; independently reviewed format; clearly not filed/approved | Critical |
+| COM-02 | Review synthetic public EU passport | Minimal authorized public projection; required-field gaps recorded, not marked compliant | Critical |
+| COM-03 | Enter known lifecycle carbon fixtures | Correct unit conversion, independently reviewed methodology and authorized persistence | High |
+| COM-04 | Enter synthetic recycled-content fixture | Correct material units/validation; qualified jurisdiction/date thresholds, not certification | High |
+| COM-05 | Test positive/zero/negative/repeated yield in QA | No negative/repeated credit, atomic authorized writes and canonical battery ID | High |
+| COM-06 | Review scoped draft compliance dashboard | Correct organization/period data; unknown/not verified shown honestly | High |
 
-| SEC-ID | Test Case | Expected Result | Status |
-|--------|-----------|-----------------|--------|
-| SEC-01 | SQL injection in search | Input sanitized, no DB error | PASS (Drizzle ORM parameterized) |
-| SEC-02 | XSS in user input | HTML escaped in output | PASS (React auto-escaping) |
-| SEC-03 | CSRF protection | JWT in httpOnly cookie, SameSite=Lax | PASS |
-| SEC-04 | Brute force login | Rate limited to 20 req/15min on /api/auth/ | PASS |
-| SEC-05 | Unauthorized API access | 401 Unauthorized without valid JWT | PASS |
-| SEC-06 | Role escalation | Non-admin cannot access admin procedures | PASS (adminProcedure guard) |
-| SEC-07 | Password storage | bcrypt hash (12 rounds), never stored in plaintext | PASS |
-| SEC-08 | JWT token expiry | Tokens expire, session invalidated | PASS |
-| SEC-09 | File upload validation | Only allowed MIME types, size limits enforced | PASS |
-| SEC-10 | HTTPS enforcement | All traffic redirected to HTTPS | PASS (Render managed) |
+### 3.7 Warranty
 
----
+Blocked/unverified public lookup privacy, canonical identity and claim-route behavior.
 
-## 6. Regression Test Protocol
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| WAR-01 | Register synthetic warranty against canonical battery | Authorized valid dates/specification and persisted ID/BPAN binding | Critical |
+| WAR-02 | Search synthetic BPAN/phone fixtures without real PII | Only approved minimal public fields; no customer contact/address leakage | Critical |
+| WAR-03 | Try synthetic claim workflow | Genuine authorized persistence/status; absent routes blocked, not fake success | High |
+| WAR-04 | Exercise known date/expiry cases | Correct valid calendar arithmetic and timezone assumptions | Medium |
 
-When any code change is made, the following regression protocol must be followed:
+### 3.8 Administration
 
-1. **Run automated tests:** `pnpm test` — all 420+ tests must pass
-2. **TypeScript check:** `pnpm check` — zero errors required
-3. **Manual smoke test:** Login → Dashboard → Register Battery → View Telemetry → Run SOH → Check Marketplace
-4. **Health endpoint:** Verify `GET /api/health` returns `{"status":"ok","db":"connected","dbType":"postgresql"}`
-5. **Mobile check:** Verify responsive layout on 375px viewport
+Use explicitly approved QA admin fixtures; no production roles, brokers or settings are changed.
 
----
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| ADM-01 | Change approved test user role | Authorized change; complete audit/readback; ordinary mutation denied | Critical |
+| ADM-02 | Attempt self-demotion in QA | Documented self-access guard, no accidental lockout | High |
+| ADM-03 | Attempt last-admin demotion in QA | Guard against removing final authorized admin | High |
+| ADM-04 | Inspect synthetic audit trail | Accurate actor/action/time and restricted access; no secrets | High |
+| ADM-05 | Change QA locale/currency and restore fixture | Authorized persistence/readback, correct UI; no regulator/payment readiness implied | Medium |
+| ADM-06 | View QA system dashboard | Measured/unknown provider states; no fabricated uptime or green health from empty data | Medium |
 
-## 7. Bug Reporting Template
+### 3.9 Cross-cutting
 
-When reporting bugs during UAT, use the following template:
+Performance, access, mobile and header checks have limited previous evidence only; not blanket all-platform passes.
+
+| TC-ID | Case / safe steps | Expected requirement | Priority |
+|---|---|---|---|
+| XC-01 | 375px viewport and separate approved real-device checks | Readable/no overflow; specify browser/hardware; emulation not hardware acceptance | Critical |
+| XC-02 | Isolated QA rate-limit harness | Documented configured limits/exemptions and honest 429; no production flood | High |
+| XC-03 | Inspect headers at specified environment/routes | Intended CSP/HSTS/type/frame controls and functional policy; presence alone not security proof | High |
+| XC-04 | Unknown route | Honest not-found UI with safe navigation | Medium |
+| XC-05 | Controlled component exception | Error state/retry, no data leak or false success | Medium |
+| XC-06 | Consent flow with approved privacy policy | Recorded policy/choices and behavior; no compliance certificate inferred | Medium |
+| XC-07 | Change language on selected workflows | Labels and technical terminology reviewed; missing translations recorded | Medium |
+| XC-08 | Theme navigation | Contrast/readability and no distracting flashes | High |
+| XC-09 | Keyboard/screen-reader/contrast audit | Measured findings against chosen WCAG criteria; no blanket AA claim without full audit | High |
+| XC-10 | Session reopen/expiry/revocation fixtures | Correct cookie/session policy with secure HTTPS behavior and explicit failure state | High |
+
+## 4. Performance Plan — Targets Only
+
+The July point estimates and PASS labels are not current benchmarks. Proposed targets below require agreed workload, build, region, browser/network, warm/cold cache, sample size, percentile, error rate and provider mode before reporting a measurement. No production uptime or p95 claim is inferred from one smoke response.
+
+| Surface | Historical target to review | Current benchmark evidence |
+|---|---|---|
+| `/api/health` | < 500ms | Not established for representative workload |
+| Homepage | < 2s | Not established |
+| Scoped registry | < 3s | Not established |
+| Successful login | < 2s | Production positive path not verified |
+| Telemetry ingest | < 1s | Hardware/ingest acceptance open |
+| Authorized socket connect | < 3s | Not a full capacity benchmark |
+| PDF generation | < 15s | Browser/storage and untrusted-content gates open |
+
+## 5. Security Cases — Plan, Not Blanket PASS
+
+Architecture choices such as an ORM, React escaping or an httpOnly cookie do not by themselves prove SQL-injection, XSS or CSRF protection across the application.
+
+| SEC-ID | Test requirement | Current disposition |
+|---|---|---|
+| SEC-01 | Parameterized queries; hostile search/input across alternate surfaces | Broad verification open; source patterns alone insufficient |
+| SEC-02 | Output escaping, including PDF user HTML; browser script/network restriction | PDF blocker remains |
+| SEC-03 | Origin/fetch-metadata protection and cookie policy on mutation surfaces | Specific controls implemented; all-surface acceptance open |
+| SEC-04 | Login throttling without session-read false lockout | Scoped evidence only; verify isolated harness |
+| SEC-05 | Anonymous/invalid auth plus cross-account resource ownership | Production rejection smoke limited; many resource blockers remain |
+| SEC-06 | Ordinary/admin escalation and global rule denial | Alert repair local only; broader role/resource acceptance open |
+| SEC-07 | Password/JWT handling, no hash/token leakage, old credential revocation | JWT rotated; old database credential still valid |
+| SEC-08 | Expiry, invalid identity, recovery replay and cookie consistency | Scoped local evidence; successful production session path unverified |
+| SEC-09 | Upload MIME/size/content and private storage/download authorization | Private document/S3 gate remains |
+| SEC-10 | HTTPS/header behavior and intended CSP without misleading claims | Recorded smoke headers only; not all-route security certification |
+| SEC-11 | MQTT ACL/device/topic/payload identity and revocation | Not fixed by declared provenance suppression |
+| SEC-12 | Payment binding/reservation/idempotency/currency/refund | Real-money launch blocked |
+| SEC-13 | Synthetic paging exclusion and alert-source authorization | Local focused regressions; PagerDuty disabled; no on-call test |
+| SEC-14 | Dependency remediation and scanner review | Advisories persist; Strix not run; Semgrep zero matches not a certificate |
+
+## 6. Regression and Retest Protocol
+
+This is a proposed protocol, not an instruction executed by this refresh.
+
+1. Freeze and identify the reviewed local snapshot; record untracked/uncheckpointed changes and separately identify the deployed Render commit/configuration.
+2. Use an isolated reviewed PostgreSQL QA database and explicitly disabled/mocked external providers. Never copy secret values or customer data into evidence.
+3. Run full unit/regression suite, project and relevant test-source typechecks and production build after final resolver/configuration cleanup. Record all failures/warnings and exact commands in the current retest report; do not substitute a focused rerun for a full-suite result.
+4. Run compiled-server data-backed desktop/mobile browser suites. Check ordinary/admin alert query selection, no nonadmin global rule requests, error/Retry/read refresh and no false healthy summaries. Record browser/hardware and timing/harness limitations.
+5. Add two-account/admin, numeric-unit, canonical-ID and atomicity fixtures for remaining blockers. Verify both negative and positive paths and every alternative API surface.
+6. Obtain explicit staging/provider authorization for delivery/hardware tests; mock passes are not provider passes. No real-user payments, broker changes, regulatory submissions or on-call tests.
+7. Only after release gates and deployment authorization: verify protective export/restore/rollback, controlled rollout, actual live commit/config and safe post-release checks. Successful production email/password login remains a separate unverified gate.
+8. Finalize report/gates with failures, exclusions and unresolved issues. Do not rewrite observations as guaranteed functionality/security.
+
+## 7. Bug and Execution Record Template
+
+Use a participant/test ID rather than a personal name in the shared record. Redact PII, credentials, customer identifiers, emails/phones, private URLs and screenshots before attachment.
 
 ```markdown
-## Bug Report
+## Test / Bug Record
+Test ID / case ID:
+Participant pseudonym / role group (if applicable):
+Consent reference (if applicable; restricted record, not personal details):
+Date/time and timezone:
+Environment / local snapshot / deployed commit / config-deploy ID:
+Browser/version, OS/device (real hardware or emulation):
+Data fixture and provider mode (mocked/disabled/test):
+Status: Pass / Fail / Blocked / Not run
+Completion time (seconds/minutes); assistance required:
 
-**Reporter:** [Name / Role]
-**Date:** [YYYY-MM-DD]
-**Severity:** [Critical / High / Medium / Low]
-**Environment:** [Production / Staging]
-**Browser:** [Chrome / Firefox / Safari / Edge + version]
-**Device:** [Desktop / Mobile + OS]
-
-### Description
-[Clear description of the issue]
-
-### Steps to Reproduce
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
-
-### Expected Result
-[What should happen]
-
-### Actual Result
-[What actually happened]
-
-### Screenshots / Video
-[Attach if applicable]
-
-### Additional Context
-[Any relevant logs, error messages, or observations]
+Steps performed:
+1.
+2.
+Expected result:
+Actual result (including error/state; do not infer from empty data):
+Blocker and severity: Critical / High / Medium / Low / None
+Reproducibility and affected scope:
+Sanitized evidence path / screenshot (PII and secrets redacted):
+Owner / linked defect / next action / retest evidence:
 ```
 
----
+## 8. UAT Entry, Exit and Sign-Off
 
-## 8. UAT Sign-Off Criteria
+[USER_PERSONAS_AND_FEEDBACK.md](USER_PERSONAS_AND_FEEDBACK.md) defines seven **fictional composite** role groups and practical voluntary recruitment/consent. No actual recruitment, quotes, feedback scores or participant sign-off evidence was supplied. A profile or planned workflow cannot be counted as a completed UAT session.
 
-The platform is considered UAT-complete when:
+Entry requires an approved isolated environment, explicit test roles, synthetic data, clear disabled/blocked features, current engineering QA evidence, safe facilitator script, consent and an owner-approved scope. Production should not be the default UAT database.
 
-1. All **Critical** priority test cases pass (100%)
-2. All **High** priority test cases pass (> 95%)
-3. All **Medium** priority test cases pass (> 90%)
-4. No unresolved Critical or High severity bugs remain
-5. Each user persona has completed their primary workflow end-to-end
-6. Performance benchmarks are met for all critical endpoints
-7. Security test cases all pass
-8. Mobile responsiveness verified on iOS Safari and Android Chrome
+Exit requires real recorded expected-vs-actual results, completion times and blocker/severity per agreed critical workflow; resolved/retested blocking defects; two-account/admin privacy tests; measured performance and device/accessibility scope; independently reviewed methodology where relevant; and explicit owner approval tied to the deployed snapshot and current release gates. No average score, fictional-persona approval or historical percentage can waive a security/payment/safety blocker. Deferred/unverified features must remain labeled or disabled. This handoff does not record UAT completion or launch sign-off.
 
----
+## 9. Severity and Triage — Not Guaranteed Response Times
 
-## 9. Defect Severity Classification
+| Severity | Meaning | Proposed action |
+|---|---|---|
+| Critical | Security exposure, data loss, dangerous outcome or financial integrity failure | Stop affected test/use; notify authorized owner immediately; protect evidence |
+| High | Primary workflow blocked, major incorrect data or privacy concern | Prioritize before broader release; owner sets remediation/retest plan |
+| Medium | Partial failure with a safe workaround | Schedule fix and record workaround/limits |
+| Low | Cosmetic/documentation/usability issue | Track with owner and review priority |
 
-| Severity | Definition | SLA |
-|----------|-----------|-----|
-| **Critical** | System down, data loss, security breach, payment failure | Fix within 4 hours |
-| **High** | Major feature broken, workflow blocked, incorrect data | Fix within 24 hours |
-| **Medium** | Feature partially broken, workaround available, UI issue | Fix within 72 hours |
-| **Low** | Cosmetic issue, minor UX improvement, documentation gap | Fix in next release |
-
----
-
-*End of QA Documentation*
+The former four-/24-/72-hour SLAs were not verified commitments. Assign named responsible owners and agreed response expectations; never imply an automatic hotfix/deployment authorization from a bug report.

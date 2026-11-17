@@ -123,7 +123,9 @@ interface MqttPayload {
   irPack?: number;
   sohEstimate?: number;
   dtcCodes?: string[];
-  source?: string;
+  source: string;
+  demo?: true;
+  simulated?: true;
   ts?: number;
 }
 
@@ -140,6 +142,17 @@ function validatePayload(raw: unknown): MqttPayload | null {
   );
   if (!hasReading) return null;
 
+  // Retain explicit non-live labels recognized by the PagerDuty filter. These
+  // declarations only suppress paging; they do not authenticate a device.
+  // Ordinary device identifiers still use the MQTT transport source. "stream"
+  // is the legacy label emitted by this module's synthetic stream publisher.
+  const declaredSource = typeof p.source === "string" ? p.source : "";
+  const source = /(simulat|demo|test)/i.test(declaredSource)
+    ? declaredSource
+    : declaredSource.trim().toLowerCase() === "stream" || p.demo === true || p.simulated === true
+      ? "simulated"
+      : "mqtt";
+
   return {
     bpan: p.bpan,
     vPack: typeof p.vPack === "number" ? p.vPack : undefined,
@@ -152,7 +165,9 @@ function validatePayload(raw: unknown): MqttPayload | null {
     irPack: typeof p.irPack === "number" ? p.irPack : undefined,
     sohEstimate: typeof p.sohEstimate === "number" ? p.sohEstimate : undefined,
     dtcCodes: Array.isArray(p.dtcCodes) ? p.dtcCodes.map(String) : undefined,
-    source: typeof p.source === "string" ? p.source : "mqtt",
+    source,
+    demo: p.demo === true ? true : undefined,
+    simulated: p.simulated === true ? true : undefined,
   };
 }
 
@@ -184,6 +199,11 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
   }
 
   const { bpan } = payload;
+  const provenance = {
+    source: payload.source,
+    ...(payload.demo === true ? { demo: true } : {}),
+    ...(payload.simulated === true ? { simulated: true } : {}),
+  };
 
   // Look up battery in DB to get batteryId
   let batteryId: number;
@@ -247,7 +267,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
       dtcCodes: payload.dtcCodes ?? null,
       thermalAnomaly,
       anomalyType: anomalyType ?? undefined,
-      source: "mqtt",
+      source: payload.source,
     });
   } catch (err) {
     console.error(`[MQTT] DB insert failed for BPAN ${bpan}:`, err);
@@ -272,7 +292,9 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
     sohEstimate: payload.sohEstimate ?? 0,
     thermalAnomaly,
     anomalyType: anomalyType ?? undefined,
-    source: "mqtt" as const,
+    // Socket telemetry has a fixed source union; retain non-live classification
+    // without widening shared types or passing arbitrary source strings to it.
+    source: payload.source === "mqtt" ? "mqtt" as const : "simulated" as const,
     recordedAt: new Date().toISOString(),
   };
   broadcastTelemetry(bpan, reading);
@@ -291,7 +313,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
           severity: rule.severity as "info" | "warning" | "critical",
           title: `${rule.name} — ${bpan}`,
           message: `${metricLabel} ${operatorLabel[rule.operator] ?? rule.operator} ${rule.threshold} triggered by rule "${rule.name}". Actual value received from device.`,
-          metadata: { ruleId: rule.id, metric: rule.metric, threshold: rule.threshold, source: "mqtt" },
+          metadata: { ruleId: rule.id, metric: rule.metric, threshold: rule.threshold, ...provenance },
         });
         recordAlert(bpan, cooldownKey);
       }
@@ -322,7 +344,7 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
           severity: "warning",
           title: `EOL Threshold Reached — ${bpan}`,
           message: `Battery SOH = ${payload.sohEstimate?.toFixed(1)}% has fallen below 70% EOL threshold. Initiate triage workflow.`,
-          metadata: { soh: payload.sohEstimate, source: "mqtt" },
+          metadata: { soh: payload.sohEstimate, ...provenance },
         });
         recordAlert(bpan, "eol_detected");
         // Update battery status to end_of_life
@@ -597,7 +619,7 @@ function generateRandomPayload(bpan: string, scenario: string = "normal") {
     cycleCount: Math.floor(100 + Math.random() * 900),
     internalResistance: parseFloat((10 + Math.random() * 20).toFixed(2)),
     dtcCodes: [] as string[],
-    source: "stream",
+    source: "simulated",
   };
 
   if (scenario === "thermal") {

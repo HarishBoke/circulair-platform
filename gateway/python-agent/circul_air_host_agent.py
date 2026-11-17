@@ -11,7 +11,7 @@ Supported host system types (select via HOST_TYPE env var):
   - "sma_inverter"     : SMA Solar inverter (Modbus TCP / Speedwire)
   - "victron_venus"    : Victron Energy Venus OS (MQTT local broker)
   - "growatt_inverter" : Growatt inverter (Modbus TCP)
-  - "rest_api"         : Generic REST API (any inverter with HTTP endpoint)
+  - "rest_api"         : Generic REST API (explicit HTTPS endpoint)
   - "csv_file"         : Read from a CSV file exported by the host system
   - "modbus_tcp"       : Generic Modbus TCP (any device with TCP endpoint)
 
@@ -23,14 +23,17 @@ Usage:
 """
 
 import csv
+import ipaddress
 import json
 import logging
 import os
+import re
 import signal
 import sys
 import time
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import urlsplit
 
 import paho.mqtt.client as mqtt
 import requests
@@ -52,7 +55,9 @@ PUBLISH_INTERVAL = int(os.getenv("PUBLISH_INTERVAL", "60"))
 # Host system connection (used depending on HOST_TYPE)
 HOST_IP          = os.getenv("HOST_IP",        "192.168.1.100")
 HOST_PORT        = int(os.getenv("HOST_PORT",  "502"))   # Modbus TCP default
-HOST_API_URL     = os.getenv("HOST_API_URL",   "http://192.168.1.100/api/battery")
+# REST has no device/address fallback: explicitly configure a trusted HTTPS URL.
+# HTTP is permitted only for localhost, 127.0.0.1, or [::1] local simulators.
+HOST_API_URL     = os.getenv("HOST_API_URL",   "")
 HOST_API_KEY     = os.getenv("HOST_API_KEY",   "")
 CSV_FILE_PATH    = os.getenv("CSV_FILE_PATH",  "/data/battery_export.csv")
 
@@ -228,17 +233,65 @@ def read_victron_venus() -> Optional[dict]:
     )
 
 
+def _validated_rest_endpoint(endpoint: str) -> str:
+    """Validate without DNS/network access; never include endpoint in errors."""
+    if (not isinstance(endpoint, str) or not endpoint
+            or re.search(r"[\s\x00-\x20\x7f\\]", endpoint)
+            or "#" in endpoint
+            or re.search(r"%(?![0-9A-Fa-f]{2})", endpoint)):
+        raise ValueError("Invalid REST endpoint")
+
+    parsed = urlsplit(endpoint)
+    if (parsed.scheme not in {"https", "http"} or not parsed.netloc
+            or "@" in parsed.netloc or not parsed.hostname):
+        raise ValueError("Invalid REST endpoint")
+
+    # Accessing port also rejects nonnumeric/out-of-range ports and bad IPv6.
+    if parsed.netloc.endswith(":") or (parsed.port is not None and parsed.port == 0):
+        raise ValueError("Invalid REST endpoint")
+    hostname = parsed.hostname
+    authority_host = f"[{hostname}]" if ":" in hostname else hostname
+    if not re.fullmatch(re.escape(authority_host) + r"(?::[0-9]+)?",
+                        parsed.netloc, flags=re.IGNORECASE):
+        raise ValueError("Invalid REST endpoint")
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        # Reject ambiguous numeric IP spellings and malformed DNS authorities.
+        dns_host = hostname[:-1] if hostname.endswith(".") else hostname
+        labels = dns_host.split(".")
+        if (len(hostname) > 253 or re.fullmatch(r"[0-9.]+", hostname)
+                or any(not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
+                       for label in labels)):
+            raise ValueError("Invalid REST endpoint")
+
+    if parsed.scheme == "http" and hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise ValueError("REST endpoint requires HTTPS")
+    return endpoint
+
+
 def read_rest_api() -> Optional[dict]:
     """
-    Generic REST API reader. Reads battery data from an HTTP endpoint.
+    Generic REST API reader. Requires an explicit, trusted HTTPS endpoint.
+    Exact loopback HTTP endpoints are allowed only for local simulators/tests.
     Adjust the field mapping to match your inverter's API response format.
     """
+    try:
+        endpoint = _validated_rest_endpoint(HOST_API_URL)
+    except (TypeError, ValueError):
+        log.error("REST API endpoint rejected; configure HTTPS or exact loopback HTTP")
+        return None
+
     try:
         headers = {}
         if HOST_API_KEY:
             headers["Authorization"] = f"Bearer {HOST_API_KEY}"
 
-        resp = requests.get(HOST_API_URL, headers=headers, timeout=10)
+        resp = requests.get(endpoint, headers=headers, timeout=10,
+                            allow_redirects=False, verify=True)
+        if 300 <= resp.status_code < 400:
+            log.error("REST API redirect response rejected")
+            return None
         resp.raise_for_status()
         data = resp.json()
 
@@ -254,8 +307,9 @@ def read_rest_api() -> Optional[dict]:
             v_cell_min= float(data.get("cell_voltage_min", data.get("vCellMin", 0))),
             v_cell_max= float(data.get("cell_voltage_max", data.get("vCellMax", 0))),
         )
-    except Exception as e:
-        log.error(f"REST API read error: {e}")
+    except Exception:
+        # Exceptions may contain URLs, credentials, or upstream response bodies.
+        log.error("REST API read failed; transport, status, or payload rejected")
         return None
 
 

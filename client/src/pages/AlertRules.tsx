@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -82,6 +83,8 @@ const EMPTY_FORM: RuleFormData = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AlertRules() {
+  const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
+  const canLoadRules = !authLoading && !authError && user?.role === "admin";
   const [filterChemistry, setFilterChemistry] = useState<string>("");
   const [filterMetric, setFilterMetric] = useState<string>("");
   const [filterEnabled, setFilterEnabled] = useState<string>("all");
@@ -98,15 +101,19 @@ export default function AlertRules() {
   const utils = trpc.useUtils();
 
   // Queries
-  const { data: rulesData, isLoading } = trpc.alertRules.list.useQuery({
+  const { data: rulesData, isPending: isLoading, isFetching, error: rulesError, refetch: refetchRules } = trpc.alertRules.list.useQuery({
     chemistry: filterChemistry || undefined,
     metric: filterMetric || undefined,
     enabled: filterEnabled === "all" ? undefined : filterEnabled === "enabled",
     limit: 200,
     offset: 0,
+  }, {
+    enabled: canLoadRules,
   });
 
-  const { data: defaults } = trpc.alertRules.getDefaults.useQuery();
+  const { data: defaults, isPending: defaultsLoading, isFetching: defaultsFetching, error: defaultsError, refetch: refetchDefaults } = trpc.alertRules.getDefaults.useQuery(undefined, {
+    enabled: canLoadRules,
+  });
 
   // Mutations
   const createMutation = trpc.alertRules.create.useMutation({
@@ -230,6 +237,38 @@ export default function AlertRules() {
 
   const metricUnit = METRIC_LABELS[form.metric]?.unit ?? "";
 
+  // Keep all hooks above this gate so role changes never alter hook order.
+  if (!canLoadRules) {
+    return (
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <AlertTriangle className="h-6 w-6 text-yellow-400" />
+          Alert Rule Configuration
+        </h1>
+        <Card>
+          <CardContent className="p-6">
+            {authLoading ? (
+              <p role="status" className="text-sm text-muted-foreground">Checking administrator access...</p>
+            ) : authError ? (
+              <div role="alert" className="space-y-3">
+                <h2 className="font-semibold">Unable to verify administrator access</h2>
+                <p className="text-sm text-muted-foreground">Your account could not be verified. No alert rules have been requested.</p>
+                <Button variant="outline" size="sm" onClick={() => refreshAuth()}>Retry</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <h2 className="font-semibold">Administrator access required</h2>
+                <p className="text-sm text-muted-foreground">
+                  Alert rules apply globally and can only be viewed or managed by administrators. Contact your administrator for rule configuration changes.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -257,7 +296,23 @@ export default function AlertRules() {
         </div>
 
         {/* Chemistry Defaults Panel */}
-        {showDefaults && defaults && (
+        {showDefaults && (defaultsLoading || defaultsError) && (
+          <Card className="border-yellow-500/30 bg-yellow-500/5">
+            <CardContent className="p-4">
+              {defaultsLoading ? (
+                <p role="status" className="text-sm text-muted-foreground">Loading chemistry defaults...</p>
+              ) : (
+                <div role="alert" className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Unable to load chemistry defaults. Please retry.</p>
+                  <Button variant="outline" size="sm" disabled={defaultsFetching} onClick={() => refetchDefaults()}>
+                    {defaultsFetching ? "Retrying..." : "Retry"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        {showDefaults && !defaultsLoading && !defaultsError && defaults && (
           <Card className="border-yellow-500/30 bg-yellow-500/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-yellow-400">
@@ -313,7 +368,7 @@ export default function AlertRules() {
           ].map((s) => (
             <Card key={s.label} className="p-3">
               <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-2xl font-bold ${s.color}`}>{isLoading || rulesError ? "—" : s.value}</p>
             </Card>
           ))}
         </div>
@@ -364,8 +419,16 @@ export default function AlertRules() {
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+              <div role="status" className="flex items-center justify-center h-40 text-muted-foreground text-sm">
                 Loading rules...
+              </div>
+            ) : rulesError ? (
+              <div role="alert" className="flex flex-col items-center justify-center h-40 gap-3">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
+                <p className="text-sm text-muted-foreground">Unable to load alert rules. Rule configuration is unavailable.</p>
+                <Button size="sm" variant="outline" disabled={isFetching} onClick={() => refetchRules()}>
+                  {isFetching ? "Retrying..." : "Retry"}
+                </Button>
               </div>
             ) : rules.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 gap-3 text-muted-foreground">
