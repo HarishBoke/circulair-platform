@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import {
   Plus, Cpu, Wifi, WifiOff, Copy, RefreshCw, Trash2, Edit,
-  Key, Terminal, Radio, CircuitBoard, Eye
+  Key, Terminal, Radio, CircuitBoard
 } from "lucide-react";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -57,16 +57,18 @@ export default function DeviceProvisioning() {
     firmwareVersion: "", hardwareModel: "", location: "", notes: "",
   });
 
+  // Hard-disabled until reviewed owner-scoped routes and broker provisioning exist.
+  const deviceBoundaryReady = false;
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.device.list.useQuery(
-    statusFilter !== "all" ? { status: statusFilter } : undefined
+    statusFilter !== "all" ? { status: statusFilter } : undefined,
+    { enabled: deviceBoundaryReady }
   );
-  const stats = trpc.device.stats.useQuery();
+  const stats = trpc.device.stats.useQuery(undefined, { enabled: deviceBoundaryReady });
 
   const registerMut = trpc.device.register.useMutation({
-    onSuccess: (result) => {
+    onSuccess: () => {
       setShowRegister(false);
-      setShowCredentials(result);
       setRegForm({ name: "", deviceType: "gateway", bpan: "", firmwareVersion: "", hardwareModel: "", location: "", notes: "" });
       utils.device.list.invalidate();
       utils.device.stats.invalidate();
@@ -85,9 +87,8 @@ export default function DeviceProvisioning() {
   });
 
   const regenMut = trpc.device.regenerateCredentials.useMutation({
-    onSuccess: (result) => {
-      setShowCredentials({ deviceId: "", ...result });
-      toast.success("Credentials regenerated");
+    onSuccess: () => {
+      toast.info("Credential delivery remains gated");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -105,6 +106,7 @@ export default function DeviceProvisioning() {
   const s = stats.data;
 
   const handleRegister = () => {
+    if (!deviceBoundaryReady) { toast.error("Provisioning is disabled pending owner and broker verification"); return; }
     if (!regForm.name.trim()) { toast.error("Device name is required"); return; }
     registerMut.mutate({
       name: regForm.name.trim(),
@@ -127,6 +129,7 @@ export default function DeviceProvisioning() {
   };
 
   const handleUpdate = () => {
+    if (!deviceBoundaryReady) { toast.error("Device changes are disabled pending verification"); return; }
     if (!showEdit) return;
     updateMut.mutate({
       id: showEdit, name: editForm.name.trim() || undefined,
@@ -144,12 +147,14 @@ export default function DeviceProvisioning() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Device Provisioning</h1>
-          <p className="text-muted-foreground text-sm mt-1">Register IoT gateways and BMS units to stream telemetry via MQTT</p>
+          <p className="text-muted-foreground text-sm mt-1">Prepare owner-bound battery gateways; operational ingestion is not yet enabled</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setShowRegister(true)}>
+        <Button disabled={!deviceBoundaryReady} className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setShowRegister(true)}>
           <Plus className="w-4 h-4 mr-1.5" /> Register Device
         </Button>
       </div>
+
+      <div role="status" className="border border-border rounded-xl p-4 text-sm">Device provisioning, credential retrieval and changes are unavailable until owner-scoped server routes, protected secrets, verified device/battery mapping and broker ACL/revocation evidence are approved. Existing records are retained. A listed status is not a connectivity or safety certificate. No battery hardware has been connected by this page.</div>
 
       {/* Stats */}
       {s && (
@@ -180,7 +185,7 @@ export default function DeviceProvisioning() {
             <SelectItem value="revoked">Revoked</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => { utils.device.list.invalidate(); utils.device.stats.invalidate(); }} className="border-border">
+        <Button variant="outline" size="sm" disabled={!deviceBoundaryReady} onClick={() => { utils.device.list.invalidate(); utils.device.stats.invalidate(); }} className="border-border">
           <RefreshCw className="w-3.5 h-3.5" />
         </Button>
       </div>
@@ -209,8 +214,8 @@ export default function DeviceProvisioning() {
                 <tr>
                   <td colSpan={7} className="px-4 py-16 text-center">
                     <Cpu className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground text-sm">No devices registered yet.</p>
-                    <Button size="sm" className="mt-4 bg-primary text-primary-foreground" onClick={() => setShowRegister(true)}>Register First Device</Button>
+                    <p className="text-muted-foreground text-sm">Device listing is unavailable while authorization remediation is gated.</p>
+                    <Button disabled={!deviceBoundaryReady} size="sm" className="mt-4 bg-primary text-primary-foreground" onClick={() => setShowRegister(true)}>Register First Device</Button>
                   </td>
                 </tr>
               ) : devices.map((d) => {
@@ -243,9 +248,8 @@ export default function DeviceProvisioning() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Edit" onClick={() => openEdit(d)}><Edit className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="View credentials" onClick={() => setShowCredentials({ deviceId: d.deviceId, mqttTopic: d.mqttTopic, mqttUsername: d.mqttUsername, mqttPassword: d.mqttPassword })}><Eye className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Regenerate credentials" onClick={() => regenMut.mutate({ id: d.id })}><Key className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Delete" onClick={() => { if (confirm("Delete this device?")) deleteMut.mutate({ id: d.id }); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled title="Credential rotation unavailable until broker revocation is verified"><Key className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" disabled title="Deletion unavailable; use reviewed revocation process"><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                     </td>
                   </tr>
@@ -261,19 +265,8 @@ export default function DeviceProvisioning() {
         <h3 className="font-display text-sm font-bold mb-3 flex items-center gap-2">
           <Terminal className="w-4 h-4 text-primary" /> Integration Guide
         </h3>
-        <p className="text-muted-foreground text-xs mb-4">After registering a device, use the MQTT credentials to publish telemetry readings.</p>
-        <div className="bg-secondary/30 rounded-lg p-4 font-mono text-xs space-y-1">
-          <div className="text-muted-foreground"># Publish a telemetry reading</div>
-          <div className="text-foreground break-all">
-            mosquitto_pub -h broker.circulair.energy -p 1883 \<br />
-            &nbsp;&nbsp;-u &lt;mqttUsername&gt; -P &lt;mqttPassword&gt; \<br />
-            &nbsp;&nbsp;-t &lt;mqttTopic&gt; \<br />
-            &nbsp;&nbsp;-m '{`{"bpan":"<BPAN>","vPack":52.1,"iPack":-12.5,"tPack":28.3,"tMax":31.2,"sohEstimate":94.5,"cycleCount":142}`}'
-          </div>
-        </div>
-        <div className="mt-3 text-xs text-muted-foreground">
-          <strong className="text-foreground">Required:</strong> bpan &nbsp;|&nbsp; <strong className="text-foreground">Optional:</strong> vPack, iPack, vMin, vMax, tPack, tMax, cycleCount, irPack, sohEstimate, dtcCodes
-        </div>
+        <p className="text-muted-foreground text-xs mb-4">Do not publish to example brokers. Start with offline tests in gateway/python-agent/REST_TRANSPORT.md. Obtain a verified owner, exact BPAN, physical serial/device mapping, approved read-only interface, field units/scaling, signed physical envelope, and TLS/ACL/revocation evidence before a separately authorized staging pilot.</p>
+        <p className="text-xs text-muted-foreground">The strict contract requires bpan, deviceId, recordedAt and source: measured. Missing metrics remain unknown; explicit zero is retained. SOC, inferred health and unsupported aliases are rejected rather than silently saved as measurements. No wiring or charging instructions are provided.</p>
       </div>
 
       {/* Register Dialog */}
@@ -323,7 +316,7 @@ export default function DeviceProvisioning() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRegister(false)} className="border-border">Cancel</Button>
-            <Button onClick={handleRegister} disabled={registerMut.isPending} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleRegister} disabled={!deviceBoundaryReady || registerMut.isPending} className="bg-primary text-primary-foreground hover:bg-primary/90">
               {registerMut.isPending ? "Registering..." : "Register Device"}
             </Button>
           </DialogFooter>
@@ -335,12 +328,12 @@ export default function DeviceProvisioning() {
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display">MQTT Credentials</DialogTitle>
-            <DialogDescription>Store the password securely. It cannot be retrieved after this dialog is closed.</DialogDescription>
+            <DialogDescription>Credential delivery is disabled pending protected secret storage and verified broker provisioning. Database records alone do not establish usable broker credentials.</DialogDescription>
           </DialogHeader>
           {showCredentials && (
             <div className="space-y-3 py-2">
               {[
-                { label: "Broker", value: "mqtt://broker.circulair.energy:1883" },
+                { label: "Broker", value: "Not provisioned or verified" },
                 { label: "Topic", value: showCredentials.mqttTopic },
                 { label: "Username", value: showCredentials.mqttUsername },
                 { label: "Password", value: showCredentials.mqttPassword },
@@ -410,7 +403,7 @@ export default function DeviceProvisioning() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEdit(null)} className="border-border">Cancel</Button>
-            <Button onClick={handleUpdate} disabled={updateMut.isPending} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleUpdate} disabled={!deviceBoundaryReady || updateMut.isPending} className="bg-primary text-primary-foreground hover:bg-primary/90">
               {updateMut.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

@@ -5,46 +5,22 @@
  */
 
 import puppeteer from "puppeteer-core";
+import { documentHtml, joinDocumentHtml, renderDocumentPdf, type DocumentHtml } from "./documentSecurity";
 
 import { existsSync } from "fs";
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH ||
   ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]
     .find((p) => existsSync(p)) ||
   "/usr/bin/chromium";
-const LAUNCH_ARGS = [
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage",
-  "--disable-gpu",
-  "--disable-software-rasterizer",
-];
-
-async function htmlToPdf(html: string): Promise<Buffer> {
-  const browser = await puppeteer.launch({
-    executablePath: CHROMIUM_PATH,
-    args: LAUNCH_ARGS,
-    headless: true,
-  });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
+async function htmlToPdf(html: DocumentHtml): Promise<Buffer> {
+  return renderDocumentPdf(html, puppeteer, CHROMIUM_PATH);
 }
 
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 
-const baseStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+const baseStyles = documentHtml`
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; font-size: 11px; color: #1a1a2e; background: #fff; line-height: 1.5; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1a1a2e; background: #fff; line-height: 1.5; }
   .page { padding: 0; }
   .header { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%); color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
   .header-logo { display: flex; align-items: center; gap: 12px; }
@@ -184,7 +160,7 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
   const mfgDate = `${battery.mfgYear}-${String(battery.mfgMonth).padStart(2, "0")}-${String(battery.mfgDay).padStart(2, "0")}`;
   const passportId = `HP-${battery.bpan}-${Date.now().toString(36).toUpperCase()}`;
 
-  const html = `<!DOCTYPE html>
+  const html = documentHtml`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -238,12 +214,12 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
         <div class="soh-title">State of Health Assessment</div>
         <div class="soh-sub">BPAN: <span style="font-family:monospace;color:#00e5a0">${battery.bpan}</span> &nbsp;|&nbsp; ${battery.chemistry} &nbsp;|&nbsp; ${battery.capacityKwh} kWh</div>
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-          ${latestPrediction?.rulDays != null ? `
+          ${latestPrediction?.rulDays != null ? documentHtml`
           <div class="rul-badge">
             <div class="rul-num">${latestPrediction.rulDays}</div>
             <div class="rul-text">Days RUL Remaining</div>
           </div>` : ""}
-          ${latestPrediction?.triageDecision ? `
+          ${latestPrediction?.triageDecision ? documentHtml`
           <div>
             <div style="font-size:9px;color:#a0aec0;margin-bottom:4px">AI TRIAGE DECISION</div>
             <span class="badge ${getTriageBadge(latestPrediction.triageDecision)}">${formatStatus(latestPrediction.triageDecision)}</span>
@@ -252,7 +228,7 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
             <div style="font-size:9px;color:#a0aec0;margin-bottom:4px">LIFECYCLE STATUS</div>
             <span class="badge ${getStatusBadge(battery.status)}">${formatStatus(battery.status)}</span>
           </div>
-          ${latestPrediction?.confidence != null ? `
+          ${latestPrediction?.confidence != null ? documentHtml`
           <div>
             <div style="font-size:9px;color:#a0aec0;margin-bottom:4px">AI CONFIDENCE</div>
             <div style="font-size:14px;font-weight:700;color:#00e5a0">${parseFloat(String(latestPrediction.confidence)).toFixed(1)}%</div>
@@ -299,11 +275,11 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
         <div class="field-value">${battery.cellOriginCountry}</div>
       </div>
     </div>
-    ${battery.vehicleId ? `<div style="margin-top:10px"><div class="field" style="display:inline-block"><div class="field-label">Vehicle ID</div><div class="field-value mono">${battery.vehicleId}</div></div></div>` : ""}
+    ${battery.vehicleId ? documentHtml`<div style="margin-top:10px"><div class="field" style="display:inline-block"><div class="field-label">Vehicle ID</div><div class="field-value mono">${battery.vehicleId}</div></div></div>` : ""}
   </div>
 
   <!-- LIVE TELEMETRY -->
-  ${latestTelemetry ? `
+  ${latestTelemetry ? documentHtml`
   <div class="section">
     <div class="section-title">Latest Telemetry Snapshot</div>
     <div class="grid-4">
@@ -350,17 +326,17 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
   <div class="section">
     <div class="section-title">Material Composition (BMCS)</div>
     <div class="grid-4">
-      ${battery.lithiumPct != null ? `<div class="field"><div class="field-label">Lithium (Li)</div><div class="field-value">${parseFloat(String(battery.lithiumPct)).toFixed(2)}%</div></div>` : ""}
-      ${battery.cobaltPct != null ? `<div class="field"><div class="field-label">Cobalt (Co)</div><div class="field-value">${parseFloat(String(battery.cobaltPct)).toFixed(2)}%</div></div>` : ""}
-      ${battery.nickelPct != null ? `<div class="field"><div class="field-label">Nickel (Ni)</div><div class="field-value">${parseFloat(String(battery.nickelPct)).toFixed(2)}%</div></div>` : ""}
-      ${battery.manganesePct != null ? `<div class="field"><div class="field-label">Manganese (Mn)</div><div class="field-value">${parseFloat(String(battery.manganesePct)).toFixed(2)}%</div></div>` : ""}
-      ${battery.recyclabilityPct != null ? `<div class="field"><div class="field-label">Recyclability</div><div class="field-value accent">${parseFloat(String(battery.recyclabilityPct)).toFixed(1)}%</div></div>` : ""}
-      ${battery.carbonFootprintKgCo2 != null ? `<div class="field"><div class="field-label">Carbon Footprint</div><div class="field-value">${parseFloat(String(battery.carbonFootprintKgCo2)).toFixed(1)} kg CO₂</div></div>` : ""}
+      ${battery.lithiumPct != null ? documentHtml`<div class="field"><div class="field-label">Lithium (Li)</div><div class="field-value">${parseFloat(String(battery.lithiumPct)).toFixed(2)}%</div></div>` : ""}
+      ${battery.cobaltPct != null ? documentHtml`<div class="field"><div class="field-label">Cobalt (Co)</div><div class="field-value">${parseFloat(String(battery.cobaltPct)).toFixed(2)}%</div></div>` : ""}
+      ${battery.nickelPct != null ? documentHtml`<div class="field"><div class="field-label">Nickel (Ni)</div><div class="field-value">${parseFloat(String(battery.nickelPct)).toFixed(2)}%</div></div>` : ""}
+      ${battery.manganesePct != null ? documentHtml`<div class="field"><div class="field-label">Manganese (Mn)</div><div class="field-value">${parseFloat(String(battery.manganesePct)).toFixed(2)}%</div></div>` : ""}
+      ${battery.recyclabilityPct != null ? documentHtml`<div class="field"><div class="field-label">Recyclability</div><div class="field-value accent">${parseFloat(String(battery.recyclabilityPct)).toFixed(1)}%</div></div>` : ""}
+      ${battery.carbonFootprintKgCo2 != null ? documentHtml`<div class="field"><div class="field-label">Carbon Footprint</div><div class="field-value">${parseFloat(String(battery.carbonFootprintKgCo2)).toFixed(1)} kg CO₂</div></div>` : ""}
     </div>
   </div>
 
   <!-- SERVICE HISTORY -->
-  ${serviceHistory.length > 0 ? `
+  ${serviceHistory.length > 0 ? documentHtml`
   <div class="section">
     <div class="section-title">Service History (Last ${Math.min(serviceHistory.length, 5)} Records)</div>
     <table class="table">
@@ -375,7 +351,7 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
         </tr>
       </thead>
       <tbody>
-        ${serviceHistory.slice(0, 5).map((s) => `
+        ${joinDocumentHtml(serviceHistory.slice(0, 5).map((s) => documentHtml`
         <tr>
           <td>${new Date(s.servicedAt).toLocaleDateString("en-IN")}</td>
           <td>${formatStatus(s.serviceType)}</td>
@@ -383,7 +359,7 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
           <td>${s.sohBefore != null ? parseFloat(String(s.sohBefore)).toFixed(1) + "%" : "—"}</td>
           <td>${s.sohAfter != null ? parseFloat(String(s.sohAfter)).toFixed(1) + "%" : "—"}</td>
           <td>${s.notes ?? "—"}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
     </table>
   </div>` : ""}
@@ -393,18 +369,18 @@ export async function generateHealthPassportPdf(data: HealthPassportData): Promi
     <div>
       <div style="font-weight:600;color:#374151;margin-bottom:2px">Circul-AI-r Platform</div>
       <div>India's Battery Circular Economy Intelligence Platform</div>
-      <div>Compliant with MoEFCC Battery Waste Management Rules 2022</div>
+      <div>Self-declared data; regulatory review required</div>
     </div>
     <div class="footer-seal">
       <div class="seal-box">
-        <div class="seal-text">✓ Digitally Certified</div>
+        <div class="seal-text">DRAFT — NOT CERTIFIED</div>
         <div class="seal-text">Circul-AI-r Platform</div>
         <div style="font-size:7px;color:#9ca3af;margin-top:2px">${passportId}</div>
       </div>
     </div>
     <div style="text-align:right">
-      <div class="watermark-valid">✓ VALID DOCUMENT</div>
-      <div>BPAN Verified by CPCB Registry</div>
+      <div class="watermark-valid">REVIEW REQUIRED</div>
+      <div>Registry verification not established</div>
       <div>Page 1 of 1</div>
     </div>
   </div>
@@ -462,7 +438,7 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
   const totalNiRecovered = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.nickelRecoveredKg ?? 0)), 0);
   const totalBlackMass = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.blackMassKg ?? 0)), 0);
 
-  const html = `<!DOCTYPE html>
+  const html = documentHtml`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -513,8 +489,8 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
     </div>
     <div class="header-meta">
       <strong>${organization.name}</strong>
-      ${organization.gstin ? `<div>GSTIN: ${organization.gstin}</div>` : ""}
-      ${organization.cpcbId ? `<div>CPCB ID: ${organization.cpcbId}</div>` : ""}
+      ${organization.gstin ? documentHtml`<div>GSTIN: ${organization.gstin}</div>` : ""}
+      ${organization.cpcbId ? documentHtml`<div>CPCB ID: ${organization.cpcbId}</div>` : ""}
       <div>Generated: ${generatedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</div>
     </div>
   </div>
@@ -524,8 +500,8 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
     <div class="compliance-box">
       <div class="compliance-icon">✅</div>
       <div class="compliance-text">
-        <h3>EPR Compliance Status: COMPLIANT</h3>
-        <p>All Extended Producer Responsibility obligations for ${monthName} ${reportPeriod.year} have been met. ${eprTokens.length} EPR tokens issued covering ${stats.totalWeightKg.toFixed(1)} kg of battery waste processed.</p>
+        <h3>Compliance status: REVIEW REQUIRED — DRAFT</h3>
+        <p>Self-declared processing summary for ${monthName} ${reportPeriod.year}; obligations have not been evaluated. ${eprTokens.length} EPR tokens issued covering ${stats.totalWeightKg.toFixed(1)} kg of battery waste processed.</p>
       </div>
     </div>
   </div>
@@ -595,7 +571,7 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
   </div>
 
   <!-- EPR TOKEN LEDGER -->
-  ${eprTokens.length > 0 ? `
+  ${eprTokens.length > 0 ? documentHtml`
   <div class="section">
     <div class="section-title">Section C — EPR Token Ledger (${Math.min(eprTokens.length, 15)} of ${eprTokens.length})</div>
     <table class="table">
@@ -610,7 +586,7 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
         </tr>
       </thead>
       <tbody>
-        ${eprTokens.slice(0, 15).map((t) => `
+        ${joinDocumentHtml(eprTokens.slice(0, 15).map((t) => documentHtml`
         <tr>
           <td style="font-family:monospace;font-size:9px">${t.tokenId}</td>
           <td style="font-family:monospace;font-size:9px">${t.bpan ?? "—"}</td>
@@ -618,14 +594,14 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
           <td>${parseFloat(String(t.weightKg)).toFixed(2)}</td>
           <td><span class="badge ${t.status === "issued" ? "badge-green" : t.status === "redeemed" ? "badge-blue" : "badge-yellow"}">${t.status}</span></td>
           <td>${new Date(t.issuedAt).toLocaleDateString("en-IN")}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
     </table>
-    ${eprTokens.length > 15 ? `<div style="margin-top:6px;font-size:9px;color:#9ca3af">... and ${eprTokens.length - 15} more tokens. Full ledger available in the Circul-AI-r platform.</div>` : ""}
+    ${eprTokens.length > 15 ? documentHtml`<div style="margin-top:6px;font-size:9px;color:#9ca3af">... and ${eprTokens.length - 15} more tokens. Full ledger available in the Circul-AI-r platform.</div>` : ""}
   </div>` : ""}
 
   <!-- YIELD VERIFICATION -->
-  ${yieldVerifications.length > 0 ? `
+  ${yieldVerifications.length > 0 ? documentHtml`
   <div class="section">
     <div class="section-title">Section D — Yield Verification Records</div>
     <table class="table">
@@ -640,7 +616,7 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
         </tr>
       </thead>
       <tbody>
-        ${yieldVerifications.slice(0, 10).map((v) => `
+        ${joinDocumentHtml(yieldVerifications.slice(0, 10).map((v) => documentHtml`
         <tr>
           <td style="font-family:monospace;font-size:9px">${v.bpan ?? "—"}</td>
           <td>${parseFloat(String(v.blackMassKg)).toFixed(2)}</td>
@@ -648,7 +624,7 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
           <td>${v.cobaltRecoveredKg != null ? parseFloat(String(v.cobaltRecoveredKg)).toFixed(2) : "—"}</td>
           <td>${v.nickelRecoveredKg != null ? parseFloat(String(v.nickelRecoveredKg)).toFixed(2) : "—"}</td>
           <td>${new Date(v.verifiedAt).toLocaleDateString("en-IN")}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
     </table>
   </div>` : ""}
@@ -658,20 +634,18 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
     <div class="section-title">Section E — Declaration</div>
     <div class="warning-box">
       <p style="font-size:10px;color:#92400e;line-height:1.6">
-        I hereby declare that the information furnished in this Form BW-3 is true, correct and complete to the best of my knowledge and belief. 
-        All battery waste has been processed in accordance with the Battery Waste Management Rules, 2022 and applicable CPCB guidelines. 
-        EPR obligations for the reporting period have been fulfilled through the Circul-AI-r Platform's blockchain-verified token system.
+        Draft self-declared records only. Organization, reporting-period scope, recovery evidence and applicable obligations require independent review. No regulatory determination, government submission, digital signature or blockchain anchoring is established by this report.
       </p>
       <div style="margin-top:12px;display:flex;justify-content:space-between">
         <div>
-          <div style="font-size:9px;color:#9ca3af">Authorized Signatory</div>
+          <div style="font-size:9px;color:#9ca3af">Prepared by (not signed)</div>
           <div style="font-size:10px;font-weight:600;margin-top:2px">${generatedBy}</div>
           <div style="font-size:9px;color:#9ca3af">${organization.name}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:9px;color:#9ca3af">Date of Submission</div>
+          <div style="font-size:9px;color:#9ca3af">Date generated (not submitted)</div>
           <div style="font-size:10px;font-weight:600;margin-top:2px">${generatedAt.toLocaleDateString("en-IN")}</div>
-          <div style="font-size:9px;color:#9ca3af">Digital Signature via Circul-AI-r</div>
+          <div style="font-size:9px;color:#9ca3af">Unsigned draft</div>
         </div>
       </div>
     </div>
@@ -686,13 +660,13 @@ export async function generateCpcbReportPdf(data: CpcbReportData): Promise<Buffe
     </div>
     <div class="footer-seal">
       <div class="seal-box">
-        <div class="seal-text">✓ EPR COMPLIANT</div>
+        <div class="seal-text">DRAFT — REVIEW REQUIRED</div>
         <div class="seal-text">${monthName} ${reportPeriod.year}</div>
       </div>
     </div>
     <div style="text-align:right">
-      <div class="watermark-valid">✓ OFFICIAL DOCUMENT</div>
-      <div>CPCB Registry Verified</div>
+      <div class="watermark-valid">UNOFFICIAL DRAFT</div>
+      <div>Registry verification not established</div>
       <div>Page 1 of 1</div>
     </div>
   </div>
@@ -790,10 +764,10 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
   const totalNiRecovered = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.nickelRecoveredKg ?? 0)), 0);
   const totalBlackMass = yieldVerifications.reduce((s, v) => s + parseFloat(String(v.blackMassKg ?? 0)), 0);
 
-  const complianceStatus = stats.complianceRate >= 85 ? "COMPLIANT" : stats.complianceRate >= 60 ? "PARTIALLY COMPLIANT" : "NON-COMPLIANT";
-  const complianceColor = stats.complianceRate >= 85 ? "#059669" : stats.complianceRate >= 60 ? "#d97706" : "#dc2626";
-  const complianceBg = stats.complianceRate >= 85 ? "#ecfdf5" : stats.complianceRate >= 60 ? "#fffbeb" : "#fef2f2";
-  const complianceBorder = stats.complianceRate >= 85 ? "#6ee7b7" : stats.complianceRate >= 60 ? "#fcd34d" : "#fca5a5";
+  const complianceStatus: string = "REVIEW REQUIRED — DRAFT";
+  const complianceColor = "#92400e";
+  const complianceBg = "#fff7ed";
+  const complianceBorder = "#fed7aa";
 
   // Chemistry breakdown
   const chemistryMap = new Map<string, number>();
@@ -809,7 +783,7 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
     statusMap.set(b.status, (statusMap.get(b.status) ?? 0) + 1);
   });
 
-  const html = `<!DOCTYPE html>
+  const html = documentHtml`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -861,9 +835,9 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
     </div>
     <div class="header-meta">
       <strong>${organization.name}</strong>
-      ${organization.registrationId ? `<div>Registration: ${organization.registrationId}</div>` : ""}
-      ${organization.address ? `<div>${organization.address}</div>` : ""}
-      ${organization.contactEmail ? `<div>${organization.contactEmail}</div>` : ""}
+      ${organization.registrationId ? documentHtml`<div>Registration: ${organization.registrationId}</div>` : ""}
+      ${organization.address ? documentHtml`<div>${organization.address}</div>` : ""}
+      ${organization.contactEmail ? documentHtml`<div>${organization.contactEmail}</div>` : ""}
       <div>Generated: ${generatedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</div>
     </div>
   </div>
@@ -871,11 +845,11 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
   <!-- COMPLIANCE STATUS -->
   <div class="section">
     <div class="compliance-box">
-      <div class="compliance-rate">${stats.complianceRate.toFixed(0)}%</div>
+      <div class="compliance-rate">${eprTokens.length === 0 ? "Unknown" : "Not evaluated"}</div>
       <div>
         <div class="compliance-status">${complianceStatus}</div>
         <p style="font-size:10px;color:#6b7280;margin-top:4px">
-          EPR compliance rate for ${quarterLabel} ${reportPeriod.year}. ${stats.totalEprTokens} EPR tokens issued covering ${stats.totalWeightKg.toFixed(1)} kg of battery waste processed across ${stats.totalBatteries} registered batteries.
+          Self-declared processing summary for ${quarterLabel} ${reportPeriod.year}. ${stats.totalEprTokens} EPR tokens issued covering ${stats.totalWeightKg.toFixed(1)} kg of battery waste processed across ${stats.totalBatteries} registered batteries.
         </p>
       </div>
     </div>
@@ -912,17 +886,17 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
         <tr><th>Chemistry</th><th>Count</th><th>Percentage</th><th>Distribution</th></tr>
       </thead>
       <tbody>
-        ${chemistryRows.map(([chem, count]) => {
+        ${joinDocumentHtml(chemistryRows.map(([chem, count]) => {
           const pct = batteries.length > 0 ? ((count / batteries.length) * 100).toFixed(1) : "0";
           const colors: Record<string, string> = { NMC: "#3b82f6", LFP: "#22c55e", NCA: "#f59e0b", LCO: "#8b5cf6", LMO: "#ef4444" };
           const barColor = colors[chem] ?? "#94a3b8";
-          return `<tr>
+          return documentHtml`<tr>
             <td style="font-weight:600">${chem}</td>
             <td>${count}</td>
             <td>${pct}%</td>
             <td style="width:200px"><div class="chemistry-bar"><div class="chemistry-fill" style="width:${pct}%;background:${barColor}"></div></div></td>
           </tr>`;
-        }).join("")}
+        }))}
       </tbody>
     </table>
   </div>
@@ -970,7 +944,7 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
   </div>
 
   <!-- EPR TOKEN LEDGER -->
-  ${eprTokens.length > 0 ? `
+  ${eprTokens.length > 0 ? documentHtml`
   <div class="section page-break">
     <div class="section-title">Section E — EPR Token Ledger (${Math.min(eprTokens.length, 20)} of ${eprTokens.length})</div>
     <table class="table">
@@ -978,7 +952,7 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
         <tr><th>Token ID</th><th>BPAN</th><th>Chemistry</th><th>Weight (kg)</th><th>Status</th><th>Issued</th></tr>
       </thead>
       <tbody>
-        ${eprTokens.slice(0, 20).map((t) => `
+        ${joinDocumentHtml(eprTokens.slice(0, 20).map((t) => documentHtml`
         <tr>
           <td style="font-family:monospace;font-size:9px">${t.tokenId}</td>
           <td style="font-family:monospace;font-size:9px">${t.bpan ?? "\u2014"}</td>
@@ -986,14 +960,14 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
           <td>${parseFloat(String(t.weightKg)).toFixed(2)}</td>
           <td><span class="badge ${t.status === "issued" ? "badge-green" : t.status === "redeemed" ? "badge-blue" : "badge-yellow"}">${t.status}</span></td>
           <td>${new Date(t.issuedAt).toLocaleDateString("en-IN")}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
     </table>
-    ${eprTokens.length > 20 ? `<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${eprTokens.length - 20} more tokens. Full ledger available in the platform.</div>` : ""}
+    ${eprTokens.length > 20 ? documentHtml`<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${eprTokens.length - 20} more tokens. Full ledger available in the platform.</div>` : ""}
   </div>` : ""}
 
   <!-- BATTERY INVENTORY -->
-  ${batteries.length > 0 ? `
+  ${batteries.length > 0 ? documentHtml`
   <div class="section${eprTokens.length === 0 ? " page-break" : ""}">
     <div class="section-title">Section F — Battery Inventory (${Math.min(batteries.length, 25)} of ${batteries.length})</div>
     <table class="table">
@@ -1001,10 +975,10 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
         <tr><th>BPAN</th><th>Chemistry</th><th>Capacity</th><th>SOH</th><th>Status</th><th>Manufacturer</th><th>Registered</th></tr>
       </thead>
       <tbody>
-        ${batteries.slice(0, 25).map((b) => {
+        ${joinDocumentHtml(batteries.slice(0, 25).map((b) => {
           const soh = b.currentSoh != null ? parseFloat(String(b.currentSoh)) : null;
           const sohColor = soh == null ? "#9ca3af" : soh > 75 ? "#059669" : soh > 50 ? "#d97706" : "#dc2626";
-          return `<tr>
+          return documentHtml`<tr>
             <td style="font-family:monospace;font-size:9px">${b.bpan}</td>
             <td>${b.chemistry}</td>
             <td>${parseFloat(String(b.capacityKwh)).toFixed(1)} kWh</td>
@@ -1013,14 +987,14 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
             <td style="font-size:9px">${b.manufacturer ?? "\u2014"}</td>
             <td>${new Date(b.registeredAt).toLocaleDateString("en-IN")}</td>
           </tr>`;
-        }).join("")}
+        }))}
       </tbody>
     </table>
-    ${batteries.length > 25 ? `<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${batteries.length - 25} more batteries. Full inventory available in the platform.</div>` : ""}
+    ${batteries.length > 25 ? documentHtml`<div style="margin-top:6px;font-size:9px;color:#9ca3af">\u2026 and ${batteries.length - 25} more batteries. Full inventory available in the platform.</div>` : ""}
   </div>` : ""}
 
   <!-- YIELD VERIFICATION -->
-  ${yieldVerifications.length > 0 ? `
+  ${yieldVerifications.length > 0 ? documentHtml`
   <div class="section">
     <div class="section-title">Section G — Yield Verification Records</div>
     <table class="table">
@@ -1028,7 +1002,7 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
         <tr><th>BPAN</th><th>Black Mass (kg)</th><th>Li (kg)</th><th>Co (kg)</th><th>Ni (kg)</th><th>Verified</th></tr>
       </thead>
       <tbody>
-        ${yieldVerifications.slice(0, 15).map((v) => `
+        ${joinDocumentHtml(yieldVerifications.slice(0, 15).map((v) => documentHtml`
         <tr>
           <td style="font-family:monospace;font-size:9px">${v.bpan ?? "\u2014"}</td>
           <td>${parseFloat(String(v.blackMassKg)).toFixed(2)}</td>
@@ -1036,7 +1010,7 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
           <td>${v.cobaltRecoveredKg != null ? parseFloat(String(v.cobaltRecoveredKg)).toFixed(2) : "\u2014"}</td>
           <td>${v.nickelRecoveredKg != null ? parseFloat(String(v.nickelRecoveredKg)).toFixed(2) : "\u2014"}</td>
           <td>${new Date(v.verifiedAt).toLocaleDateString("en-IN")}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
     </table>
   </div>` : ""}
@@ -1046,20 +1020,18 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
     <div class="section-title">Section H — Declaration & Certification</div>
     <div class="warning-box">
       <p style="font-size:10px;color:#92400e;line-height:1.6">
-        I hereby declare that the information furnished in this EPR Compliance Report is true, correct and complete to the best of my knowledge and belief. 
-        All battery waste has been processed in accordance with applicable regulations (${meta.regulation}) and guidelines issued by ${meta.authority}. 
-        EPR obligations for ${quarterLabel} ${reportPeriod.year} have been fulfilled through the Circul-AI-r Platform's blockchain-verified token system.
+        Draft self-declared records only. Organization, period and jurisdiction scope (${meta.regulation}) require independent review. No evaluation by ${meta.authority}, regulatory determination, government submission, digital signature or blockchain anchoring is established.
       </p>
       <div style="margin-top:16px;display:flex;justify-content:space-between">
         <div>
-          <div style="font-size:9px;color:#9ca3af">Authorized Signatory</div>
+          <div style="font-size:9px;color:#9ca3af">Prepared by (not signed)</div>
           <div style="font-size:11px;font-weight:600;margin-top:2px">${generatedBy}</div>
           <div style="font-size:9px;color:#9ca3af">${organization.name}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:9px;color:#9ca3af">Date of Submission</div>
+          <div style="font-size:9px;color:#9ca3af">Date generated (not submitted)</div>
           <div style="font-size:11px;font-weight:600;margin-top:2px">${generatedAt.toLocaleDateString("en-IN")}</div>
-          <div style="font-size:9px;color:#9ca3af">Digital Signature via Circul-AI-r</div>
+          <div style="font-size:9px;color:#9ca3af">Unsigned draft</div>
         </div>
       </div>
     </div>
@@ -1079,8 +1051,8 @@ export async function generateEprComplianceReportPdf(data: EprComplianceReportDa
       </div>
     </div>
     <div style="text-align:right">
-      <div class="watermark-valid" style="color:${complianceColor}">${complianceStatus === "COMPLIANT" ? "\u2713 OFFICIAL DOCUMENT" : "\u26A0 REVIEW REQUIRED"}</div>
-      <div>Compliance Rate: ${stats.complianceRate.toFixed(0)}%</div>
+      <div class="watermark-valid" style="color:${complianceColor}">${"REVIEW REQUIRED — UNSIGNED"}</div>
+      <div>Legal compliance: not evaluated</div>
     </div>
   </div>
 </div>
@@ -1123,13 +1095,13 @@ export async function generateBatteryComplianceCertPdf(data: BatteryComplianceCe
   const { battery, eprTokens, serviceHistory, complianceStatus, generatedAt, generatedBy } = data;
   const certId = `CERT-${battery.bpan}-${Date.now().toString(36).toUpperCase()}`;
   const soh = battery.currentSoh != null ? parseFloat(String(battery.currentSoh)) : null;
-  const statusLabel = complianceStatus === "compliant" ? "COMPLIANT" : complianceStatus === "pending" ? "PENDING REVIEW" : "NON-COMPLIANT";
-  const statusColor = complianceStatus === "compliant" ? "#059669" : complianceStatus === "pending" ? "#d97706" : "#dc2626";
-  const statusBg = complianceStatus === "compliant" ? "#ecfdf5" : complianceStatus === "pending" ? "#fffbeb" : "#fef2f2";
-  const statusBorder = complianceStatus === "compliant" ? "#6ee7b7" : complianceStatus === "pending" ? "#fcd34d" : "#fca5a5";
+  const statusLabel = "REVIEW REQUIRED — DRAFT";
+  const statusColor = "#92400e";
+  const statusBg = "#fff7ed";
+  const statusBorder = "#fed7aa";
   const totalEprWeight = eprTokens.reduce((s, t) => s + parseFloat(String(t.weightKg ?? 0)), 0);
 
-  const html = `<!DOCTYPE html>
+  const html = documentHtml`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1202,7 +1174,7 @@ export async function generateBatteryComplianceCertPdf(data: BatteryComplianceCe
         <div class="detail-value">${new Date(battery.registeredAt).toLocaleDateString("en-IN")}</div>
       </div>
     </div>
-    ${soh != null ? `
+    ${soh != null ? documentHtml`
     <div style="margin-top:12px">
       <div class="detail-label">State of Health (SOH)</div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
@@ -1217,36 +1189,36 @@ export async function generateBatteryComplianceCertPdf(data: BatteryComplianceCe
   <!-- EPR TOKEN HISTORY -->
   <div class="section">
     <div class="section-title">EPR Token History (${eprTokens.length} tokens, ${totalEprWeight.toFixed(2)} kg total)</div>
-    ${eprTokens.length > 0 ? `
+    ${eprTokens.length > 0 ? documentHtml`
     <table class="table">
       <thead>
         <tr><th>Token ID</th><th>Weight (kg)</th><th>Status</th><th>Issued</th></tr>
       </thead>
       <tbody>
-        ${eprTokens.slice(0, 10).map((t) => `
+        ${joinDocumentHtml(eprTokens.slice(0, 10).map((t) => documentHtml`
         <tr>
           <td style="font-family:monospace;font-size:9px">${t.tokenId}</td>
           <td>${parseFloat(String(t.weightKg)).toFixed(2)}</td>
           <td><span class="badge ${t.status === "issued" ? "badge-green" : t.status === "redeemed" ? "badge-blue" : "badge-yellow"}">${t.status}</span></td>
           <td>${new Date(t.issuedAt).toLocaleDateString("en-IN")}</td>
-        </tr>`).join("")}
+        </tr>`))}
       </tbody>
-    </table>` : `<p style="font-size:10px;color:#9ca3af">No EPR tokens issued for this battery.</p>`}
+    </table>` : documentHtml`<p style="font-size:10px;color:#9ca3af">No EPR tokens issued for this battery.</p>`}
   </div>
 
   <!-- SERVICE HISTORY -->
   <div class="section">
     <div class="section-title">Service & Maintenance History</div>
-    ${serviceHistory.length > 0 ? `
+    ${serviceHistory.length > 0 ? documentHtml`
     <div class="timeline">
-      ${serviceHistory.slice(0, 8).map((s) => `
+      ${joinDocumentHtml(serviceHistory.slice(0, 8).map((s) => documentHtml`
       <div class="timeline-item">
         <div class="timeline-dot"></div>
         <div style="font-size:10px;font-weight:600">${s.serviceType.replace(/_/g, " ")}</div>
         <div style="font-size:9px;color:#6b7280">${s.description ?? ""}</div>
-        <div style="font-size:9px;color:#9ca3af;margin-top:2px">${new Date(s.performedAt).toLocaleDateString("en-IN")} ${s.performedBy ? `\u2014 ${s.performedBy}` : ""}</div>
-      </div>`).join("")}
-    </div>` : `<p style="font-size:10px;color:#9ca3af">No service records available.</p>`}
+        <div style="font-size:9px;color:#9ca3af;margin-top:2px">${new Date(s.performedAt).toLocaleDateString("en-IN")} ${s.performedBy ? documentHtml`\u2014 ${s.performedBy}` : ""}</div>
+      </div>`))}
+    </div>` : documentHtml`<p style="font-size:10px;color:#9ca3af">No service records available.</p>`}
   </div>
 
   <!-- FOOTER -->
@@ -1263,7 +1235,7 @@ export async function generateBatteryComplianceCertPdf(data: BatteryComplianceCe
       </div>
     </div>
     <div style="text-align:right">
-      <div class="watermark-valid" style="color:${statusColor}">${complianceStatus === "compliant" ? "\u2713 CERTIFIED" : "\u26A0 REVIEW REQUIRED"}</div>
+      <div class="watermark-valid" style="color:${statusColor}">${"REVIEW REQUIRED — UNSIGNED"}</div>
     </div>
   </div>
 </div>

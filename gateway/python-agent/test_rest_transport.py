@@ -5,6 +5,7 @@ Run from the repository root:
 """
 
 import importlib.util
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import socket
@@ -56,17 +57,18 @@ class RestTransportTests(unittest.TestCase):
         self.default_url = self.agent.HOST_API_URL
         self.agent.HOST_API_URL = self.URL
         self.agent.HOST_API_KEY = self.KEY
-        self.agent.DEVICE_BPAN = "TEST-BPAN"
+        self.agent.DEVICE_BPAN = "A" * 21
+        self.agent.DEVICE_ID = "DEV-mock"
         self.agent.CHEMISTRY = "LFP"
         self.response = Mock()
         self.response.status_code = 200
-        self.response.json.return_value = {}
+        self.response.json.return_value = {"vPack": 0}
         self.agent.requests.get.side_effect = None
         self.agent.requests.get.return_value = self.response
         self.clock = patch.object(self.agent, "datetime")
         clock = self.clock.start()
         self.addCleanup(self.clock.stop)
-        clock.now.return_value.timestamp.return_value = 1700000000
+        clock.now.return_value = datetime(2026, 11, 17, 19, 0, 0, tzinfo=timezone.utc)
         self.main_guard = patch.object(self.agent, "main", side_effect=AssertionError("Main forbidden"))
         self.main_guard.start()
         self.addCleanup(self.main_guard.stop)
@@ -216,45 +218,39 @@ class RestTransportTests(unittest.TestCase):
     def test_canonical_field_mapping_and_rounding_preserved(self):
         self.response.json.return_value = {
             "battery_voltage": "52.126", "battery_current": "-3.456",
-            "state_of_charge": "78.36", "state_of_health": "96.26",
             "temperature_max": "52.16", "temperature_min": "24.23",
             "cycle_count": "123", "cell_voltage_min": "3.1236",
             "cell_voltage_max": "3.4567",
         }
         self.assertEqual(self.agent.read_rest_api(), {
-            "bpan": "TEST-BPAN", "ts": 1700000000000, "vPack": 52.13,
-            "iPack": -3.46, "soc": 78.4, "sohEstimate": 96.3,
-            "tMax": 52.2, "tMin": 24.2, "tAvg": 38.2,
-            "vCellMin": 3.124, "vCellMax": 3.457, "cycleCount": 123,
-            "thermalAnomaly": True, "chemistry": "LFP",
+            "bpan": "A" * 21, "deviceId": "DEV-mock", "source": "measured",
+            "recordedAt": "2026-11-17T19:00:00+00:00", "vPack": 52.13,
+            "iPack": -3.46, "tMax": 52.16, "vMin": 3.124, "vMax": 3.457,
+            "cycleCount": 123,
         })
 
     def test_alias_mapping_preserved(self):
         self.response.json.return_value = {
-            "vPack": "48", "iPack": "-2", "soc": "80", "soh": "90",
-            "tMax": "30", "tMin": "20", "cycles": "12",
-            "vCellMin": "3.1", "vCellMax": "3.2",
+            "vPack": "48", "iPack": "-2", "tMax": "30", "tMin": "20",
+            "cycles": "12", "vCellMin": "3.1", "vCellMax": "3.2",
         }
         payload = self.agent.read_rest_api()
         self.assertEqual(payload, {
-            "bpan": "TEST-BPAN", "ts": 1700000000000, "vPack": 48.0,
-            "iPack": -2.0, "soc": 80.0, "sohEstimate": 90.0,
-            "tMax": 30.0, "tMin": 20.0, "tAvg": 25.0,
-            "vCellMin": 3.1, "vCellMax": 3.2, "cycleCount": 12,
-            "thermalAnomaly": False, "chemistry": "LFP",
+            "bpan": "A" * 21, "deviceId": "DEV-mock", "source": "measured",
+            "recordedAt": "2026-11-17T19:00:00+00:00", "vPack": 48.0,
+            "iPack": -2.0, "tMax": 30.0, "vMin": 3.1, "vMax": 3.2,
+            "cycleCount": 12,
         })
 
     def test_canonical_keys_take_precedence_over_aliases(self):
         pairs = (
             ("battery_voltage", "vPack", "vPack"),
             ("battery_current", "iPack", "iPack"),
-            ("state_of_charge", "soc", "soc"),
-            ("state_of_health", "soh", "sohEstimate"),
             ("temperature_max", "tMax", "tMax"),
-            ("temperature_min", "tMin", "tMin"),
+            ("temperature_min", "tMin", None),
             ("cycle_count", "cycles", "cycleCount"),
-            ("cell_voltage_min", "vCellMin", "vCellMin"),
-            ("cell_voltage_max", "vCellMax", "vCellMax"),
+            ("cell_voltage_min", "vCellMin", "vMin"),
+            ("cell_voltage_max", "vCellMax", "vMax"),
         )
         self.response.json.return_value = {
             key: value for canonical, alias, _ in pairs
@@ -262,16 +258,18 @@ class RestTransportTests(unittest.TestCase):
         }
         payload = self.agent.read_rest_api()
         for _, _, output in pairs:
-            self.assertEqual(payload[output], 2)
+            if output:
+                self.assertEqual(payload[output], 2)
 
-    def test_missing_fields_keep_defaults(self):
-        self.assertEqual(self.agent.read_rest_api(), {
-            "bpan": "TEST-BPAN", "ts": 1700000000000, "vPack": 0.0,
-            "iPack": 0.0, "soc": 0.0, "sohEstimate": 100.0,
-            "tMax": 25.0, "tMin": 25.0, "tAvg": 25.0,
-            "vCellMin": 0.0, "vCellMax": 0.0, "cycleCount": 0,
-            "thermalAnomaly": False, "chemistry": "LFP",
-        })
+    def test_missing_fields_are_unknown_and_empty_payload_rejected(self):
+        self.response.json.return_value = {"battery_current": 0}
+        payload = self.agent.read_rest_api()
+        self.assertEqual(payload["iPack"], 0)
+        self.assertNotIn("vPack", payload)
+        self.assertNotIn("sohEstimate", payload)
+        self.response.json.return_value = {}
+        with self.assertLogs(self.agent.log, level="ERROR"):
+            self.assertIsNone(self.agent.read_rest_api())
 
     def test_invalid_json_error_sanitized(self):
         self.response.json.side_effect = ValueError(f"{self.URL} {self.KEY} {self.BODY}")
@@ -295,11 +293,33 @@ class RestTransportTests(unittest.TestCase):
                     self.assertIsNone(self.agent.read_rest_api())
                 self.assert_sanitized(logs)
 
-    def test_thermal_threshold_preserved(self):
-        for temperature, expected in ((51.0, False), (51.01, True)):
-            with self.subTest(temperature=temperature):
-                self.response.json.return_value = {"temperature_max": temperature}
-                self.assertEqual(self.agent.read_rest_api()["thermalAnomaly"], expected)
+    def test_thermal_flags_not_fabricated_by_gateway(self):
+        for temperature in (51.0, 51.01):
+            self.response.json.return_value = {"temperature_max": temperature}
+            self.assertNotIn("thermalAnomaly", self.agent.read_rest_api())
+
+    def test_limits_fractional_cycles_nonfinite_and_unsupported_estimates_rejected(self):
+        for data in ({"vPack": -1}, {"vPack": float("inf")}, {"vPack": float("nan")},
+                     {"cycles": 1.5}, {"cycles": -1}, {"vPack": True},
+                     {"tMax": -274}, {"vCellMin": 3, "vCellMax": 2},
+                     {"tMin": 40, "tMax": 30}, {"soc": 50}, {"soh": 100}):
+            with self.subTest(data=data):
+                self.response.json.return_value = data
+                with self.assertLogs(self.agent.log, level="ERROR") as logs:
+                    self.assertIsNone(self.agent.read_rest_api())
+                self.assert_sanitized(logs)
+
+    def test_unconfigured_identity_rejected_without_telemetry(self):
+        self.agent.DEVICE_ID = ""
+        with self.assertLogs(self.agent.log, level="ERROR"):
+            self.assertIsNone(self.agent.read_rest_api())
+
+    def test_zero_values_preserved_without_inventing_unknown_fields(self):
+        self.response.json.return_value = {"vPack": 0, "iPack": 0, "cycles": 0}
+        payload = self.agent.read_rest_api()
+        self.assertEqual((payload["vPack"], payload["iPack"], payload["cycleCount"]), (0, 0, 0))
+        self.assertNotIn("tMax", payload)
+
 
 
 if __name__ == "__main__":

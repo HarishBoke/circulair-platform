@@ -44,13 +44,13 @@ export interface GeneratedApiKey {
 }
 
 /**
- * Generate a new API key with the format: cai_live_{32 random hex chars}
+ * Generate a new API key with the format: cai_live_{48 random hex chars}
  */
 export function generateApiKey(): GeneratedApiKey {
   const random = crypto.randomBytes(24).toString("hex");
   const plaintext = `cai_live_${random}`;
   const hash = crypto.createHash("sha256").update(plaintext).digest("hex");
-  const prefix = plaintext.slice(0, 13); // "cai_live_" + 4 chars
+  const prefix = plaintext.slice(0, 12); // Existing keyPrefix varchar(12) contract.
   return { plaintext, hash, prefix };
 }
 
@@ -62,13 +62,16 @@ export function hashApiKey(plaintext: string): string {
 }
 
 /**
- * Parse permissions string from DB (comma-separated) to array.
+ * Parse the persisted JSON array or legacy comma-separated scopes; malformed values deny access.
  */
-export function parsePermissions(permissionsStr: string): ApiPermission[] {
-  return permissionsStr
-    .split(",")
+export function parsePermissions(scopes: unknown): ApiPermission[] {
+  const values: unknown[] = Array.isArray(scopes)
+    ? scopes
+    : typeof scopes === "string" ? scopes.split(",") : [];
+  return Array.from(new Set(values
+    .filter((p): p is string => typeof p === "string")
     .map((p) => p.trim())
-    .filter((p) => ALL_PERMISSIONS.includes(p as ApiPermission)) as ApiPermission[];
+    .filter((p): p is ApiPermission => ALL_PERMISSIONS.includes(p as ApiPermission))));
 }
 
 /**
@@ -81,8 +84,8 @@ export function serializePermissions(permissions: ApiPermission[]): string {
 /**
  * Check if a key has a specific permission.
  */
-export function hasPermission(permissionsStr: string, required: ApiPermission): boolean {
-  const perms = parsePermissions(permissionsStr);
+export function hasPermission(scopes: unknown, required: ApiPermission): boolean {
+  const perms = parsePermissions(scopes);
   return perms.includes(required);
 }
 

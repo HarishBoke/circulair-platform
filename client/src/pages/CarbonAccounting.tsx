@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../server/routers";
+import { carbonStageData } from "@/lib/numericalPresentation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,22 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Leaf, Download, FileText, Globe, Factory, Truck, Recycle, Zap } from "lucide-react";
+import { Leaf, Globe, Recycle, Zap } from "lucide-react";
 
-const GRID_REGIONS = [
-  { value: "IN", label: "India (0.82 kg CO₂/kWh)" },
-  { value: "EU", label: "EU Average (0.23 kg CO₂/kWh)" },
-  { value: "CN", label: "China (0.58 kg CO₂/kWh)" },
-  { value: "US", label: "USA (0.39 kg CO₂/kWh)" },
-  { value: "AU", label: "Australia (0.55 kg CO₂/kWh)" },
-  { value: "RENEWABLE", label: "Renewable (0.02 kg CO₂/kWh)" },
-];
+type CarbonResult = inferRouterOutputs<AppRouter>["carbon"]["calculate"];
 
 export default function CarbonAccounting() {
   const [bpan, setBpan] = useState("");
   const [gridRegion, setGridRegion] = useState("IN");
   const [transportKm, setTransportKm] = useState(500);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CarbonResult | null>(null);
+  const gridQuery = trpc.carbon.getGridRegions.useQuery();
 
   const calcMutation = trpc.carbon.calculate.useMutation({
     onSuccess: (data) => {
@@ -34,33 +31,23 @@ export default function CarbonAccounting() {
   });
 
   const handleCalculate = () => {
-    if (!bpan.trim() || bpan.length !== 19) {
-      toast.error("Invalid BPAN", { description: "BPAN must be exactly 19 characters" });
+    if (![19, 21].includes(bpan.trim().length)) {
+      toast.error("Invalid BPAN", { description: "Use the complete registered 19- or 21-character BPAN" });
       return;
     }
+    if (!Number.isFinite(transportKm) || transportKm < 0 || transportKm > 50000) {
+      toast.error("Invalid distance", { description: "Enter a finite distance between 0 and 50,000 km" });
+      return;
+    }
+    if (!gridQuery.data?.some((region) => region.code === gridRegion)) {
+      toast.error("Grid assumptions unavailable", { description: "Choose a region returned by the server" });
+      return;
+    }
+    setResult(null);
     calcMutation.mutate({ bpan: bpan.trim(), gridRegion, transportDistanceKm: transportKm });
   };
 
-  const stageColors: Record<string, string> = {
-    manufacturing: "#6366f1",
-    charging: "#22c55e",
-    transport: "#f59e0b",
-    endOfLife: "#ef4444",
-  };
-
-  const chartData = result ? [
-    { name: "Manufacturing", value: result.breakdown?.manufacturing ?? 0, color: stageColors.manufacturing },
-    { name: "Charging", value: result.breakdown?.charging ?? 0, color: stageColors.charging },
-    { name: "Transport", value: result.breakdown?.transport ?? 0, color: stageColors.transport },
-    { name: "End of Life", value: result.breakdown?.endOfLife ?? 0, color: stageColors.endOfLife },
-  ] : [];
-
-  const getRatingColor = (rating: string) => {
-    if (rating === "A" || rating === "A+") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-    if (rating === "B") return "text-blue-400 border-blue-500/30 bg-blue-500/10";
-    if (rating === "C") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-    return "text-red-400 border-red-500/30 bg-red-500/10";
-  };
+  const chartData = result ? carbonStageData(result) : [];
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -70,10 +57,11 @@ export default function CarbonAccounting() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Carbon Accounting</h1>
-          <p className="text-sm text-muted-foreground">EU Article 7 compliant lifecycle carbon footprint per BPAN</p>
+          <p className="text-sm text-muted-foreground">Estimated lifecycle carbon footprint per BPAN — not a compliance declaration</p>
         </div>
-        <Badge variant="outline" className="ml-auto border-emerald-500/30 text-emerald-400 bg-emerald-500/10">EU Art. 7</Badge>
+        <Badge variant="outline" className="ml-auto border-amber-500/30 text-amber-400">Unverified estimate</Badge>
       </div>
+      <p className="text-sm text-muted-foreground">Embedded factors and assumed 92% charging efficiency are unverified. Operational CO₂e counts all charging energy, not only losses. This is not a certified lifecycle assessment or hardware safety model.</p>
 
       {/* Input */}
       <Card className="border-border/50 bg-card/50">
@@ -86,11 +74,11 @@ export default function CarbonAccounting() {
             <div className="space-y-2">
               <Label>Battery BPAN</Label>
               <Input
-                placeholder="19-character BPAN"
+                placeholder="Complete registered BPAN"
                 value={bpan}
                 onChange={(e) => setBpan(e.target.value)}
                 className="font-mono"
-                maxLength={19}
+                maxLength={21}
               />
             </div>
             <div className="space-y-2">
@@ -100,8 +88,8 @@ export default function CarbonAccounting() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {GRID_REGIONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  {(gridQuery.data ?? []).map((r) => (
+                    <SelectItem key={r.code} value={r.code}>{r.code} ({r.intensity} g CO₂e/kWh)</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -117,7 +105,8 @@ export default function CarbonAccounting() {
               />
             </div>
           </div>
-          <Button onClick={handleCalculate} disabled={calcMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-foreground">
+          {gridQuery.isError && <p role="alert" className="text-sm text-red-400">Grid assumptions could not be loaded; calculation is unavailable.</p>}
+          <Button onClick={handleCalculate} disabled={calcMutation.isPending || !gridQuery.data?.length} className="bg-emerald-600 hover:bg-emerald-700 text-foreground">
             <Leaf className="w-4 h-4 mr-2" />
             {calcMutation.isPending ? "Calculating…" : "Calculate Carbon Footprint"}
           </Button>
@@ -131,7 +120,7 @@ export default function CarbonAccounting() {
             {[
               { label: "Total CO₂e", value: `${result.totalKgCo2?.toFixed(1)} kg`, icon: <Globe className="w-4 h-4 text-emerald-400" />, color: "text-emerald-400" },
               { label: "Per kWh", value: `${result.intensityKgCo2PerKwh?.toFixed(2)} kg/kWh`, icon: <Zap className="w-4 h-4 text-blue-400" />, color: "text-blue-400" },
-              { label: "EU Compliant", value: result.euCompliant ? "Yes" : "No", icon: <Leaf className="w-4 h-4 text-violet-400" />, color: result.euCompliant ? "text-emerald-400" : "text-red-400" },
+              { label: "Compliance", value: "Not assessed", icon: <Leaf className="w-4 h-4 text-violet-400" />, color: "text-amber-400" },
               { label: "Grid Region", value: result.gridRegion ?? "—", icon: <Recycle className="w-4 h-4 text-amber-400" />, color: "text-amber-400" },
             ].map((card) => (
               <Card key={card.label} className="border-border/50 bg-card/50">
@@ -171,21 +160,13 @@ export default function CarbonAccounting() {
             </CardContent>
           </Card>
 
-          {/* EU Rating Badge */}
+          {/* Estimate assumptions, not an invented EU rating */}
           <Card className="border-border/50 bg-card/50">
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">EU Battery Regulation Article 7 Rating</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Based on lifecycle carbon footprint per kWh of rated capacity</p>
-                </div>
-                <Badge className={`text-2xl font-bold px-4 py-2 ${getRatingColor(result.euRating)}`}>
-                  {result.euRating}
-                </Badge>
-              </div>
-              {result.complianceNotes && (
-                <p className="text-xs text-muted-foreground mt-3 p-3 bg-muted/30 rounded-lg">{result.complianceNotes}</p>
-              )}
+              <p className="text-sm font-medium text-foreground">Estimate assumptions and exclusions</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-muted-foreground">
+                {result.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}
+              </ul>
             </CardContent>
           </Card>
         </>

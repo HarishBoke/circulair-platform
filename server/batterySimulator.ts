@@ -3,7 +3,7 @@
  * Physics-inspired demo battery telemetry simulator for Circul-AI-r Platform.
  * Simplified profiles are not calibrated battery models or safety validation.
  *
- * Models realistic electrochemical behaviour per chemistry:
+ * Uses uncalibrated demonstration profiles per chemistry:
  *   - NMC  (Nickel Manganese Cobalt)   — 3.0–4.2 V/cell, 96s packs
  *   - LFP  (Lithium Iron Phosphate)    — 2.5–3.65 V/cell, 120s packs
  *   - NCA  (Nickel Cobalt Aluminium)   — 3.0–4.2 V/cell, 96s packs
@@ -12,9 +12,11 @@
  *
  * Each battery instance maintains independent state:
  *   SoC (%), SoH (%), cycle count, temperature, current direction.
- * Degradation is applied per reading (very slow, realistic over thousands of cycles).
+ * Degradation is applied per direction switch, not a calibrated cycle-life model.
  * Anomaly injection: thermal spikes, voltage sag, high-current events.
  */
+
+import { requireFiniteRange } from "./numericalUnits";
 
 // ─── Chemistry profiles ───────────────────────────────────────────────────────
 
@@ -83,7 +85,8 @@ const CHEMISTRY_PROFILES: Record<string, ChemistryProfile> = {
 };
 
 function getProfile(chemistry: string): ChemistryProfile {
-  return CHEMISTRY_PROFILES[chemistry] ?? CHEMISTRY_PROFILES["NMC"]!;
+  if (!Object.hasOwn(CHEMISTRY_PROFILES, chemistry)) throw new RangeError("Unsupported demo chemistry; no invented NMC profile");
+  return CHEMISTRY_PROFILES[chemistry];
 }
 
 // ─── Per-battery state ────────────────────────────────────────────────────────
@@ -95,7 +98,7 @@ export interface BatterySimState {
   soc: number;
   /** State of Health 0–100 */
   soh: number;
-  /** Cumulative full-equivalent cycles */
+  /** Demo charge-direction switches; NOT measured full-equivalent cycles */
   cycleCount: number;
   /** Current pack temperature (°C) */
   tPack: number;
@@ -121,6 +124,7 @@ const _states = new Map<string, BatterySimState>();
  */
 export function getOrCreateState(bpan: string, chemistry: string = "NMC"): BatterySimState {
   if (_states.has(bpan)) return _states.get(bpan)!;
+  getProfile(chemistry); // Validate before allocating even a demo state.
   const state: BatterySimState = {
     bpan,
     chemistry,
@@ -195,6 +199,7 @@ export interface SimulatedReading {
   /** Extra fields for demo dashboard */
   soc: number;
   chemistry: string;
+  modelStatus: "demo_uncalibrated";
 }
 
 /**
@@ -203,6 +208,13 @@ export interface SimulatedReading {
 export function generateReading(bpan: string, chemistry: string = "NMC"): SimulatedReading {
   const state = getOrCreateState(bpan, chemistry);
   const profile = getProfile(state.chemistry);
+
+  // Basic numeric domains, NOT chemistry-specific hardware/safety limits.
+  requireFiniteRange("demo SOC (%)", state.soc, 0, 100);
+  requireFiniteRange("demo SOH (%)", state.soh, 0, 100);
+  requireFiniteRange("demo cycle count", state.cycleCount, 0);
+  requireFiniteRange("demo direction ticks", state.directionTicks, 0);
+  if (!Number.isFinite(state.tPack) || !Number.isFinite(state.tAmbient)) throw new RangeError("Demo temperatures must be finite");
 
   // ── Direction logic: charge/discharge cycles ──────────────────────────────
   state.directionTicks++;
@@ -214,7 +226,7 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
       // Completed a charge → increment cycle count
       state.cycleCount += 1;
       // Apply capacity fade
-      state.soh = Math.max(20, state.soh - profile.capacityFadePerCycle);
+      state.soh = Math.max(0, state.soh - profile.capacityFadePerCycle);
     }
   }
 
@@ -225,7 +237,8 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
   const iPack = parseFloat(((state.isCharging ? 1 : -1) * iMag).toFixed(1));
 
   // ── SoC update (Coulomb counting approximation) ───────────────────────────
-  // Each tick = 2s, capacity ~50 kWh → 50000 Wh / (vPack * 3600) Ah
+  // Each tick = 2s; fixed demo 50 kWh → 50000 Wh / nominal pack V = Ah.
+  // Independent of the timer interval and real registered capacity; NOT hardware coulomb counting.
   const vPackApprox = profile.vNominal * profile.seriesCells;
   const capacityAh = (50 * 1000) / vPackApprox; // ~50 kWh pack
   const deltaAh = (iMag * 2) / 3600; // 2-second tick
@@ -247,6 +260,13 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
   const cellSpread = 0.02 + (100 - state.soh) * 0.001; // imbalance grows with age
   const vMin = parseFloat((vCell - cellSpread / 2 - Math.random() * 0.01).toFixed(3));
   const vMax = parseFloat((vCell + cellSpread / 2 + Math.random() * 0.01).toFixed(3));
+
+  // The resistive toy model can become nonphysical at extreme loads, especially
+  // low-voltage demo packs. Reject the reading; do NOT fabricate a safe-looking
+  // clamped voltage or certify a chemistry-specific cutoff/current envelope.
+  for (const [name, value] of Object.entries({ vPack, vMin, vMax })) {
+    requireFiniteRange(`demo ${name} (V)`, value, Number.MIN_VALUE);
+  }
 
   // ── Internal resistance ───────────────────────────────────────────────────
   const irPack = parseFloat((irPackOhm * 1000 + Math.random() * 0.5).toFixed(3)); // pack mΩ
@@ -297,6 +317,11 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
     }
   }
 
+  // A reported maximum must not be below the reported pack temperature.
+  tMax = Math.max(tMax, state.tPack);
+  if (!Number.isFinite(state.tPack) || !Number.isFinite(tMax)) throw new RangeError("Nonfinite demo temperature output");
+  if (thermalAnomaly) anomalyType = `High temperature: ${tMax}°C`;
+
   return {
     bpan,
     vPack,
@@ -314,6 +339,7 @@ export function generateReading(bpan: string, chemistry: string = "NMC"): Simula
     recordedAt: new Date().toISOString(),
     soc: parseFloat(state.soc.toFixed(1)),
     chemistry: state.chemistry,
+    modelStatus: "demo_uncalibrated",
   };
 }
 
@@ -330,7 +356,7 @@ export interface SimulatorCallbacks {
 }
 
 /**
- * Start a physics-based simulator for a single battery.
+ * Start an uncalibrated demo simulator for a single battery.
  * Calls `callbacks.onReading` every `intervalMs` milliseconds.
  */
 export function startBatterySimulator(

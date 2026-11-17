@@ -23,138 +23,138 @@ const FAQS = [
   {
     category: "Battery Passport",
     q: "What is a Battery Passport (BPAN)?",
-    a: "A Battery Passport is a digital identity record for each battery, encoded as a unique Battery Passport Alphanumeric Number (BPAN). It contains the battery's chemistry, capacity, voltage, country of origin, manufacturer, production date, and lifecycle history. The EU Battery Regulation (2023/1542) mandates digital battery passports for EV batteries from 2027. Circul-AI-r generates and manages BPANs for batteries across all supported jurisdictions.",
+    a: "A battery passport is an identity and lifecycle information record. Circul-AI-r stores local battery identification and QR records; official BPAN enrollment not verified. A record here is not a government-issued passport, regulatory acceptance or proof of battery condition.",
   },
   {
     category: "Battery Passport",
     q: "How is a BPAN structured?",
-    a: "A BPAN is a 19-character alphanumeric code encoding: country code (2 chars), manufacturer code (3 chars), capacity class (1 char), chemistry code (1 char), voltage class (2 chars), origin code (2 chars), extended type (1 char), year (2 chars), month (2 chars), day (2 chars), and factory code (1 char). Example: NLBYM2L48JP22101200 represents a Netherlands-manufactured NMC battery from a specific factory.",
+    a: "Existing app records may use legacy local identifiers. A separate 21-character draft identifier is under review; issuer allocation and official enrollment are unconfirmed. Preserve existing identifiers and aliases during any approved mapping. Do not infer an official standard from an example or length check.",
   },
   {
     category: "Battery Passport",
     q: "Which battery chemistries does Circul-AI-r support?",
-    a: "Circul-AI-r supports all major lithium battery chemistries: LFP (Lithium Iron Phosphate), NMC (Nickel Manganese Cobalt), NCA (Nickel Cobalt Aluminium), Solid-State (SSB), and emerging chemistries. Each chemistry is encoded in the BPAN and tracked throughout the battery's lifecycle.",
+    a: "Records may describe chemistries such as LFP, NMC and NCA. A chemistry label is not evidence of a calibrated model, a working BMS adapter or suitability for a particular application. Confirm accepted registration fields and pack-specific documentation separately.",
   },
   {
     category: "Battery Passport",
     q: "Can I import existing batteries into Circul-AI-r?",
-    a: "Yes. Circul-AI-r supports bulk onboarding via CSV upload, API integration, and manual registration. Each battery receives a BPAN upon registration. For batteries already deployed in the field, you can register them with their existing serial numbers and map them to BPANs retroactively.",
+    a: "Registration and import source workflows exist, subject to authentication, ownership and validation. Review authorized offline fixtures before importing, preserve original serial numbers and report rejected rows honestly. Do not seed, overwrite or relabel production customer data as a pilot.",
   },
   // SOH Prediction
   {
     category: "SOH Prediction",
     q: "What is State of Health (SOH) in batteries?",
-    a: "State of Health (SOH) is a measure of a battery's current capacity relative to its rated capacity, expressed as a percentage. A new battery has SOH = 100%. As a battery ages through charge-discharge cycles, temperature stress, and calendar aging, its SOH decreases. An EV battery is typically considered end-of-first-life at SOH ≈ 80%, making it suitable for second-life applications such as stationary energy storage.",
+    a: "Capacity-based SOH is current measured capacity divided by rated capacity, expressed as a percentage; 100% means capacity equals the reference rating under the specified test conditions. SOH alone cannot establish safety, end-of-life or suitability for second-life use. Manufacturer limits, history, physical inspection and qualified review remain necessary.",
   },
   {
     category: "SOH Prediction",
     q: "How does Circul-AI-r's AI predict battery SOH?",
-    a: "Circul-AI-r uses a CNN-LSTM (Convolutional Neural Network + Long Short-Term Memory) hybrid model trained on telemetry data including voltage, current, temperature, and cycle count. The model predicts current SOH, Remaining Useful Life (RUL) in cycles, confidence intervals, and a triage path (Direct Reuse, Refurbish, Repurpose, or Recycle). The model achieves RMSE < 2% on validation datasets.",
+    a: "The current SOH path uses deterministic physics-based heuristics, not a validated trained neural network. SOH and Remaining Useful Life outputs are uncalibrated estimates. Confidence and error-like legacy metadata are not observed accuracy or validated uncertainty. No held-out accuracy claim or autonomous safety approval is made.",
   },
   {
     category: "SOH Prediction",
     q: "What is Remaining Useful Life (RUL)?",
-    a: "Remaining Useful Life (RUL) is the estimated number of charge-discharge cycles a battery can complete before its SOH drops below the end-of-life threshold (typically 70-80%). Circul-AI-r's AI model predicts RUL alongside SOH, enabling proactive maintenance scheduling and second-life planning.",
+    a: "RUL is an estimate of time or cycles until a specified performance threshold under stated conditions. The app's heuristic RUL is uncalibrated and is not a warranty, service-life guarantee, maintenance instruction or approved disposal decision. Verify units and assumptions for the particular output.",
   },
   {
     category: "SOH Prediction",
     q: "What triage paths does the AI recommend?",
-    a: "The AI triage system recommends one of four paths: (1) Direct Reuse — battery SOH is high enough for direct redeployment; (2) Refurbish — battery needs cell balancing or minor repair before reuse; (3) Repurpose — battery is suitable for second-life stationary storage (SOH 70-80%); (4) Recycle — battery has reached end-of-life and should be sent for material recovery.",
+    a: "Stored labels may describe reuse, refurbishment, repurposing or recycling candidates. They are uncalibrated review suggestions, not approved safety, second-life or recycling decisions. The app does not authorize redeployment, repairs, carrier dispatch or automated route approval.",
   },
   // EPR Compliance
   {
     category: "EPR Compliance",
     q: "What is Extended Producer Responsibility (EPR) for batteries?",
-    a: "Extended Producer Responsibility (EPR) is a policy framework that makes battery producers financially and physically responsible for the end-of-life management of their products. EPR regulations require producers to register, report, and fund the collection and recycling of batteries. Circul-AI-r supports EPR compliance across 7 jurisdictions: EU, India (CPCB BW-3), China (MEP), USA (state-level), UK (BPR), Thailand, and Indonesia.",
+    a: "EPR is a policy approach assigning producers responsibilities for product end-of-life management. Obligations vary by jurisdiction, battery category and current rules. App records and draft reports are not evidence that a producer has fulfilled an obligation; obtain qualified jurisdiction-specific review.",
   },
   {
     category: "EPR Compliance",
     q: "What is CPCB BW-3 compliance?",
-    a: "CPCB BW-3 refers to the Central Pollution Control Board's Battery Waste Management Rules 2022 in India. Under BW-3, battery producers must register with CPCB, achieve collection and recycling targets (starting at 70% in 2024-25, rising to 90% by 2026-27), and submit quarterly compliance reports. Circul-AI-r automates BW-3 reporting with pre-built templates and real-time compliance dashboards.",
+    a: "India's battery waste rules and regulator forms require current, category-specific review. BW-3 is a legacy label in this app, not proof of an official form mapping. Draft records are not approved submissions; no government portal acceptance or automated reporting is claimed.",
   },
   {
     category: "EPR Compliance",
     q: "Does Circul-AI-r support EU Battery Regulation compliance?",
-    a: "Yes. Circul-AI-r supports the EU Battery Regulation (2023/1542), including digital battery passport requirements, carbon footprint declaration, recycled content reporting, and supply chain due diligence. The platform generates Battery Passport data in the format required by the EU Battery Regulation, ready for submission to national competent authorities.",
+    a: "The app can organize draft battery and lifecycle records. It has not established EU passport-format conformity, carbon-methodology acceptance, legal compliance or a government submission integration. Verify applicable requirements with qualified counsel and the relevant authority before using a report.",
   },
   {
     category: "EPR Compliance",
     q: "What is an EPR token in Circul-AI-r?",
-    a: "An EPR token in Circul-AI-r is a digital certificate representing a unit of recycling obligation fulfilled. When a battery is recycled by a registered recycler, a yield-verified EPR token is issued. Producers can use these tokens to demonstrate compliance with their EPR obligations. Tokens are immutably recorded and auditable.",
+    a: "It is an internal recycling-related record. Recorded yields may be self-declared; a local hash or status label is not a blockchain receipt, official certificate or fulfilled recycling obligation. Independent facility, mass-balance and regulatory evidence are still required.",
   },
   // Marketplace
   {
     category: "Marketplace",
     q: "What is the second-life battery marketplace?",
-    a: "The Circul-AI-r marketplace is a B2B platform for trading second-life batteries — batteries that have completed their first-life use in EVs or industrial applications but still have significant capacity remaining (typically SOH 70-85%). Buyers include stationary energy storage operators, telecom tower operators, and microgrid developers. All listings include AI-verified SOH, BPAN traceability, and compliance documentation.",
+    a: "It is a listing and record-review workflow. Seller declarations and uncalibrated SOH estimates do not verify safety or suitability. Payments and private document publishing are disabled pending separate acceptance; no completed sale, matching, dispatch or inspection is promised.",
   },
   {
     category: "Marketplace",
     q: "How are battery prices determined on the marketplace?",
-    a: "Battery prices on the Circul-AI-r marketplace are set by sellers and reflect factors including SOH, chemistry, capacity, age, and market demand. The platform supports multi-currency pricing (USD, EUR, INR, CNY, GBP, THB, IDR). AI-powered price suggestions are available based on comparable listings and market trends.",
+    a: "Displayed asking prices are seller-supplied records. No calibrated automated valuation, verified market trend or executed payment is established. A listing price is not a transaction receipt or guarantee of value.",
   },
   {
     category: "Marketplace",
     q: "How does Circul-AI-r verify battery condition before listing?",
-    a: "All marketplace listings require a valid BPAN and AI-predicted SOH from the Circul-AI-r platform. Sellers must upload telemetry data or allow the platform to pull live IoT readings. The AI model validates the SOH claim and flags discrepancies. Optional third-party physical inspection certificates can also be attached to listings.",
+    a: "It does not independently verify physical condition from a listing or heuristic estimate. Review source provenance, measurement quality and separately obtained qualified inspection evidence. Uploaded documents and status labels are not automatically verified certificates or permission to reuse a battery.",
   },
   // IoT & Telemetry
   {
     category: "IoT & Telemetry",
     q: "How does Circul-AI-r connect to battery management systems (BMS)?",
-    a: "Circul-AI-r connects to Battery Management Systems (BMS) via MQTT protocol over TLS. The platform provides a device provisioning workflow to register IoT gateways and battery packs. Supported data points include cell voltage, pack voltage, current, temperature, SOC, cycle count, and fault codes. The platform also supports REST API ingestion for systems that cannot use MQTT.",
+    a: "Gateway reference sources and device contracts exist, but generic wiring, register maps and compatibility are not approved. Legacy hardware ingestion is blocked with HTTP 503. A later isolated physical pilot needs separate operator approval, calibrated instruments, device-to-battery authorization and measured provenance; no physical test has been performed here.",
   },
   {
     category: "IoT & Telemetry",
     q: "What telemetry data does Circul-AI-r collect?",
-    a: "Circul-AI-r collects real-time telemetry including: pack voltage (V), current (A), temperature (°C), State of Charge (SOC %), cycle count, individual cell voltages, fault codes, and GPS location (optional). Data is stored with millisecond timestamps and retained for the full battery lifecycle. Historical telemetry is used to train and improve SOH prediction models.",
+    a: "The schema can represent supplied measurements such as voltage, current, temperature and cycle count. Actual availability depends on source and authorization; missing values remain unknown and explicit zero is retained. Stored data does not establish live collection, lifecycle-long retention or model training.",
   },
   {
     category: "IoT & Telemetry",
     q: "Does Circul-AI-r support offline or edge computing?",
-    a: "Yes. Circul-AI-r supports edge computing via MQTT with QoS levels 1 and 2, which enable reliable message delivery even with intermittent connectivity. The platform also supports batch telemetry upload via REST API for offline scenarios. Edge gateway firmware is available for common hardware platforms.",
+    a: "Offline fixtures and recorded exports can be reviewed before an approved connection. Historical gateway code is reference material, not accepted firmware or a delivery guarantee. The new local pilot is in development and not deployed; no new route is advertised as ready.",
   },
   // Platform
   {
     category: "Platform",
     q: "What is Circul-AI-r?",
-    a: "Circul-AI-r is an end-to-end battery lifecycle intelligence platform that enables battery manufacturers, EV OEMs, fleet operators, recyclers, and regulators to track, predict, trade, and comply across the entire battery lifecycle. The platform combines IoT telemetry, AI-powered health prediction, digital battery passports, EPR compliance automation, and a second-life marketplace in a single integrated solution.",
+    a: "Circul-AI-r is a brand-agnostic battery lifecycle record application with bounded development workflows. It organizes local identities, supplied telemetry, uncalibrated estimates, listings and draft regulatory evidence. It is not a complete safety, regulatory, carrier or financial execution system.",
   },
   {
     category: "Platform",
     q: "Who uses Circul-AI-r?",
-    a: "Circul-AI-r serves five stakeholder groups: (1) Battery Manufacturers — register batteries, generate BPANs, manage warranty; (2) EV OEMs & Fleet Operators — monitor battery health, predict maintenance, plan second-life; (3) Recyclers — receive batteries, verify yield, issue EPR tokens; (4) Regulators — access compliance dashboards, audit trails, and EPR reports; (5) Second-Life Buyers — purchase verified second-life batteries from the marketplace.",
+    a: "The role model includes manufacturers, battery owners, service providers, recyclers and reviewers. These role names do not prove customer adoption, professional qualification, government endorsement or access to another organization's data. Server-side authorization remains the controlling boundary.",
   },
   {
     category: "Platform",
     q: "Does Circul-AI-r have an API?",
-    a: "Yes. Circul-AI-r provides a RESTful API and a tRPC API for programmatic access to all platform features. An OpenAPI 3.1 specification is available at /api/v1/openapi.json. The platform also provides an MCP (Model Context Protocol) server for AI agent integration, enabling LLMs to query battery data, run SOH predictions, and check compliance status.",
+    a: "REST, tRPC and MCP source interfaces exist with authentication, scope and ownership boundaries. Legacy paths may be unavailable; confirm the enabled contract rather than assuming every listed capability executes. Read-only query access is distinct from metadata-only execution and training, which are gated unavailable.",
   },
   {
     category: "Platform",
     q: "Is Circul-AI-r available as a white-label solution?",
-    a: "Yes. Circul-AI-r is available as a white-label SaaS solution for battery manufacturers, recyclers, and national EPR compliance bodies. Enterprise plans include custom branding, dedicated infrastructure, on-premise deployment options, and SLA-backed support. Contact business@setoo.co for enterprise pricing.",
+    a: "Brand-independent workflows are a design goal. Dedicated infrastructure, custom deployments, pricing, support response times and uptime commitments are not verified offers here. Any future deployment requires separate approval and acceptance.",
   },
   // Regulations
   {
     category: "Regulations",
     q: "What is the EU Battery Regulation 2023/1542?",
-    a: "The EU Battery Regulation (Regulation 2023/1542) is the European Union's comprehensive framework for sustainable batteries. It mandates digital battery passports for EV batteries from 2027, carbon footprint declarations from 2025, recycled content requirements from 2028, and collection/recycling targets. Circul-AI-r is designed to help companies comply with all phases of the EU Battery Regulation.",
+    a: "It is an EU regulatory framework addressing batteries and their lifecycle. Requirements and timing depend on battery category, delegated measures and current law. This offline glossary is not legal advice; obtain current authoritative guidance. App records do not establish conformity.",
   },
   {
     category: "Regulations",
     q: "What are the battery recycling targets under CPCB BW-3?",
-    a: "Under India's Battery Waste Management Rules 2022 (CPCB BW-3), producers must achieve the following collection and recycling targets: 70% in 2024-25, 80% in 2025-26, and 90% from 2026-27 onwards. Targets apply to all battery categories including EV batteries, portable batteries, and industrial batteries. Non-compliance attracts penalties and can result in suspension of import/manufacturing licenses.",
+    a: "Targets vary with the applicable battery category, reporting period and current rules. No universal percentage schedule is asserted here. Consult current regulator materials and qualified reviewers; software estimates or internal token counts cannot demonstrate that an obligation is fulfilled.",
   },
   {
     category: "Regulations",
     q: "How does Circul-AI-r help with China's MEP battery regulations?",
-    a: "Circul-AI-r supports China's Ministry of Ecology and Environment (MEP) battery regulations, including the New Energy Vehicle Battery Recycling Management Measures. The platform tracks battery provenance, generates recycling certificates, and supports the China Battery Traceability Platform (CATL-compatible) data format for regulatory reporting.",
+    a: "It can organize draft provenance and recycling records. No approved authority-specific adapter, traceability format or government portal submission is established. Legacy jurisdiction labels require current legal and technical review.",
   },
   {
     category: "Regulations",
     q: "What is a Digital Product Passport (DPP)?",
-    a: "A Digital Product Passport (DPP) is a standardised digital record that contains information about a product's materials, components, supply chain, and end-of-life instructions. For batteries, the EU Battery Regulation mandates DPPs that include SOH data, carbon footprint, recycled content, and supply chain due diligence information. Circul-AI-r generates EU-compliant DPPs for every registered battery.",
+    a: "A DPP is a structured product-information record covering identity, materials, supply chain and lifecycle data. Applicable requirements vary. An app-generated identity or QR record is not automatically an officially enrolled or compliant DPP.",
   },
 ];
 
@@ -199,8 +199,8 @@ export default function Faq() {
             Frequently Asked Questions
           </h1>
           <p className="text-muted-foreground text-lg mb-8">
-            Everything you need to know about battery lifecycle management, BPAN traceability,
-            AI-powered SOH prediction, EPR compliance, and the Circul-AI-r platform.
+            Development boundaries for local battery records, uncalibrated SOH estimates,
+            draft regulatory evidence and the Circul-AI-r platform.
           </p>
           <div className="relative max-w-xl mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -281,25 +281,19 @@ export default function Faq() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-3">Still have questions?</h2>
           <p className="text-muted-foreground mb-6">
-            Our team is happy to walk you through the platform, discuss your compliance requirements,
-            or set up a pilot for your battery fleet.
+            Review the development documentation and outstanding acceptance boundaries.
+            Physical pilot work requires separate approval; no test or release is promised here.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/">
-              <a className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                Contact Us
-              </a>
-            </Link>
-            <Link href="/wiki">
-              <a className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
+            <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                Platform Overview
+              </Link>
+            <Link href="/wiki" className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
                 Browse the Wiki
-              </a>
-            </Link>
-            <Link href="/getting-started">
-              <a className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
+              </Link>
+            <Link href="/getting-started" className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
                 Getting Started Guide
-              </a>
-            </Link>
+              </Link>
           </div>
         </div>
       </section>

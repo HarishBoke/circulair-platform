@@ -6,13 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import { ShoppingCart, Plus, Search, Zap, RefreshCw, TrendingUp, DollarSign, Download, Package } from "lucide-react";
 import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
-import { usePlatformSettings } from "@/contexts/PlatformSettingsContext";
 import { CURRENCIES } from "@shared/currencies";
 
 const LISTING_STATUS_STYLES: Record<string, string> = {
@@ -21,8 +17,6 @@ const LISTING_STATUS_STYLES: Record<string, string> = {
   expired: "bg-muted/10 text-muted-foreground border-border",
   reserved: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
-
-const CURRENCY_OPTIONS = Object.values(CURRENCIES).slice(0, 8); // Top 8 currencies
 
 function formatPrice(amount: number | string | null | undefined, currency: string): string {
   const num = Number(amount ?? 0);
@@ -48,7 +42,7 @@ export default function Marketplace() {
       "@type": "WebPage",
       "name": "Second-Life Battery Marketplace",
       "url": "https://www.circulair.energy/marketplace",
-      "description": "Browse and trade second-life EV batteries with verified health passports, SOH data, and chain-of-custody tracking.",
+      "description": "Browse second-life battery records. Transactions and payments are unavailable; records are not safety certification.",
       "breadcrumb": {
         "@type": "BreadcrumbList",
         "itemListElement": [
@@ -65,19 +59,7 @@ export default function Marketplace() {
   const PAGE_SIZE = 12;
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"browse" | "my">("browse");
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const { displayCurrency } = usePlatformSettings();
-  const [createForm, setCreateForm] = useState({
-    bpan: "",
-    batteryId: 0,
-    listingType: "second_life_pack" as "second_life_pack" | "direct_reuse" | "module_repurposing" | "black_mass",
-    askingPrice: 50000,
-    currency: displayCurrency || "INR",
-    description: "",
-    targetMarkets: ["IN"] as string[],
-  });
-
-  const { data, isLoading, refetch } = trpc.marketplace.list.useQuery({
+  const { data, isLoading, error, refetch } = trpc.marketplace.list.useQuery({
     listingType: listingType !== "all" ? listingType : undefined,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
@@ -85,117 +67,28 @@ export default function Marketplace() {
 
   const { data: stats } = trpc.marketplace.stats.useQuery();
 
-  const createMutation = trpc.marketplace.createListing.useMutation({
-    onSuccess: () => {
-      toast.success("Listing created successfully!");
-      setShowCreateDialog(false);
-      refetch();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const listings = data?.items ?? [];
+  const allPageListings = data?.items ?? [];
+  const listings = allPageListings.filter((item) =>
+    `${item.bpan} ${item.description ?? ""}`.toLowerCase().includes(search.trim().toLowerCase())
+  );
   const total = data?.total ?? 0;
-
-  const selectedCurrencyMeta = CURRENCIES[createForm.currency];
 
   return (
     <div className="p-6 space-y-5 animate-fade-up">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Second-Life Marketplace</h1>
-          <p className="text-muted-foreground text-sm mt-1">AI-priced battery listings with health passport certification</p>
+          <p className="text-muted-foreground text-sm mt-1">Read-only battery listings; condition and valuation are not independently verified</p>
         </div>
         <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/marketplace/create")}>
-          <Plus className="w-3.5 h-3.5 mr-1.5" /> List Battery for Sale
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> Prepare Listing (publication unavailable)
         </Button>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <span className="hidden" />
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-display">Create Marketplace Listing</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">BPAN</Label>
-                <Input
-                  placeholder="19-character BPAN"
-                  value={createForm.bpan}
-                  onChange={(e) => setCreateForm({ ...createForm, bpan: e.target.value.toUpperCase() })}
-                  className="bg-secondary/30 border-border font-mono text-sm h-9"
-                  maxLength={19}
-                />
-              </div>
-              <div>
-                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Listing Type</Label>
-                <Select value={createForm.listingType} onValueChange={(v) => setCreateForm({ ...createForm, listingType: v as typeof createForm.listingType })}>
-                  <SelectTrigger className="bg-secondary/30 border-border h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="second_life_pack">Second Life Pack</SelectItem>
-                    <SelectItem value="direct_reuse">Direct Reuse</SelectItem>
-                    <SelectItem value="module_repurposing">Module Repurposing</SelectItem>
-                    <SelectItem value="black_mass">Black Mass</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Asking Price</Label>
-                <div className="flex gap-2">
-                  <Select value={createForm.currency} onValueChange={(v) => setCreateForm({ ...createForm, currency: v })}>
-                    <SelectTrigger className="w-28 bg-secondary/30 border-border h-9 text-sm shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {CURRENCY_OPTIONS.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          <span className="font-mono">{c.symbol}</span> {c.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={createForm.askingPrice}
-                    onChange={(e) => setCreateForm({ ...createForm, askingPrice: parseInt(e.target.value) || 0 })}
-                    className="bg-secondary/30 border-border font-mono text-sm h-9 flex-1"
-                    placeholder={`Amount in ${createForm.currency}`}
-                  />
-                </div>
-                {selectedCurrencyMeta && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Price will be listed in {selectedCurrencyMeta.name} ({selectedCurrencyMeta.code})
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Description</Label>
-                <Input
-                  placeholder="Battery description..."
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  className="bg-secondary/30 border-border text-sm h-9"
-                />
-              </div>
-              <Button
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={createMutation.isPending}
-                onClick={() => createMutation.mutate({
-                  bpan: createForm.bpan,
-                  batteryId: createForm.batteryId,
-                  listingType: createForm.listingType,
-                  askingPrice: createForm.askingPrice,
-                  currency: createForm.currency,
-                  description: createForm.description,
-                  targetMarkets: createForm.targetMarkets,
-                })}
-              >
-                {createMutation.isPending ? "Creating..." : "Create Listing"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      </div>
+
+      <div role="status" className="rounded-lg border border-amber-500/30 p-3 text-sm">
+        Payments, offers, seller acceptance, publication and listing changes are unavailable while
+        authorization, reservation, verified settlement, refund and payout gates remain open.
+        Browsing remains available. Do not arrange payment or physical handover based on listing status.
       </div>
 
       {/* Tabs */}
@@ -223,9 +116,9 @@ export default function Marketplace() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Active Listings", value: stats?.activeListings ?? 0, icon: ShoppingCart },
-          { label: "Total Transactions", value: stats?.totalTransactions ?? 0, icon: TrendingUp },
-          { label: "Total Value (INR)", value: `₹${((stats?.totalValueInr ?? 0) / 100000).toFixed(1)}L`, icon: DollarSign },
-          { label: "Avg SOH Listed", value: "78.4%", icon: Zap },
+          { label: "Recorded Sold Listings (unverified)", value: stats?.totalTransactions ?? 0, icon: TrendingUp },
+          { label: "Recorded Value INR (unaudited)", value: `₹${((stats?.totalValueInr ?? 0) / 100000).toFixed(1)}L`, icon: DollarSign },
+          { label: "Avg SOH Listed", value: "Not measured", icon: Zap },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
@@ -242,13 +135,13 @@ export default function Marketplace() {
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search BPAN, listing..."
+            placeholder="Filter BPAN/description on this page"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-card border-border font-mono text-sm h-9"
           />
         </div>
-        <Select value={listingType} onValueChange={setListingType}>
+        <Select value={listingType} onValueChange={(value) => { setListingType(value); setPage(0); }}>
           <SelectTrigger className="w-44 bg-card border-border h-9 text-sm"><SelectValue placeholder="Listing Type" /></SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Types</SelectItem>
@@ -270,7 +163,7 @@ export default function Marketplace() {
             const cols: CsvColumn<typeof listings[0]>[] = [
               { key: "bpan", header: "BPAN" },
               { key: "listingType", header: "Type", format: (r) => r.listingType?.replace(/_/g, " ") ?? "" },
-              { key: "askingPriceInr", header: "Price", format: (r) => formatPrice(r.askingPriceInr, (r as any).currency?.listingCurrency ?? "INR") },
+              { key: "askingPriceInr", header: "Asking price (unverified)", format: (r) => formatPrice((r as { listingCurrencyAmount?: string | null }).listingCurrencyAmount ?? r.askingPriceInr, (r as { listingCurrency?: string }).listingCurrency ?? "INR") },
               { key: "status", header: "Status" },
               { key: "description", header: "Description" },
               { key: "createdAt", header: "Listed", format: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "" },
@@ -289,11 +182,13 @@ export default function Marketplace() {
             <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse h-52" />
           ))}
         </div>
+      ) : error ? (
+        <div role="alert" className="rounded-xl border border-destructive/30 p-6">Unable to load listings. No availability or sale status can be confirmed.</div>
       ) : listings.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-16 text-center">
           <ShoppingCart className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-display text-lg font-bold mb-2">No Listings Found</h3>
-          <p className="text-muted-foreground text-sm">Create the first marketplace listing for second-life batteries.</p>
+          <p className="text-muted-foreground text-sm">No matching records on this page. Publication and transactions are unavailable.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -343,8 +238,8 @@ export default function Marketplace() {
                     View Details
                   </Button>
                   {listing.status === "active" && (
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-7" onClick={() => navigate(`/marketplace/${listing.id}`)}>
-                      Make Offer
+                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground text-xs h-7" disabled>
+                      Purchase unavailable
                     </Button>
                   )}
                 </div>
@@ -387,12 +282,7 @@ export default function Marketplace() {
 }
 
 function MyListingsTab({ navigate }: { navigate: (path: string) => void }) {
-  const { data, isLoading } = trpc.marketplace.myListings.useQuery({ limit: 50 });
-  const withdrawMutation = trpc.marketplace.withdraw.useMutation({
-    onSuccess: () => toast.success("Listing withdrawn"),
-  });
-  const utils = trpc.useUtils();
-
+  const { data, isLoading, error } = trpc.marketplace.myListings.useQuery({ limit: 50 });
   const items = data?.items ?? [];
 
   if (isLoading) {
@@ -403,14 +293,16 @@ function MyListingsTab({ navigate }: { navigate: (path: string) => void }) {
     );
   }
 
+  if (error) return <div role="alert" className="p-6">Unable to load your listing records.</div>;
+
   if (items.length === 0) {
     return (
       <div className="bg-card border border-border rounded-xl p-16 text-center">
         <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
         <h3 className="font-display text-lg font-bold mb-2">No Listings Yet</h3>
-        <p className="text-muted-foreground text-sm mb-4">List your first battery on the marketplace.</p>
+        <p className="text-muted-foreground text-sm mb-4">Publication is unavailable; you may prepare details without saving them.</p>
         <Button onClick={() => navigate("/marketplace/create")} className="bg-primary text-primary-foreground">
-          <Plus className="w-3.5 h-3.5 mr-1.5" /> List Battery for Sale
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> Prepare Listing (publication unavailable)
         </Button>
       </div>
     );
@@ -436,7 +328,7 @@ function MyListingsTab({ navigate }: { navigate: (path: string) => void }) {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="font-display text-lg font-bold">
-                    {listing.askingPriceInr ? `\u20B9${Number(listing.askingPriceInr).toLocaleString()}` : "Market Price"}
+                    {listing.askingPriceInr ? `\u20B9${Number(listing.askingPriceInr).toLocaleString()}` : "Price unavailable"}
                   </div>
                   <Badge variant="outline" className={`font-mono text-[9px] capitalize ${LISTING_STATUS_STYLES[listing.status] ?? ""}`}>
                     {listing.status}
@@ -447,14 +339,9 @@ function MyListingsTab({ navigate }: { navigate: (path: string) => void }) {
                     variant="outline"
                     size="sm"
                     className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs"
-                    disabled={withdrawMutation.isPending}
-                    onClick={() => {
-                      withdrawMutation.mutate({ listingId: listing.id }, {
-                        onSuccess: () => utils.marketplace.myListings.invalidate(),
-                      });
-                    }}
+                    disabled
                   >
-                    Withdraw
+                    Withdrawal unavailable
                   </Button>
                 )}
               </div>

@@ -90,6 +90,17 @@ describe("battery simulator pack/cell resistance units (demo model)", () => {
       const expectedCellVoltage = ocvCell + signedCurrent * packResistanceOhm / testCase.seriesCells;
       const spread = 0.02 + (100 - testCase.soh) * 0.001;
 
+      // Preserve every extreme fixture and the independent I*R arithmetic.
+      // Previously nonpositive lead-acid voltages were asserted as valid output;
+      // those same inputs now MUST fail closed, not be removed or clamped.
+      const expectedMin = Number((expectedCellVoltage - spread / 2 - testCase.random * 0.01).toFixed(3));
+      if (Number(expectedPackVoltage.toFixed(2)) <= 0 || expectedMin <= 0) {
+        expect(() => generateReading(state.bpan, testCase.chemistry)).toThrow(RangeError);
+        expect(state.soh).toBe(testCase.soh);
+        expect(state.cycleCount).toBe(100);
+        return;
+      }
+
       const reading = generateReading(state.bpan, testCase.chemistry);
       expect(reading.iPack).toBe(signedCurrent);
       expect(state.soc).toBeCloseTo(nextSoc, 12);
@@ -127,5 +138,47 @@ describe("battery simulator pack/cell resistance units (demo model)", () => {
     expect(reading.vPack).toBe(Number((packOcv - 135 * packResistanceOhm).toFixed(2)));
     expect(reading.vPack).toBeGreaterThan(100);
     expect(reading.vPack).toBeLessThan(600);
+  });
+});
+
+describe("demo simulator nonphysical boundaries (not safety validation)", () => {
+  it("preserves zero SOH at a forced charge-direction switch instead of raising it to 20%", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const state = controlState("NMC", { soh: 0, soc: 50, isCharging: true, directionTicks: 1000 });
+    const reading = generateReading(state.bpan, "NMC");
+    expect(reading.sohEstimate).toBe(0);
+    expect(state.soh).toBe(0);
+    expect(reading.modelStatus).toBe("demo_uncalibrated");
+  });
+
+  it("rejects nonpositive low-voltage pack output, rather than clamping to a fake valid reading", () => {
+    vi.spyOn(Math, "random").mockReturnValue(1 - Number.EPSILON);
+    const state = controlState("LEAD_ACID", { soh: 20, soc: 0, isCharging: false });
+    expect(() => generateReading(state.bpan, "LEAD_ACID")).toThrow(RangeError);
+  });
+
+  it.each([
+    { soc: -1 }, { soc: 101 }, { soc: NaN }, { soh: -1 }, { soh: 101 }, { soh: Infinity },
+    { cycleCount: -1 }, { cycleCount: NaN }, { tPack: NaN }, { tAmbient: Infinity },
+  ])("rejects invalid state without returning telemetry: %o", (override) => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const state = controlState("NMC", override);
+    expect(() => generateReading(state.bpan, "NMC")).toThrow(RangeError);
+    expect(state.directionTicks).toBe(0);
+  });
+
+  it("reported maximum temperature is not below pack temperature during an injected spike", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const state = controlState("NMC", { tPack: 80, tAmbient: 80, thermalSpikeActive: true, spikeTicks: 3 });
+    const reading = generateReading(state.bpan, "NMC");
+    expect(reading.tMax).toBeGreaterThanOrEqual(reading.tPack);
+    expect(reading.thermalAnomaly).toBe(true);
+  });
+});
+
+describe("demo chemistry provenance", () => {
+  it.each(["Unknown", "SOLID_STATE", "toString"])("rejects unsupported %s instead of mislabelling an NMC simulation", (chemistry) => {
+    expect(() => getOrCreateState("UNSUPPORTED-DEMO", chemistry)).toThrow(RangeError);
+    expect(() => generateReading("UNSUPPORTED-DEMO", chemistry)).toThrow(RangeError);
   });
 });

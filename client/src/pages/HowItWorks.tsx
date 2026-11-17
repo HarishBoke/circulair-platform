@@ -10,121 +10,60 @@ import {
 /* ─── STEPS DATA ────────────────────────────────────────────────────────── */
 const STEPS = [
   {
-    icon: QrCode,
-    step: 1,
-    title: "Register Your Battery",
-    description:
-      "Generate a unique Battery Passport Alphanumeric Number (BPAN) for each battery. Upload battery specifications — chemistry, capacity, voltage, manufacturer, and production date — via the web interface, CSV bulk import, or REST API. Each battery receives a digital identity that persists for its entire lifecycle.",
-    details: [
-      "Generate BPAN from battery specifications",
-      "Bulk import via CSV or API",
-      "Attach manufacturer certificates and test reports",
-      "Set warranty terms and service intervals",
-    ],
-    duration: "5 minutes per battery or bulk in seconds",
-    tool: "Battery Registry",
+    icon: QrCode, step: 1, title: "Prepare a Canonical Battery Record",
+    description: "Local battery identification and QR records; official BPAN enrollment not verified. Link the local record to the physical label and verify chemistry, rated capacity, voltage and manufacture date from controlled records. Preserve legacy local aliases; official issuance, canonical mapping and ownership need separate acceptance.",
+    details: ["Local battery identification and QR record paths exist", "Compare the physical label with canonical identity", "Retain authorized specifications and test evidence", "Reject missing or mismatched identifiers"],
+    duration: "Pilot acceptance required", tool: "Registry / Pilot",
   },
   {
-    icon: Cpu,
-    step: 2,
-    title: "Connect IoT Telemetry",
-    description:
-      "Connect your Battery Management System (BMS) to Circul-AI-r via MQTT over TLS. The platform provisions IoT gateways and provides firmware for common hardware platforms. Real-time telemetry — voltage, current, temperature, SOC, cycle count — streams to the platform and is stored with millisecond timestamps.",
-    details: [
-      "MQTT over TLS for secure data transmission",
-      "REST API for batch telemetry upload",
-      "Support for CAN bus, UART, and Modbus BMS protocols",
-      "Edge gateway firmware for offline scenarios",
-    ],
-    duration: "30 minutes for first gateway setup",
-    tool: "IoT Telemetry",
+    icon: Cpu, step: 2, title: "Validate a Read-Only Telemetry Connection",
+    description: "MQTT, REST API and WebSocket source paths exist, with gateway reference code. Installation is manual; no remote hardware has been commissioned here. First prove payload units, timestamps, source labels and device-to-BPAN binding offline, then obtain separate approval for an isolated physical connection.",
+    details: ["Gateway code is reference code, not installed firmware", "Broker TLS, ACLs and credential lifecycle remain unverified", "CAN, UART or Modbus compatibility is hardware-specific", "Telemetry is not an emergency cutoff or control system"],
+    duration: "Hardware setup time unknown", tool: "Telemetry / Pilot",
   },
   {
-    icon: BarChart3,
-    step: 3,
-    title: "Predict Battery Health with AI",
-    description:
-      "Run AI-powered State of Health (SOH) predictions on any registered battery using its BPAN. The CNN-LSTM model analyses telemetry history to predict current SOH, Remaining Useful Life (RUL), confidence intervals, and a triage path. Predictions are stored and used to power the marketplace and compliance workflows.",
-    details: [
-      "CNN-LSTM model trained on millions of battery cycles",
-      "SOH prediction with RMSE < 2%",
-      "RUL prediction in cycles",
-      "Triage path: Direct Reuse, Refurbish, Repurpose, or Recycle",
-    ],
-    duration: "Under 30 seconds per prediction",
-    tool: "AI SOH Prediction",
+    icon: BarChart3, step: 3, title: "Review Heuristic Battery Health Estimates",
+    description: "The implemented SOH path uses a deterministic physics-based model. Its remaining-life and triage outputs are estimates, not validated neural-network inference. Use authorized real-source data and compare results with qualified measurements before making a lifecycle decision.",
+    details: ["Accuracy unvalidated; no training dataset established", "Confidence and error fields are heuristic, not measured RMSE", "Synthetic telemetry must not be treated as measured evidence", "Qualified human review is required; no autonomous approval"],
+    duration: "Calibration and acceptance pending", tool: "Health / Estimate",
   },
   {
-    icon: ShoppingCart,
-    step: 4,
-    title: "List on the Second-Life Marketplace",
-    description:
-      "When a battery reaches end-of-first-life (SOH ≈ 80%), list it on the Circul-AI-r marketplace. Listings include AI-verified SOH, BPAN traceability, compliance documentation, and multi-currency pricing. Buyers — stationary storage operators, telecom companies, microgrid developers — can purchase with confidence.",
-    details: [
-      "AI-verified SOH included in every listing",
-      "Multi-currency pricing (USD, EUR, INR, CNY, GBP, THB, IDR)",
-      "Logistics and chain-of-custody tracking",
-      "Stripe-powered secure payments",
-    ],
-    duration: "10 minutes to create a listing",
-    tool: "Marketplace",
+    icon: ShoppingCart, step: 4, title: "Review Listings without Real Settlement",
+    description: "Listing, offer and indicative pricing workflows exist. A listed SOH or document is declared evidence, not battery qualification. Real purchases, settlement, refunds and payouts require separate authorization, integrity and provider acceptance; a local test is not payment verification.",
+    details: ["Manual inventory qualification required", "Currency display does not prove currency settlement", "Logistics records do not confirm carrier dispatch", "Do not use the pilot for real transactions"],
+    duration: "Commercial acceptance pending", tool: "Marketplace / Review",
   },
   {
-    icon: Shield,
-    step: 5,
-    title: "Automate EPR Compliance",
-    description:
-      "Generate EPR compliance reports for 7 jurisdictions — EU, India (CPCB BW-3), China (MEP), USA, UK, Thailand, and Indonesia — directly from the platform. Track collection and recycling targets, manage EPR tokens, and submit reports to regulatory authorities. Automated alerts notify you of upcoming deadlines.",
-    details: [
-      "Pre-built report templates for each jurisdiction",
-      "Real-time compliance dashboards",
-      "EPR token issuance upon yield verification",
-      "Automated deadline alerts",
-    ],
-    duration: "Continuous — automated compliance monitoring",
-    tool: "EPR Compliance",
+    icon: Shield, step: 5, title: "Prepare Draft Regulatory Records",
+    description: "Jurisdiction metadata, declaration forms and report templates support evidence preparation. Government submission adapters, period and organization scoping, legal obligations and regulator acceptance are not established. Treat all generated outputs as draft or self-declared until reviewed.",
+    details: ["Templates are not compliance certification", "No verified government synchronization", "Missing obligation evidence means status unknown", "Qualified jurisdiction-specific review required"],
+    duration: "Regulatory sign-off pending", tool: "Regulatory / Draft",
   },
   {
-    icon: Recycle,
-    step: 6,
-    title: "Verify Recycling Yield",
-    description:
-      "When a battery reaches end-of-life, send it to a registered recycler. The recycler records the actual material yield — lithium, cobalt, nickel, manganese — in Circul-AI-r. Upon verification, EPR tokens are issued to the producer, closing the circular economy loop and fulfilling regulatory obligations.",
-    details: [
-      "Recycler registration and verification",
-      "Material yield recording by element",
-      "EPR token issuance upon yield confirmation",
-      "Blockchain-based audit trail",
-    ],
-    duration: "15 minutes per batch",
-    tool: "Yield Verification",
+    icon: Recycle, step: 6, title: "Record Declared Recovery Evidence",
+    description: "Yield forms capture declared material recovery and internal EPR records. They do not independently verify recycler measurements, issue recognized regulatory credits or prove obligations fulfilled. No real blockchain anchoring is established; generated transaction-like values are demo data.",
+    details: ["Independent mass measurement and event identity required", "Finite nonnegative quantities and replay controls required", "Internal records are not regulatory credits", "Hash comparison is not blockchain receipt verification"],
+    duration: "Recovery assurance pending", tool: "Recovery / Declared",
   },
 ];
 
 /* ─── COMPONENT ─────────────────────────────────────────────────────────── */
 export default function HowItWorks() {
-  usePageTitle("How It Works — Battery Lifecycle Management with Circul-AI-r");
+  usePageTitle("How It Works — Bounded Battery Pilot with Circul-AI-r");
 
   useStructuredData({
     "@context": "https://schema.org",
     "@type": "HowTo",
-    "name": "How to Manage Battery Lifecycle with Circul-AI-r",
+    "name": "How to Prepare a Bounded Battery Pilot with Circul-AI-r",
     "description":
-      "Step-by-step guide to registering batteries, connecting IoT telemetry, predicting SOH with AI, listing on the second-life marketplace, automating EPR compliance, and verifying recycling yield.",
-    "url": "https://www.circulair.energy/how-it-works",
-    "image": "https://d2xsxph8kpxj0f.cloudfront.net/310519663256112242/Su7XGBwDj2SqiggDTNrQPe/og-image-CMmQGxVgPUy53dDEotsvLk.png",
-    "totalTime": "PT2H",
-    "estimatedCost": {
-      "@type": "MonetaryAmount",
-      "currency": "USD",
-      "value": "0",
-    },
+      "A bounded pilot preparation guide for battery records, telemetry validation, heuristic estimates, listing review and draft regulatory evidence. Physical, safety, payment and legal acceptance remain pending.",
+    "url": "https://circulair.energy/how-it-works",
     "step": STEPS.map((s) => ({
       "@type": "HowToStep",
       "position": s.step,
       "name": s.title,
       "text": s.description,
-      "url": `https://www.circulair.energy/how-it-works#step-${s.step}`,
+      "url": `https://circulair.energy/how-it-works#step-${s.step}`,
     })),
   });
 
@@ -135,22 +74,18 @@ export default function HowItWorks() {
         <div className="max-w-3xl mx-auto text-center">
           <Badge variant="outline" className="mb-4 text-xs font-mono">HOW IT WORKS</Badge>
           <h1 className="text-4xl font-bold tracking-tight mb-4">
-            Battery Lifecycle Management in 6 Steps
+            Battery Pilot Preparation in 6 Steps
           </h1>
           <p className="text-muted-foreground text-lg mb-8">
-            From first registration to end-of-life recycling — Circul-AI-r covers the complete battery
-            lifecycle with AI-powered intelligence, IoT connectivity, and automated compliance.
+            Circul-AI-r brings battery records and review workflows together.
+            These steps describe a bounded pilot, not verified hardware operation or launch acceptance.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/register">
-              <a className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                Get Started Free <ArrowRight className="h-4 w-4" />
-              </a>
+            <Link href="/login" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                Sign In for Pilot <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/getting-started">
-              <a className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
+            <Link href="/getting-started" className="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg font-medium hover:bg-muted/50 transition-colors">
                 View Documentation
-              </a>
             </Link>
           </div>
         </div>
@@ -216,28 +151,28 @@ export default function HowItWorks() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "Full Traceability",
-                desc: "Every battery has a BPAN — a permanent digital identity that follows it from manufacture to recycling.",
+                title: "Identity Records",
+                desc: "Registry and QR paths exist. Canonical identity, physical labeling and complete history require acceptance.",
               },
               {
-                title: "AI-Powered Decisions",
-                desc: "CNN-LSTM SOH prediction with RMSE < 2% tells you exactly when to reuse, refurbish, repurpose, or recycle.",
+                title: "Heuristic Estimates",
+                desc: "Physics-based SOH and triage suggestions are uncalibrated estimates for human review, not battery safety decisions.",
               },
               {
-                title: "Automated Compliance",
-                desc: "EPR reports for 7 jurisdictions generated automatically — no manual data entry, no missed deadlines.",
+                title: "Draft Regulatory Evidence",
+                desc: "Metadata and templates support preparation. Legal conformity, deadlines and government submission remain unverified.",
               },
               {
-                title: "Second-Life Revenue",
-                desc: "Monetise end-of-first-life batteries through the marketplace instead of sending them directly to recycling.",
+                title: "Listing Review",
+                desc: "Listings and indicative pricing support manual review. No accepted payment, matching or payout workflow is implied.",
               },
               {
-                title: "Real-Time Monitoring",
-                desc: "MQTT-based IoT telemetry gives you live visibility into every battery in your fleet.",
+                title: "Telemetry Pilot",
+                desc: "Ingest source paths require broker, device, payload and physical acceptance. Connectivity and latency are not guaranteed.",
               },
               {
-                title: "Closed-Loop Recycling",
-                desc: "Yield verification and EPR token issuance close the circular economy loop and prove compliance.",
+                title: "Declared Recovery Records",
+                desc: "Internal yield records are self-declared. Independent assurance and regulatory recognition are not established.",
               },
             ].map((item, i) => (
               <div key={i} className="p-5 border border-border rounded-xl bg-background">
@@ -254,18 +189,14 @@ export default function HowItWorks() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
           <p className="text-muted-foreground mb-8">
-            Register your first battery for free. No credit card required.
+            Use an authorized pilot identity and isolated data only. Real battery tests need qualified supervision and a separately approved protocol.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/register">
-              <a className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors">
-                Create Free Account <ArrowRight className="h-4 w-4" />
-              </a>
+            <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors">
+                Sign In for Pilot <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/faq">
-              <a className="inline-flex items-center gap-2 px-6 py-3 border border-border rounded-lg font-semibold hover:bg-muted/50 transition-colors">
+            <Link href="/faq" className="inline-flex items-center gap-2 px-6 py-3 border border-border rounded-lg font-semibold hover:bg-muted/50 transition-colors">
                 Read the FAQ
-              </a>
             </Link>
           </div>
         </div>

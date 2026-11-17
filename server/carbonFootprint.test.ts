@@ -1,13 +1,14 @@
 /**
  * carbonFootprint.test.ts
  * Tests for:
- * 1. calculatePerformanceClass — EU A–E class calculator (shared/carbonClass.ts)
+ * 1. calculatePerformanceClass — existing internal A–E bands (not legal validation)
  * 2. getThresholds / getReferenceIntensity — threshold helpers
  * 3. LIFECYCLE_STAGES — stage metadata completeness
- * 4. declareCarbonFootprint tRPC procedure — input validation, auth guard
- * 5. getCarbonFootprintByBpan tRPC procedure — query correctness
+ * 4. Real pure lifecycle calculator units and finite boundaries.
+ * No router/auth/database tests, external factor verification or legal sign-off.
  */
 import { describe, it, expect } from "vitest";
+import { calculateCarbonFootprint } from "./carbonModel";
 import {
   calculatePerformanceClass,
   getThresholds,
@@ -222,5 +223,81 @@ describe("CLASS_LABELS and CLASS_COLORS", () => {
   it("CLASS_LABELS are in degrading order", () => {
     expect(CLASS_LABELS["A"]).toContain("Best");
     expect(CLASS_LABELS["E"]).toContain("Worst");
+  });
+});
+
+// Independent numeric fixtures test the ACTUAL pure model, not copied router logic.
+describe("lifecycle carbon units and boundaries (unverified estimate)", () => {
+  const base = { bpan: "OFFLINE-CARBON", chemistry: "NMC", capacityKwh: 10 };
+
+  it("converts g/kWh to kg: 10 kWh × 200 cycles/year × 3 years / .92 × 713 / 1000", () => {
+    const result = calculateCarbonFootprint({ ...base, gridRegion: "IN", transportDistanceKm: 5000 });
+    expect(result.lifetimeDeliveredEnergyKwh).toBe(6000);
+    expect(result.energyDrawnFromGridKwh).toBeCloseTo(6000 / 0.92, 10);
+    expect(result.operationalKgCo2).toBe(4650);
+    expect(result.manufacturingKgCo2).toBe(850);
+    expect(result.transportKgCo2).toBe(125);
+    expect(result.eolKgCo2).toBe(120);
+    expect(result.totalKgCo2).toBe(5745);
+    expect(result.intensityKgCo2PerKwh).toBe(574.5);
+    expect(result.gridCarbonIntensity).toBe(713);
+    expect(Object.values(result.breakdown).reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10);
+    expect(result.euCompliant).toBeNull();
+    expect(result.complianceStatus).toBe("not_assessed");
+  });
+
+  it("counts all grid charging energy, including rather than only losses", () => {
+    const result = calculateCarbonFootprint({ ...base, gridRegion: "GLOBAL", totalEnergyKwh: 0.92 });
+    expect(result.energyDrawnFromGridKwh).toBe(1);
+    expect(result.operationalKgCo2).toBe(0.45);
+    expect(result.method).toBe("all_grid_charging_energy");
+  });
+
+  it("preserves explicit zero energy/distance despite positive default lifetime", () => {
+    const result = calculateCarbonFootprint({ ...base, totalEnergyKwh: 0, transportDistanceKm: 0 });
+    expect(result.lifetimeDeliveredEnergyKwh).toBe(0);
+    expect(result.operationalKgCo2).toBe(0);
+    expect(result.transportKgCo2).toBe(0);
+    expect(result.breakdown.operationalPct).toBe(0);
+    expect(result.breakdown.transportPct).toBe(0);
+    expect(result.totalKgCo2).toBe(970);
+  });
+
+  it.each([{ ageYears: 0 }, { cyclesPerYear: 0 }])("does not replace a zero age/cycle estimate: %o", (override) => {
+    expect(calculateCarbonFootprint({ ...base, ...override }).operationalKgCo2).toBe(0);
+  });
+
+  it("scales energy emissions linearly with documented region intensity", () => {
+    const input = { ...base, totalEnergyKwh: 920 };
+    expect(calculateCarbonFootprint({ ...input, gridRegion: "FR" }).operationalKgCo2).toBe(58);
+    expect(calculateCarbonFootprint({ ...input, gridRegion: "IN" }).operationalKgCo2).toBe(713);
+  });
+
+  it.each([0, -1, NaN, Infinity, -Infinity])("rejects undefined/nonphysical capacity %s", (capacityKwh) => {
+    expect(() => calculateCarbonFootprint({ ...base, capacityKwh })).toThrow(RangeError);
+  });
+
+  it.each(["transportDistanceKm", "totalEnergyKwh", "ageYears", "cyclesPerYear"] as const)("rejects negative/nonfinite %s", (field) => {
+    for (const value of [-1, NaN, Infinity, -Infinity]) {
+      expect(() => calculateCarbonFootprint({ ...base, [field]: value })).toThrow(RangeError);
+    }
+  });
+
+  it.each(["RENEWABLE", "UNKNOWN", "toString"])("rejects unsupported region %s instead of mislabelling a global fallback", (gridRegion) => {
+    expect(() => calculateCarbonFootprint({ ...base, gridRegion })).toThrow(RangeError);
+  });
+
+  it.each(["UNKNOWN", "toString"])("rejects unsupported chemistry %s", (chemistry) => {
+    expect(() => calculateCarbonFootprint({ ...base, chemistry })).toThrow(RangeError);
+  });
+
+  it("rejects arithmetic overflow without emitting infinity/NaN", () => {
+    expect(() => calculateCarbonFootprint({ ...base, capacityKwh: Number.MAX_VALUE })).toThrow(RangeError);
+  });
+
+  it("keeps tiny valid capacity intensities finite without an invented zero fallback", () => {
+    const result = calculateCarbonFootprint({ ...base, capacityKwh: 0.001, totalEnergyKwh: 0, transportDistanceKm: 0 });
+    expect(result.intensityKgCo2PerKwh).toBe(97);
+    expect(Object.values(result.breakdown).every(Number.isFinite)).toBe(true);
   });
 });

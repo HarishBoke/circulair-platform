@@ -1,57 +1,16 @@
 /**
- * mqttSubscriber.ts
- *
- * Real MQTT broker subscriber for Circul-AI-r platform.
- *
- * Architecture:
- *   BMS/IoT Device → MQTT Broker (TCP/TLS) → This subscriber
- *     → insertTelemetry (MySQL)
- *     → Socket.io broadcast (/telemetry namespace)
- *     → createAlert (thermal anomaly / EOL detection)
- *
- * Environment variables (set via webdev_request_secrets):
- *   MQTT_BROKER_URL      e.g. "mqtts://broker.hivemq.com:8883"
- *                        or   "mqtt://localhost:1883"  (plain TCP, no TLS)
- *   MQTT_USERNAME        optional — broker username
- *   MQTT_PASSWORD        optional — broker password
- *   MQTT_CLIENT_ID       optional — defaults to "circulair-server-<random>"
- *   MQTT_TOPIC_PREFIX    optional — defaults to "circulair/telemetry"
- *   MQTT_CA_CERT         optional — PEM-encoded CA cert for self-signed brokers
- *
- * Expected MQTT payload (JSON, published to  <prefix>/<BPAN>):
- * {
- *   "bpan":        "INHB30N40250627A000101",  // 19-char BPAN
- *   "vPack":       354.2,    // Pack voltage (V)
- *   "iPack":       -45.3,    // Pack current (A, negative = charging)
- *   "vMin":        3.51,     // Min cell voltage (V)  [optional]
- *   "vMax":        3.58,     // Max cell voltage (V)  [optional]
- *   "tPack":       32.4,     // Pack temperature (°C)
- *   "tMax":        38.1,     // Max cell temperature (°C)
- *   "cycleCount":  342,      // Total charge cycles
- *   "irPack":      18.5,     // Internal resistance (mΩ)
- *   "sohEstimate": 91.2,     // BMS-reported SOH (%)
- *   "dtcCodes":    [],       // Diagnostic trouble codes [optional]
- *   "source":      "bms_v2" // Device identifier [optional]
- * }
+ * Broker management uses approved TLS configuration and explicit admin context.
+ * Operational ingestion is CLOSED pending authenticated publisher identity,
+ * persisted owner/device/battery/key mapping and atomic provenance storage.
+ * Future measured topic: <prefix>/<exact-registered-BPAN>/<deviceId>.
+ * Future JSON contract: bpan, deviceId, recordedAt (ISO UTC), source: measured,
+ * plus strictly validated supported metrics. Broker acknowledgement is not
+ * persistence or hardware acceptance. Synthetic publishers cannot ingest here.
  */
 
 import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import { nanoid } from "nanoid";
-import { getBatteryByBpan, insertTelemetry, createAlert, updateBatteryStatus, updateDeviceLastSeenByBpan, getActiveRulesForBpan, evaluateAlertRules } from "./db";
-import { broadcastTelemetryReading, getSocketIO } from "./telemetrySocket";
-import type { TelemetryAnomaly } from "./telemetrySocket";
-import { shouldCreateAlert, recordAlert } from "./alertCooldown";
-
-function broadcastTelemetry(bpan: string, reading: Parameters<typeof broadcastTelemetryReading>[0]): void {
-  broadcastTelemetryReading(reading);
-}
-
-function broadcastAnomaly(bpan: string, anomaly: TelemetryAnomaly): void {
-  const io = getSocketIO();
-  if (!io) return;
-  const ns = io.of("/telemetry");
-  ns.to("anomalies").emit("telemetry:anomaly", anomaly);
-}
+import { deviceBpanSchema, deviceTelemetrySchema } from "./deviceIngestionBoundary";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -82,6 +41,7 @@ export interface MqttSubscriberStatus {
 
 let _client: MqttClient | null = null;
 let _config: MqttConfig | null = null;
+let _disposeConnection: (() => void) | null = null;
 let _status: MqttSubscriberStatus = {
   connected: false,
   brokerUrl: "",
@@ -111,249 +71,34 @@ function calcMessagesPerMinute(): number {
 
 // ─── Payload validation ───────────────────────────────────────────────────────
 
-interface MqttPayload {
-  bpan?: string;
-  vPack?: number;
-  iPack?: number;
-  vMin?: number;
-  vMax?: number;
-  tPack?: number;
-  tMax?: number;
-  cycleCount?: number;
-  irPack?: number;
-  sohEstimate?: number;
-  dtcCodes?: string[];
-  source: string;
-  demo?: true;
-  simulated?: true;
-  ts?: number;
-}
-
-function validatePayload(raw: unknown): MqttPayload | null {
-  if (!raw || typeof raw !== "object") return null;
-  const p = raw as Record<string, unknown>;
-
-  // bpan is required and must be 21 chars
-  if (typeof p.bpan !== "string" || p.bpan.length !== 19) return null;
-
-  // At least one numeric sensor reading required
-  const hasReading = ["vPack", "iPack", "tPack", "tMax", "sohEstimate"].some(
-    (k) => typeof p[k] === "number"
-  );
-  if (!hasReading) return null;
-
-  // Retain explicit non-live labels recognized by the PagerDuty filter. These
-  // declarations only suppress paging; they do not authenticate a device.
-  // Ordinary device identifiers still use the MQTT transport source. "stream"
-  // is the legacy label emitted by this module's synthetic stream publisher.
-  const declaredSource = typeof p.source === "string" ? p.source : "";
-  const source = /(simulat|demo|test)/i.test(declaredSource)
-    ? declaredSource
-    : declaredSource.trim().toLowerCase() === "stream" || p.demo === true || p.simulated === true
-      ? "simulated"
-      : "mqtt";
-
-  return {
-    bpan: p.bpan,
-    vPack: typeof p.vPack === "number" ? p.vPack : undefined,
-    iPack: typeof p.iPack === "number" ? p.iPack : undefined,
-    vMin: typeof p.vMin === "number" ? p.vMin : undefined,
-    vMax: typeof p.vMax === "number" ? p.vMax : undefined,
-    tPack: typeof p.tPack === "number" ? p.tPack : undefined,
-    tMax: typeof p.tMax === "number" ? p.tMax : undefined,
-    cycleCount: typeof p.cycleCount === "number" ? Math.floor(p.cycleCount) : undefined,
-    irPack: typeof p.irPack === "number" ? p.irPack : undefined,
-    sohEstimate: typeof p.sohEstimate === "number" ? p.sohEstimate : undefined,
-    dtcCodes: Array.isArray(p.dtcCodes) ? p.dtcCodes.map(String) : undefined,
-    source,
-    demo: p.demo === true ? true : undefined,
-    simulated: p.simulated === true ? true : undefined,
-  };
+export function validatePayload(raw: unknown) {
+  const result = deviceTelemetrySchema.safeParse(raw);
+  return result.success ? result.data : null;
 }
 
 // ─── Message handler ──────────────────────────────────────────────────────────
 
-async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
-  // Track rate
-  _msgTimestamps.push(Date.now());
+export async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
   _status.messagesReceived++;
   _status.lastMessageAt = new Date().toISOString();
+  if (_msgTimestamps.length < 10000) _msgTimestamps.push(Date.now());
   _status.messagesPerMinute = calcMessagesPerMinute();
-  console.log(`[MQTT] ← Message received on topic: ${topic} (${rawPayload.length} bytes, total: ${_status.messagesReceived})`);
-
-  // Parse JSON
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawPayload.toString("utf8"));
-  } catch {
-    _status.errors.push(`[${new Date().toISOString()}] JSON parse error on topic ${topic}`);
-    if (_status.errors.length > 20) _status.errors.shift();
-    return;
-  }
-
-  const payload = validatePayload(parsed);
-  if (!payload || !payload.bpan) {
-    _status.errors.push(`[${new Date().toISOString()}] Invalid payload on topic ${topic}`);
-    if (_status.errors.length > 20) _status.errors.shift();
-    return;
-  }
-
-  const { bpan } = payload;
-  const provenance = {
-    source: payload.source,
-    ...(payload.demo === true ? { demo: true } : {}),
-    ...(payload.simulated === true ? { simulated: true } : {}),
-  };
-
-  // Look up battery in DB to get batteryId
-  let batteryId: number;
-  let batteryChemistry = "NMC";
-  try {
-    const battery = await getBatteryByBpan(bpan);
-    if (!battery) {
-      // Auto-register unknown BPAN with minimal data so telemetry isn't lost
-      console.warn(`[MQTT] Unknown BPAN ${bpan} — telemetry received but battery not registered`);
-      _status.errors.push(`[${new Date().toISOString()}] Unknown BPAN: ${bpan} — register battery first`);
-      if (_status.errors.length > 20) _status.errors.shift();
-      return;
-    }
-    batteryId = battery.id;
-    batteryChemistry = battery.chemistry ?? "NMC";
-  } catch (err) {
-    console.error(`[MQTT] DB lookup failed for BPAN ${bpan}:`, err);
-    return;
-  }
-
-  // ─── Dynamic alert rule evaluation (replaces hard-coded 51°C threshold) ────
-  let triggeredRules: Awaited<ReturnType<typeof evaluateAlertRules>> = [];
-  try {
-    const activeRules = await getActiveRulesForBpan(bpan, batteryChemistry);
-    const telemetryReading = {
-      temperature: payload.tMax ?? payload.tPack ?? null,
-      voltage: payload.vPack ?? null,
-      current: payload.iPack ?? null,
-      soc: null, // not in MQTT payload currently
-      soh: payload.sohEstimate ?? null,
-      cycleCount: payload.cycleCount ?? null,
-      internalResistance: payload.irPack ?? null,
-    };
-    triggeredRules = evaluateAlertRules(activeRules, telemetryReading);
-  } catch (err) {
-    console.warn(`[MQTT] Alert rule evaluation failed for ${bpan}:`, err);
-  }
-
-  // Detect anomalies — thermalAnomaly is now driven by rules if any temperature rule fired;
-  // fall back to legacy 51°C check only when NO temperature rules are configured.
-  const tempRuleFired = triggeredRules.some((r) => r.metric === "temperature");
-  const legacyThermalAnomaly = (payload.tMax ?? 0) > 51;
-  const thermalAnomaly = tempRuleFired || (!triggeredRules.some((r) => r.metric === "temperature") && legacyThermalAnomaly);
-  const anomalyType = thermalAnomaly ? "over_temperature" : null;
-  const sohBelowThreshold = (payload.sohEstimate ?? 100) < 70;
-
-  // Persist to DB
-  try {
-    await insertTelemetry({
-      bpan,
-      batteryId,
-      vPack: payload.vPack?.toString(),
-      iPack: payload.iPack?.toString(),
-      vMin: payload.vMin?.toString(),
-      vMax: payload.vMax?.toString(),
-      tPack: payload.tPack?.toString(),
-      tMax: payload.tMax?.toString(),
-      cycleCount: payload.cycleCount,
-      irPack: payload.irPack?.toString(),
-      sohEstimate: payload.sohEstimate?.toString(),
-      dtcCodes: payload.dtcCodes ?? null,
-      thermalAnomaly,
-      anomalyType: anomalyType ?? undefined,
-      source: payload.source,
-    });
-  } catch (err) {
-    console.error(`[MQTT] DB insert failed for BPAN ${bpan}:`, err);
-    return;
-  }
-
-  // Update IoT device lastSeen heartbeat (fire-and-forget)
-  updateDeviceLastSeenByBpan(bpan).catch(() => {});
-
-  // Broadcast to Socket.io live dashboard
-  const reading = {
-    bpan,
-    batteryId,
-    vPack: payload.vPack ?? 0,
-    iPack: payload.iPack ?? 0,
-    vMin: payload.vMin ?? 0,
-    vMax: payload.vMax ?? 0,
-    tPack: payload.tPack ?? 0,
-    tMax: payload.tMax ?? 0,
-    cycleCount: payload.cycleCount ?? 0,
-    irPack: payload.irPack ?? 0,
-    sohEstimate: payload.sohEstimate ?? 0,
-    thermalAnomaly,
-    anomalyType: anomalyType ?? undefined,
-    // Socket telemetry has a fixed source union; retain non-live classification
-    // without widening shared types or passing arbitrary source strings to it.
-    source: payload.source === "mqtt" ? "mqtt" as const : "simulated" as const,
-    recordedAt: new Date().toISOString(),
-  };
-  broadcastTelemetry(bpan, reading);
-
-  // ─── Fire alerts for triggered rules (5-min dedup per rule) ────────────────
-  for (const rule of triggeredRules) {
-    const cooldownKey = `rule_${rule.id}`;
+  let reason = "verified_broker_device_ingestion_unavailable";
+  if (rawPayload.length > 16384) reason = "payload_too_large";
+  else {
     try {
-      if (await shouldCreateAlert(bpan, cooldownKey)) {
-        const metricLabel = rule.metric.charAt(0).toUpperCase() + rule.metric.slice(1);
-        const operatorLabel: Record<string, string> = { gt: ">", lt: "<", gte: "≥", lte: "≤", eq: "=" };
-        await createAlert({
-          bpan,
-          batteryId,
-          type: rule.metric === "temperature" ? "thermal_anomaly" : "system",
-          severity: rule.severity as "info" | "warning" | "critical",
-          title: `${rule.name} — ${bpan}`,
-          message: `${metricLabel} ${operatorLabel[rule.operator] ?? rule.operator} ${rule.threshold} triggered by rule "${rule.name}". Actual value received from device.`,
-          metadata: { ruleId: rule.id, metric: rule.metric, threshold: rule.threshold, ...provenance },
-        });
-        recordAlert(bpan, cooldownKey);
-      }
-    } catch (err) {
-      console.error(`[MQTT] Rule alert creation failed for rule ${rule.id} on BPAN ${bpan}:`, err);
-    }
+      const payload = deviceTelemetrySchema.safeParse(JSON.parse(rawPayload.toString("utf8")));
+      if (!payload.success) reason = "invalid_measured_device_payload";
+      else if (topic !== `${_config?.topicPrefix ?? "circulair/telemetry"}/${payload.data.bpan}/${payload.data.deviceId}`) reason = "topic_device_identity_mismatch";
+    } catch { reason = "invalid_json"; }
   }
-
-  // Thermal anomaly broadcast (Socket.io) — kept for live dashboard widgets
-  if (thermalAnomaly) {
-    broadcastAnomaly(bpan, {
-      bpan,
-      tMax: payload.tMax ?? 0,
-      tPack: payload.tPack ?? 0,
-      recordedAt: new Date().toISOString(),
-      message: `Thermal anomaly detected for ${bpan}. T_max = ${payload.tMax?.toFixed(1)}°C`,
-    });
-  }
-
-  // SOH below EOL threshold — create alert (5-min dedup cooldown)
-  if (sohBelowThreshold) {
-    try {
-      if (await shouldCreateAlert(bpan, "eol_detected")) {
-        await createAlert({
-          bpan,
-          batteryId,
-          type: "eol_detected",
-          severity: "warning",
-          title: `EOL Threshold Reached — ${bpan}`,
-          message: `Battery SOH = ${payload.sohEstimate?.toFixed(1)}% has fallen below 70% EOL threshold. Initiate triage workflow.`,
-          metadata: { soh: payload.sohEstimate, ...provenance },
-        });
-        recordAlert(bpan, "eol_detected");
-        // Update battery status to end_of_life
-        await updateBatteryStatus(bpan, "end_of_life", payload.sohEstimate);
-      }
-    } catch (err) {
-      console.error(`[MQTT] EOL alert creation failed for BPAN ${bpan}:`, err);
-    }
-  }
+  // A normal broker subscription does NOT reveal/authenticate the original
+  // publishing client's identity. Payload deviceId alone is not proof. Until a
+  // reviewed broker ACL + authenticated publisher envelope + atomic persistence
+  // adapter exists, reject both measured and synthetic operational ingestion.
+  // No DB lookup, write, alert, heartbeat, lifecycle mutation or broadcast occurs.
+  _status.errors.push(reason);
+  if (_status.errors.length > 20) _status.errors.shift();
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -362,31 +107,32 @@ async function handleMessage(topic: string, rawPayload: Buffer): Promise<void> {
  * Start the MQTT subscriber. Safe to call multiple times — will disconnect
  * existing client first if already running.
  */
-export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
-  // Merge with env defaults
-  // Auto-prepend mqtts:// for bare hostnames (e.g. "broker.hivemq.com" → "mqtts://broker.hivemq.com")
-  const rawBrokerUrl = config?.brokerUrl ?? process.env.MQTT_BROKER_URL ?? "";
-  const _validSchemes = ["mqtt://", "mqtts://", "ws://", "wss://", "ssl://"];
-  const normalizedBrokerUrl = rawBrokerUrl && !_validSchemes.some(s => rawBrokerUrl.startsWith(s))
-    ? `mqtts://${rawBrokerUrl}`
-    : rawBrokerUrl;
-  if (rawBrokerUrl && rawBrokerUrl !== normalizedBrokerUrl) {
-    console.log(`[MQTT] Bare hostname detected — normalised to: ${normalizedBrokerUrl}`);
+export function startMqttSubscriber(config?: Partial<MqttConfig>, actor?: { role: string }): void {
+  if (actor?.role !== "admin") {
+    if (config) throw new Error("Broker management requires admin authorization");
+    return; // Startup is closed until approved broker integration is wired.
   }
+  const configuredUrl = process.env.MQTT_BROKER_URL ?? "";
+  const rawBrokerUrl = config?.brokerUrl ?? configuredUrl;
+  if (!rawBrokerUrl) return;
+  let url: URL;
+  try { url = new URL(rawBrokerUrl); } catch { throw new Error("Invalid broker configuration"); }
+  if (!['mqtts:', 'wss:'].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash || /[\s\\]/.test(rawBrokerUrl)) throw new Error("Broker requires an explicit credential-free TLS URL");
+  // Destinations are selected through approved deployment configuration only.
+  // Do not forward env credentials/CA to an interactive destination override.
+  if (!configuredUrl || rawBrokerUrl !== configuredUrl) throw new Error("Broker destination is not approved");
+  if (config?.username !== undefined || config?.password !== undefined || config?.caCert !== undefined) throw new Error("Broker secrets must use approved server configuration");
+  const prefix = config?.topicPrefix ?? process.env.MQTT_TOPIC_PREFIX ?? "circulair/telemetry";
+  if (!prefix || prefix.length > 128 || /[+#\s]/.test(prefix) || prefix.startsWith('/') || prefix.endsWith('/')) throw new Error("Invalid topic prefix");
   const resolved: MqttConfig = {
-    brokerUrl: normalizedBrokerUrl,
-    username: config?.username ?? process.env.MQTT_USERNAME,
-    password: config?.password ?? process.env.MQTT_PASSWORD,
+    brokerUrl: rawBrokerUrl, username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
     clientId: config?.clientId ?? process.env.MQTT_CLIENT_ID ?? `circulair-server-${nanoid(8)}`,
-    topicPrefix: config?.topicPrefix ?? process.env.MQTT_TOPIC_PREFIX ?? "circulair/telemetry",
-    caCert: config?.caCert ?? process.env.MQTT_CA_CERT,
+    topicPrefix: prefix, caCert: process.env.MQTT_CA_CERT,
   };
 
-  if (!resolved.brokerUrl) {
-    console.log("[MQTT] No MQTT_BROKER_URL configured — subscriber not started. Set MQTT_BROKER_URL to enable real MQTT.");
-    return;
-  }
-
+  _disposeConnection?.();
+  _disposeConnection = null;
   // Disconnect existing client
   if (_client) {
     _client.end(true);
@@ -419,7 +165,10 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   const MAX_RECONNECT_DELAY = 60_000; // Cap at 60s
   let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
+  let disposed = false;
+  _disposeConnection = () => { disposed = true; if (_reconnectTimer) clearTimeout(_reconnectTimer); _reconnectTimer = null; };
   function scheduleReconnect() {
+    if (disposed) return;
     if (_reconnectTimer) return; // Already scheduled
     _reconnectTimer = setTimeout(() => {
       _reconnectTimer = null;
@@ -437,7 +186,7 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   if (resolved.password) options.password = resolved.password;
 
   // TLS options for mqtts:// URLs
-  if (resolved.brokerUrl.startsWith("mqtts://") || resolved.brokerUrl.startsWith("ssl://")) {
+  if (resolved.brokerUrl.startsWith("mqtts://") || resolved.brokerUrl.startsWith("wss://")) {
     options.rejectUnauthorized = true;
     if (resolved.caCert) {
       options.ca = [Buffer.from(resolved.caCert)];
@@ -449,6 +198,7 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   _client = mqtt.connect(resolved.brokerUrl, options);
 
   _client.on("connect", () => {
+    if (disposed) return;
     console.log(`[MQTT] Connected to ${resolved.brokerUrl}`);
     _status.connected = true;
     // Reset backoff delay on successful connection
@@ -458,12 +208,12 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
       _reconnectTimer = null;
     }
 
-    // Subscribe to wildcard topic: <prefix>/+  (single level = one BPAN per topic)
-    const wildcardTopic = `${resolved.topicPrefix}/+`;
+    // Subscribe to exact BPAN/device topic depth; publisher proof still required.
+    const wildcardTopic = `${resolved.topicPrefix}/+/+`;
     _client!.subscribe(wildcardTopic, { qos: 1 }, (err) => {
       if (err) {
-        console.error(`[MQTT] Subscribe error:`, err);
-        _status.errors.push(`Subscribe error: ${err.message}`);
+        console.error("[MQTT] Broker subscription failed");
+        _status.errors.push("Broker subscription failed");
       } else {
         console.log(`[MQTT] Subscribed to ${wildcardTopic}`);
         _status.subscribedTopics = [wildcardTopic];
@@ -472,33 +222,38 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
   });
 
   _client.on("message", (topic, message) => {
+    if (disposed) return;
     handleMessage(topic, message).catch((err) => {
-      console.error(`[MQTT] Message handler error:`, err);
+      console.error("[MQTT] Message rejected");
     });
   });
 
   _client.on("reconnect", () => {
+    if (disposed) return;
     // Fired by manual _client.reconnect() calls from scheduleReconnect()
     _status.connected = false;
   });
 
   _client.on("offline", () => {
+    if (disposed) return;
     _status.connected = false;
     console.log("[MQTT] Client offline — scheduling reconnect");
     scheduleReconnect();
   });
 
   _client.on("error", (err) => {
+    if (disposed) return;
     _status.connected = false;
-    const msg = `[${new Date().toISOString()}] ${err.message}`;
+    const msg = "Broker connection failed";
     _status.errors.push(msg);
     if (_status.errors.length > 20) _status.errors.shift();
-    console.error(`[MQTT] Error:`, err.message);
+    console.error("[MQTT] Broker connection failed");
     // Schedule reconnect on keepalive timeout or other connection errors
     scheduleReconnect();
   });
 
   _client.on("close", () => {
+    if (disposed) return;
     _status.connected = false;
     scheduleReconnect();
   });
@@ -507,7 +262,9 @@ export function startMqttSubscriber(config?: Partial<MqttConfig>): void {
 /**
  * Stop the MQTT subscriber cleanly.
  */
-export function stopMqttSubscriber(): void {
+export function stopMqttSubscriber(actor?: { role: string }): void {
+  if (_client && actor?.role !== "admin") throw new Error("Broker management requires admin authorization");
+  _disposeConnection?.(); _disposeConnection = null;
   if (_client) {
     _client.end(true);
     _client = null;
@@ -529,12 +286,14 @@ export function getMqttStatus(): MqttSubscriberStatus {
 /**
  * Publish a test message to the broker (for connectivity testing).
  */
-export function publishTestMessage(bpan: string): Promise<void> {
+export function publishTestMessage(bpan: string, actor?: { role: string }): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!_client || !_status.connected) {
       reject(new Error("MQTT client not connected"));
       return;
     }
+    if (!deviceBpanSchema.safeParse(bpan).success) { reject(new Error("Invalid registered BPAN syntax")); return; }
+    if (actor?.role !== "admin") { reject(new Error("Broker management requires admin authorization")); return; }
     const topic = `${_config?.topicPrefix ?? "circulair/telemetry"}/${bpan}`;
     const payload = JSON.stringify({
       bpan,
@@ -550,7 +309,7 @@ export function publishTestMessage(bpan: string): Promise<void> {
       source: "test",
     });
     _client!.publish(topic, payload, { qos: 1 }, (err) => {
-      if (err) reject(err);
+      if (err) reject(new Error("Broker publish failed"));
       else resolve();
     });
   });
@@ -561,7 +320,7 @@ let _streamTimer: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Publish a fully custom telemetry payload to the broker.
- * Used by the MQTT Flow Tester UI to send real messages.
+ * Synthetic broker acknowledgement only; no operational history writes.
  */
 export function publishTelemetryMessage(
   bpan: string,
@@ -577,13 +336,16 @@ export function publishTelemetryMessage(
     cycleCount: number;
     internalResistance: number;
     dtcCodes?: string[];
-  }
+  },
+  actor?: { role: string }
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!_client || !_status.connected) {
       reject(new Error("MQTT client not connected — cannot publish"));
       return;
     }
+    if (actor?.role !== "admin") { reject(new Error("Broker management requires admin authorization")); return; }
+    if (payload.bpan !== bpan || !deviceBpanSchema.safeParse(bpan).success) { reject(new Error("Publisher identity mismatch")); return; }
     const topic = `${_config?.topicPrefix ?? "circulair/telemetry"}/${bpan}`;
     const body = JSON.stringify({
       ...payload,
@@ -592,8 +354,8 @@ export function publishTelemetryMessage(
     });
     _client!.publish(topic, body, { qos: 1 }, (err) => {
       if (err) {
-        console.error(`[MQTT] Publish failed for ${bpan}:`, err.message);
-        reject(err);
+        console.error("[MQTT] Synthetic broker publish failed");
+        reject(new Error("Broker publish failed"));
       } else {
         console.log(`[MQTT] ↑ Published to ${topic} (${body.length} bytes)`);
         resolve();
@@ -641,7 +403,8 @@ function generateRandomPayload(bpan: string, scenario: string = "normal") {
  * Start a continuous telemetry stream publishing to the broker at a fixed interval.
  * Each tick publishes one reading per BPAN with randomised realistic values.
  */
-export function startTelemetryStream(bpans: string[], intervalMs: number = 3000): void {
+export function startTelemetryStream(bpans: string[], intervalMs: number = 3000, actor?: { role: string }): void {
+  if (actor?.role !== "admin") throw new Error("Broker management requires admin authorization");
   if (_streamTimer) {
     clearInterval(_streamTimer);
     _streamTimer = null;
@@ -649,6 +412,7 @@ export function startTelemetryStream(bpans: string[], intervalMs: number = 3000)
   if (!_client || !_status.connected) {
     throw new Error("MQTT client not connected — cannot start stream");
   }
+  if (bpans.length < 1 || bpans.length > 10 || !Number.isInteger(intervalMs) || intervalMs < 1000 || intervalMs > 60000 || bpans.some(b => !deviceBpanSchema.safeParse(b).success)) throw new Error("Invalid bounded synthetic stream");
 
   const scenarios = ["normal", "normal", "normal", "charging", "thermal", "degraded"];
   let tick = 0;
@@ -657,7 +421,7 @@ export function startTelemetryStream(bpans: string[], intervalMs: number = 3000)
 
   _streamTimer = setInterval(() => {
     if (!_client || !_status.connected) {
-      stopTelemetryStream();
+      stopTelemetryStream({ role: "admin" });
       return;
     }
     for (const bpan of bpans) {
@@ -666,7 +430,7 @@ export function startTelemetryStream(bpans: string[], intervalMs: number = 3000)
       const topic = `${_config?.topicPrefix ?? "circulair/telemetry"}/${bpan}`;
       const body = JSON.stringify(payload);
       _client!.publish(topic, body, { qos: 0 }, (err) => {
-        if (err) console.error(`[MQTT] Stream publish error for ${bpan}:`, err.message);
+        if (err) console.error("[MQTT] Synthetic stream broker publish failed");
       });
     }
     tick++;
@@ -677,7 +441,8 @@ export function startTelemetryStream(bpans: string[], intervalMs: number = 3000)
 /**
  * Stop the continuous telemetry stream.
  */
-export function stopTelemetryStream(): void {
+export function stopTelemetryStream(actor?: { role: string }): void {
+  if (_streamTimer && actor?.role !== "admin") throw new Error("Broker management requires admin authorization");
   if (_streamTimer) {
     clearInterval(_streamTimer);
     _streamTimer = null;

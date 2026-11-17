@@ -20,10 +20,9 @@ import {
   getBatteryByBpan, listBatteries, getLatestTelemetry, getTelemetryHistory,
   getLatestSohPrediction, listMarketplace, getMarketplaceStats,
   listEprTokens, getEprStats, getBatteryStats, insertTelemetry, createAlert,
-  updateDeviceLastSeenByBpan,
 } from "./db";
 import { broadcastTelemetryReading } from "./telemetrySocket";
-import { shouldCreateAlert, recordAlert } from "./alertCooldown";
+import { deviceTelemetrySchema, ingestVerifiedRest, DeviceBoundaryError } from "./deviceIngestionBoundary";
 import {
   lookupWarranty, listWarrantyRecords, getWarrantyStats, computeWarrantyStatus, getWarrantyByBpan,
 } from "./db-warranty";
@@ -40,19 +39,14 @@ async function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const key = authHeader.substring(7);
-  const apiKey = await validateApiKey(key);
-  if (!apiKey) {
-    await writeSecurityEvent({
-      eventType: "permission_denied",
-      severity: "medium",
-      description: `Invalid API key attempt from ${req.ip}`,
-      ipAddress: req.ip ?? undefined,
-      userAgent: req.headers["user-agent"],
-    });
-    return res.status(401).json({
-      error: "unauthorized",
-      message: "Invalid or expired API key",
-    });
+  if (!/^cai_[A-Za-z0-9_-]{32}$/.test(key)) {
+    return res.status(401).json({ error: "unauthorized", message: "Invalid API key" });
+  }
+  let apiKey;
+  try { apiKey = await validateApiKey(key); }
+  catch { return res.status(503).json({ error: "authentication_unavailable" }); }
+  if (!apiKey || apiKey.status !== "active" || (apiKey.expiresAt && new Date(apiKey.expiresAt).getTime() <= Date.now())) {
+    return res.status(401).json({ error: "unauthorized", message: "Invalid or expired API key" });
   }
 
   // Attach API key info to request
@@ -174,7 +168,7 @@ const openApiSpec = {
         type: "object",
         properties: {
           id: { type: "integer" },
-          bpan: { type: "string", description: "Battery Passport Aadhaar Number (19 chars)" },
+          bpan: { type: "string", description: "Exact registered BPAN (19-character legacy or 21-character current; never truncate)" },
           manufacturer: { type: "string" },
           chemistry: { type: "string", enum: ["NMC", "LFP", "NCA", "LCO", "LMO", "LMFP", "Na-ion", "Solid-state"] },
           capacityKwh: { type: "string" },
@@ -692,6 +686,12 @@ const trpcSwaggerHtml = `<!DOCTYPE html>
 </html>`;
 
 // ─── ROUTE HANDLERS ─────────────────────────────────────────────────────────
+async function canonicalGatewayActor(req: Request) {
+  const { resourceActor } = await import("./resourceOwnership");
+  const key = (req as any).apiKey;
+  return resourceActor({ id: key?.userId, role: "user" });
+}
+
 export function createApiGateway(): Router {
   const api = Router();
 
@@ -723,6 +723,23 @@ export function createApiGateway(): Router {
   api.use(rateLimiter);
   api.use(requestLogger);
 
+  // These legacy aggregate/lookup helpers have no proven tenant predicate. Keep
+  // them unavailable rather than return another customer's private records.
+  api.use(async (req, res, next) => {
+    const key = (req as any).apiKey;
+    const match = /^\/batteries\/([^/]+)(?:\/(telemetry|soh|warranty))?$/.exec(req.path);
+    if (!match) return res.status(503).json({ error: "scoped_endpoint_unavailable" });
+    const scope = req.method === "POST" ? "telemetry:write" : match[2] === "telemetry" ? "telemetry:read" : match[2] === "warranty" ? "warranty:read" : "batteries:read";
+    if (!Array.isArray(key.scopes) || !key.scopes.includes(scope) || !Number.isSafeInteger(key.userId) || key.userId <= 0) return res.status(403).json({ error: "forbidden" });
+    // POST performs persisted device/key/battery ownership checks in its adapter.
+    if (req.method === "POST") return next();
+    try {
+      const battery = await getBatteryByBpan(match[1]!);
+      if (!battery || battery.ownerId !== key.userId) return res.status(403).json({ error: "forbidden" });
+      return next();
+    } catch { return res.status(503).json({ error: "authorization_unavailable" }); }
+  });
+
   // ─── BATTERIES ──────────────────────────────────────────────────────────
   api.get("/batteries", async (req, res) => {
     try {
@@ -736,138 +753,73 @@ export function createApiGateway(): Router {
       });
       res.json(result);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
   api.get("/batteries/:bpan", async (req, res) => {
     try {
-      const battery = await getBatteryByBpan(req.params.bpan);
-      if (!battery) return res.status(404).json({ error: "not_found", message: "Battery not found" });
+      const { requireOwnershipDb } = await import("./db");
+      const { getOwnedBattery } = await import("./resourceOwnership");
+      const battery = await getOwnedBattery(await requireOwnershipDb(), await canonicalGatewayActor(req), { bpan: req.params.bpan });
       res.json(battery);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
   api.get("/batteries/:bpan/telemetry", async (req, res) => {
     try {
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 500);
-      const [latest, history] = await Promise.all([
-        getLatestTelemetry(req.params.bpan),
-        getTelemetryHistory(req.params.bpan),
-      ]);
+      const parsedLimit = Number(req.query.limit ?? 50);
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 200) return res.status(400).json({ error: "invalid_pagination" });
+      const { requireOwnershipDb } = await import("./db");
+      const { getOwnedBatteryRelated } = await import("./resourceOwnership");
+      const history = await getOwnedBatteryRelated(await requireOwnershipDb(), await canonicalGatewayActor(req), { bpan: req.params.bpan, limit: parsedLimit }, "telemetryHistory");
+      const latest = history[0];
       res.json({ latest, history });
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
   // POST /batteries/:bpan/telemetry — REST ingest for non-MQTT sources (SCADA, fleet software, direct device)
   api.post("/batteries/:bpan/telemetry", async (req, res) => {
+    const parsed = deviceTelemetrySchema.safeParse(req.body);
+    if (!parsed.success || parsed.data.bpan !== req.params.bpan) {
+      return res.status(400).json({ error: "invalid_device_telemetry", message: "Use the strict measured device contract; path and payload identity must match" });
+    }
     try {
-      const bpan = req.params.bpan;
-      const battery = await getBatteryByBpan(bpan);
-      if (!battery) return res.status(404).json({ error: "not_found", message: `Battery ${bpan} not registered` });
-      const body = req.body as Record<string, unknown>;
-      const vPack = typeof body.vPack === "number" ? body.vPack : undefined;
-      const iPack = typeof body.iPack === "number" ? body.iPack : undefined;
-      const vMin  = typeof body.vMin  === "number" ? body.vMin  : undefined;
-      const vMax  = typeof body.vMax  === "number" ? body.vMax  : undefined;
-      const tPack = typeof body.tPack === "number" ? body.tPack : undefined;
-      const tMax  = typeof body.tMax  === "number" ? body.tMax  : undefined;
-      const cycleCount = typeof body.cycleCount === "number" ? Math.floor(body.cycleCount) : undefined;
-      const irPack = typeof body.irPack === "number" ? body.irPack : undefined;
-      const sohEstimate = typeof body.sohEstimate === "number" ? body.sohEstimate : undefined;
-      const dtcCodes = Array.isArray(body.dtcCodes) ? (body.dtcCodes as unknown[]).map(String) : undefined;
-      const thermalAnomaly = (tMax ?? 0) > 51;
-      await insertTelemetry({
-        bpan,
-        batteryId: battery.id,
-        vPack: vPack != null ? String(vPack) : undefined,
-        iPack: iPack != null ? String(iPack) : undefined,
-        vMin:  vMin  != null ? String(vMin)  : undefined,
-        vMax:  vMax  != null ? String(vMax)  : undefined,
-        tPack: tPack != null ? String(tPack) : undefined,
-        tMax:  tMax  != null ? String(tMax)  : undefined,
-        cycleCount,
-        irPack: irPack != null ? String(irPack) : undefined,
-        sohEstimate: sohEstimate != null ? String(sohEstimate) : undefined,
-        dtcCodes: dtcCodes ?? null,
-        thermalAnomaly,
-        anomalyType: thermalAnomaly ? `High temperature: ${tMax}°C` : undefined,
-        source: "api",
-      });
-      // Update IoT device lastSeen heartbeat (fire-and-forget)
-      updateDeviceLastSeenByBpan(bpan).catch(() => {});
-      broadcastTelemetryReading({
-        bpan,
-        batteryId: battery.id,
-        vPack: vPack ?? 0, iPack: iPack ?? 0, vMin: vMin ?? 0, vMax: vMax ?? 0,
-        tPack: tPack ?? 0, tMax: tMax ?? 0, cycleCount: cycleCount ?? 0,
-        irPack: irPack ?? 0, sohEstimate: sohEstimate ?? 0,
-        thermalAnomaly,
-        anomalyType: thermalAnomaly ? `High temperature: ${tMax}°C` : undefined,
-        source: "api",
-        recordedAt: new Date().toISOString(),
-      });
-      if (thermalAnomaly && await shouldCreateAlert(bpan, "thermal_anomaly")) {
-        await createAlert({
-          bpan, batteryId: battery.id, type: "thermal_anomaly", severity: "critical",
-          title: `Thermal Anomaly — ${bpan}`,
-          message: `REST ingest: T_max = ${tMax}°C exceeds 51°C threshold.`,
-          metadata: { tMax, tPack, source: "api" },
-        });
-        recordAlert(bpan, "thermal_anomaly");
-      }
-      res.status(201).json({ success: true, bpan, thermalAnomaly });
-    } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      const result = await ingestVerifiedRest((req as any).apiKey, parsed.data);
+      return res.status(201).json({ persisted: true, readingId: result.readingId, bpan: parsed.data.bpan });
+    } catch (err) {
+      if (err instanceof DeviceBoundaryError) return res.status(err.status).json({ error: err.code });
+      return res.status(503).json({ error: "ingestion_not_confirmed" });
     }
   });
 
   api.get("/batteries/:bpan/soh", async (req, res) => {
     try {
-      const prediction = await getLatestSohPrediction(req.params.bpan);
+      const { requireOwnershipDb } = await import("./db");
+      const { getOwnedBatteryRelated } = await import("./resourceOwnership");
+      const [prediction] = await getOwnedBatteryRelated(await requireOwnershipDb(), await canonicalGatewayActor(req), { bpan: req.params.bpan, limit: 1 }, "predictionLatest");
       if (!prediction) return res.status(404).json({ error: "not_found", message: "No SOH prediction found" });
       res.json(prediction);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
   api.get("/batteries/:bpan/warranty", async (req, res) => {
-    try {
-      const records = await getWarrantyByBpan(req.params.bpan);
-      const enriched = records.map(r => ({ ...r, ...computeWarrantyStatus(r) }));
-      res.json(enriched);
-    } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
-    }
+    return res.status(503).json({ error: "unavailable", message: "Private warranty access requires a verified owner/admin session; use the authenticated warranty portal" });
   });
 
   // ─── WARRANTY ───────────────────────────────────────────────────────────
   api.get("/warranty/lookup", async (req, res) => {
-    try {
-      const { channel, value } = req.query;
-      if (!channel || !value) return res.status(400).json({ error: "bad_request", message: "channel and value are required" });
-      const lookupParams: Record<string, string> = {};
-      lookupParams[channel as string] = value as string;
-      const results = await lookupWarranty(lookupParams);
-      const enriched = results.map(r => ({ ...r, ...computeWarrantyStatus(r) }));
-      res.json(enriched);
-    } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
-    }
+    return res.status(503).json({ error: "unavailable", message: "Private warranty access requires a verified owner/admin session; use the authenticated warranty portal" });
   });
 
   api.get("/warranty/stats", async (_req, res) => {
-    try {
-      const stats = await getWarrantyStats();
-      res.json(stats);
-    } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
-    }
+    return res.status(503).json({ error: "unavailable", message: "Private warranty access requires a verified owner/admin session; use the authenticated warranty portal" });
   });
 
   // ─── MARKETPLACE ────────────────────────────────────────────────────────
@@ -881,7 +833,7 @@ export function createApiGateway(): Router {
       });
       res.json(result);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
@@ -890,7 +842,7 @@ export function createApiGateway(): Router {
       const stats = await getMarketplaceStats();
       res.json(stats);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
@@ -902,7 +854,7 @@ export function createApiGateway(): Router {
       const tokens = await listEprTokens({ limit });
       res.json(tokens);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
@@ -911,7 +863,7 @@ export function createApiGateway(): Router {
       const stats = await getEprStats();
       res.json(stats);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 
@@ -921,7 +873,7 @@ export function createApiGateway(): Router {
       const stats = await getBatteryStats();
       res.json(stats);
     } catch (err: any) {
-      res.status(500).json({ error: "internal_error", message: err.message });
+      res.status(500).json({ error: "internal_error", message: "Request could not be completed" });
     }
   });
 

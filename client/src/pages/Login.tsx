@@ -90,16 +90,16 @@ export default function Login() {
             <span className="text-primary">Battery Circular Economy</span>
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-            End-to-end traceability, AI-driven health prediction, and regulatory
-            compliance across 7 jurisdictions.
+            Battery registry records, heuristic health estimates and draft
+            regulatory workflows for bounded pilots. Physical and legal acceptance remain pending.
           </p>
 
           <div className="space-y-4">
             {[
-              { icon: Battery, title: "Battery Registry", desc: "19-character BPAN generation with QR codes and lifecycle tracking" },
-              { icon: Brain, title: "AI SOH Prediction", desc: "CNN-LSTM models with less than 2% RMSE for health estimation" },
-              { icon: Shield, title: "Regulatory Compliance", desc: "EU Battery Passport, India BWMR, China MIIT adapters" },
-              { icon: ShoppingCart, title: "Second-Life Marketplace", desc: "Multi-currency marketplace with dynamic spot pricing" },
+              { icon: Battery, title: "Battery Registry", desc: "Local battery identification and QR records; official BPAN enrollment not verified" },
+              { icon: Brain, title: "Health Estimates", desc: "Physics-based SOH estimates; accuracy unvalidated and human review required" },
+              { icon: Shield, title: "Draft Regulatory Records", desc: "Metadata and templates; no certification or verified government submission" },
+              { icon: ShoppingCart, title: "Listing Workflows", desc: "Indicative pricing only; matching and real settlement are not accepted" },
             ].map((feature) => (
               <div key={feature.title} className="flex items-start gap-3 group">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -219,9 +219,9 @@ export default function Login() {
               <div className="mt-6 pt-6 border-t border-border/50">
                 <div className="flex items-center justify-center gap-6 text-muted-foreground">
                   {[
-                    { icon: Lock, label: "Encrypted" },
-                    { icon: Globe, label: "Multi-Region" },
-                    { icon: Shield, label: "RBAC" },
+                    { icon: Lock, label: "Email / Password" },
+                    { icon: Globe, label: "Web App" },
+                    { icon: Shield, label: "Pilot Review" },
                   ].map((badge) => (
                     <div key={badge.label} className="flex items-center gap-1.5">
                       <badge.icon className="w-3 h-3 text-primary/60" />
@@ -236,7 +236,7 @@ export default function Login() {
           </div>
 
           <p className="text-center text-[10px] text-muted-foreground mt-4 font-mono">
-            Role-based access for OEM, Manufacturer, Recycler, BESS Developer, Government
+            Role-oriented workflows; resource authorization requires separate acceptance
           </p>
         </div>
       </div>

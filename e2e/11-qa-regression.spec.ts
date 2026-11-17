@@ -1,5 +1,7 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test';
 import { Pool } from 'pg';
+import { randomBytes } from 'node:crypto';
+import { BPAN_REGISTRATION_BLOCKED_REASON } from '../shared/bpanContract';
 
 const BASE='http://127.0.0.1:3001';
 test.skip(process.env.QA_LOCAL !== '1' || process.env.BASE_URL !== BASE, 'Data-writing regression requires the isolated localhost QA server');
@@ -16,22 +18,38 @@ test.beforeAll(async({},info)=>{
     const r=await api.post('/api/auth/register',{data:{name:`QA ${label}`,email:`${label}-${seed}@example.invalid`,password}});expect(r.status()).toBe(201);
   }
   const dbUrl=new URL(process.env.RENDER_DATABASE_URL || process.env.DATABASE_URL || 'https://invalid');
-  if(dbUrl.hostname!=='127.0.0.1' || dbUrl.pathname!=='/circulair_qa')throw new Error('Admin fixture requires isolated localhost QA database');
+  if(!['postgres:','postgresql:'].includes(dbUrl.protocol) || dbUrl.hostname!=='127.0.0.1' || dbUrl.port!=='5432' || dbUrl.pathname!=='/circulair_qa' || dbUrl.search || dbUrl.hash)throw new Error('Admin fixture requires isolated localhost QA database');
+  const registration=await rpc(owner,'bpan.generate',{countryCode:'IN',manufacturerId:'QAT',capacityCode:'A1',chemistryCode:'F',voltageCode:'LA',cellOriginCode:'IN',extinguisherClass:'D',mfgYear:2026,mfgMonth:11,mfgDay:16,factoryCode:info.project.name==='mobile'?'M':'D',serialNumber:randomBytes(2).toString('hex').toUpperCase()},true);
+  expect(registration.status()).toBe(412);
+  expect((await registration.json()).error.json).toMatchObject({message:BPAN_REGISTRATION_BLOCKED_REASON,data:{code:'PRECONDITION_FAILED'}});
+  const empty=await rpc(owner,'bpan.list',{limit:100,offset:0});expect(empty.status()).toBe(200);expect((await empty.json()).result.data.json.total).toBe(0);
+  // Approved QA-only legacy fixture, not a successful issuer registration or pilot acceptance.
+  // Keep writes bounded to one battery/one informational alert per freshly registered owner.
   const pool=new Pool({connectionString:dbUrl.toString()});
-  try {const promoted=await pool.query('UPDATE users SET role = $1 WHERE email = $2 RETURNING id',['admin',`admin-${seed}@example.invalid`]);expect(promoted.rowCount).toBe(1);} finally {await pool.end();}
+  try {
+    await pool.query('BEGIN');
+    const promoted=await pool.query('UPDATE users SET role = $1 WHERE email = $2 RETURNING id',['admin',`admin-${seed}@example.invalid`]);expect(promoted.rowCount).toBe(1);
+    const fresh=await pool.query('SELECT id FROM users WHERE email = $1',[`owner-${seed}@example.invalid`]);expect(fresh.rowCount).toBe(1);
+    const ownerId=fresh.rows[0].id, factory=info.project.name==='mobile'?'M':'D', serial=randomBytes(2).toString('hex').toUpperCase();
+    const alias=`INQATA1FLAIND6KP${factory}${serial}`;expect(alias).toHaveLength(21);
+    const inserted=await pool.query('INSERT INTO batteries (bpan,"countryCode","manufacturerId","capacityCode","capacityKwh","chemistryCode",chemistry,"voltageCode","voltageV","cellOriginCode","cellOriginCountry","extinguisherClass","mfgYear","mfgMonth","mfgDay","factoryCode","serialNumber","registeredById","ownerId","currentSoh") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19) RETURNING id,bpan',[alias,'IN','QAT','A1','1','F','NMC','LA','48','IN','India','D',2026,11,16,factory,serial,ownerId,'100']);expect(inserted.rowCount).toBe(1);
+    battery={bpan:alias,battery:inserted.rows[0]};
+    const alert=await pool.query('INSERT INTO alerts ("userId",bpan,"batteryId",type,severity,title,message,metadata) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',[ownerId,alias,battery.battery.id,'system','info','QA legacy battery fixture',`New battery ${alias} registered successfully.`,JSON.stringify({source:'qa_synthetic',officialStatus:'not_verified'})]);expect(alert.rowCount).toBe(1);
+    await pool.query('COMMIT');
+  } catch(error) {await pool.query('ROLLBACK');throw error;} finally {await pool.end();}
   adminState=await admin.storageState();
   cookieState=await owner.storageState();
-  const r=await rpc(owner,'bpan.generate',{countryCode:'IN',manufacturerId:'QAT',capacityCode:'A1',chemistryCode:'F',voltageCode:'LA',cellOriginCode:'IN',extinguisherClass:'D',mfgYear:2026,mfgMonth:11,mfgDay:16,factoryCode:info.project.name==='mobile'?'M':'D',serialNumber:Date.now().toString(36).slice(-4).toUpperCase()},true);
-  expect(r.status()).toBe(200);battery=(await r.json()).result.data.json;
 });
 test.afterAll(async()=>{await owner?.dispose();await other?.dispose();await admin?.dispose();});
 test('real registration creates a usable authenticated session',async()=>{
   const me=await owner.get('/api/auth/me');expect(me.status()).toBe(200);expect((await me.json()).email).toContain('owner-');
   const current=await rpc(owner,'auth.me');expect(current.status()).toBe(200);expect((await current.json()).result.data.json).not.toHaveProperty('passwordHash');
 });
-test('real battery creation persists and can be read',async()=>{
+test('production registration is blocked and synthetic legacy battery is owner-readable',async()=>{
   expect(battery.bpan).toHaveLength(21);expect(battery.battery.id).toBeGreaterThan(0);
   const r=await rpc(owner,'bpan.get',{bpan:battery.bpan});expect(r.status()).toBe(200);expect((await r.json()).result.data.json.battery.bpan).toBe(battery.bpan);
+  const decoded=await rpc(owner,'bpan.decode',{bpan:battery.bpan});expect(decoded.status()).toBe(200);expect((await decoded.json()).result.data.json.decoded).toMatchObject({bpan:battery.bpan,format:'legacy-project-21/read-only',legacyReadOnly:true,officialStatus:'not_verified'});
+  expect((await rpc(other,'bpan.get',{bpan:battery.bpan})).status()).toBe(404);
 });
 test('cross-account webhook deletion cannot delete an owned row',async()=>{
   const created=await rpc(owner,'webhook.create',{name:'Local QA only',url:'https://example.invalid/no-delivery',events:['qa_only'],maxRetries:0},true);

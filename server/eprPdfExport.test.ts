@@ -5,6 +5,20 @@ vi.mock("./storage", () => ({
   storagePut: vi.fn().mockResolvedValue({ url: "https://cdn.example.com/test.pdf", key: "test.pdf" }),
 }));
 
+// Exercise the actual escaped HTML/report pipeline without launching a browser.
+const renderer = vi.hoisted(() => {
+  let html = "";
+  const page = {
+    setDefaultTimeout: vi.fn(), setDefaultNavigationTimeout: vi.fn(),
+    setJavaScriptEnabled: vi.fn(), setBypassServiceWorker: vi.fn(),
+    setRequestInterception: vi.fn(), on: vi.fn(), close: vi.fn(),
+    setContent: vi.fn(async (value: string) => { html = value; }),
+    pdf: vi.fn(async () => Buffer.from(`%PDF-1.4\n${html}`)),
+  };
+  return { page, launch: vi.fn(async () => ({ newPage: async () => page, close: vi.fn() })) };
+});
+vi.mock("puppeteer-core", () => ({ default: { launch: renderer.launch } }));
+
 // Test the PDF generator functions directly
 describe("EPR PDF Generator", () => {
   it("generateEprComplianceReportPdf returns a Buffer", async () => {

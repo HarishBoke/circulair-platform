@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isPostgresProbeReady } from "@shared/healthObservation";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Cpu, Database,
   Globe, RefreshCw, Server, Shield, Wifi, XCircle, Zap, TrendingUp,
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: ServiceStatus }) {
     operational: { label: "Operational", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
     degraded:    { label: "Degraded",    className: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
     outage:      { label: "Outage",      className: "bg-red-500/15 text-red-400 border-red-500/30" },
-    unknown:     { label: "Checking…",   className: "bg-muted/60 text-muted-foreground border-border" },
+    unknown:     { label: "Not verified", className: "bg-muted/60 text-muted-foreground border-border" },
   };
   const { label, className } = config[status];
   return (
@@ -64,8 +65,8 @@ function OverallStatusBanner({ services }: { services: ServiceCheck[] }) {
     <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-center gap-4">
       <Clock className="h-7 w-7 text-muted-foreground animate-spin shrink-0" />
       <div>
-        <p className="font-semibold text-foreground">Running health checks…</p>
-        <p className="text-sm text-muted-foreground">Pinging all platform services</p>
+        <p className="font-semibold text-foreground">Service status is not yet verified</p>
+        <p className="text-sm text-muted-foreground">Only explicit read-only probes can establish a current observation.</p>
       </div>
     </div>
   );
@@ -73,8 +74,8 @@ function OverallStatusBanner({ services }: { services: ServiceCheck[] }) {
     <div className="rounded-xl border border-red-500/30 bg-red-500/8 p-5 flex items-center gap-4">
       <XCircle className="h-7 w-7 text-red-400 shrink-0" />
       <div>
-        <p className="font-semibold text-red-300">Service Disruption Detected</p>
-        <p className="text-sm text-red-400/80">One or more services are experiencing an outage. Our team is investigating.</p>
+        <p className="font-semibold text-red-300">A Read-only Probe Failed</p>
+        <p className="text-sm text-red-400/80">A failed request is not a diagnosis of every integration or confirmation that an operator has been notified.</p>
       </div>
     </div>
   );
@@ -82,17 +83,23 @@ function OverallStatusBanner({ services }: { services: ServiceCheck[] }) {
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 p-5 flex items-center gap-4">
       <AlertTriangle className="h-7 w-7 text-amber-400 shrink-0" />
       <div>
-        <p className="font-semibold text-amber-300">Partial Service Degradation</p>
-        <p className="text-sm text-amber-400/80">Some services are experiencing elevated latency or reduced capacity.</p>
+        <p className="font-semibold text-amber-300">A Probe Did Not Confirm Readiness</p>
+        <p className="text-sm text-amber-400/80">Inspect the observation below; external-provider status remains separately unverified.</p>
       </div>
+    </div>
+  );
+  if (statuses.includes("unknown")) return (
+    <div className="rounded-xl border border-border bg-muted/30 p-5">
+      <p className="font-semibold">Only Part of the Platform Was Checked</p>
+      <p className="text-sm text-muted-foreground">Successful endpoint probes do not establish external integrations, physical acquisition, phone delivery or overall uptime.</p>
     </div>
   );
   return (
     <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 p-5 flex items-center gap-4">
       <CheckCircle2 className="h-7 w-7 text-emerald-400 shrink-0" />
       <div>
-        <p className="font-semibold text-emerald-300">All Systems Operational</p>
-        <p className="text-sm text-emerald-400/80">All platform services are running normally. No incidents reported.</p>
+        <p className="font-semibold text-emerald-300">The Listed Probes Succeeded</p>
+        <p className="text-sm text-emerald-400/80">This snapshot is not a measured uptime history or an absence-of-incidents guarantee.</p>
       </div>
     </div>
   );
@@ -167,7 +174,7 @@ export default function HealthPortal() {
   const [services, setServices] = useState<ServiceCheck[]>([
     // Core
     { name: "API Gateway",        description: "tRPC + REST endpoints",          icon: Globe,     status: "unknown", category: "core" },
-    { name: "Database",           description: "MySQL (TiDB Cloud)",             icon: Database,  status: "unknown", category: "core" },
+    { name: "Database",           description: "Render PostgreSQL — query-backed readiness", icon: Database, status: "unknown", category: "core" },
     { name: "Authentication",     description: "Email/password + JWT sessions",  icon: Lock,      status: "unknown", category: "core" },
     { name: "WebSocket / RT",     description: "Real-time dashboard updates",    icon: Wifi,      status: "unknown", category: "core" },
     // Integrations
@@ -178,27 +185,29 @@ export default function HealthPortal() {
     { name: "Stripe Payments",    description: "Payment processing gateway",     icon: Zap,       status: "unknown", category: "integration" },
     // Platform
     { name: "Compliance Engine",  description: "EPR token & audit trail",        icon: Shield,    status: "unknown", category: "platform" },
-    { name: "Blockchain Audit",   description: "Immutable audit log",            icon: Layers,    status: "unknown", category: "platform" },
+    { name: "Blockchain Audit",   description: "Anchoring disabled; content hashing only", icon: Layers, status: "unknown", category: "platform" },
     { name: "Analytics Engine",   description: "NL query & chart generation",    icon: BarChart2, status: "unknown", category: "platform" },
   ]);
 
   // Live API ping + service status population
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     async function runChecks() {
       const start = performance.now();
       try {
-        const res = await fetch("/api/trpc/auth.me", { method: "GET" });
+        const res = await fetch("/api/trpc/auth.me", { method: "GET", signal: controller.signal });
         const apiLatency = Math.round(performance.now() - start);
         const apiOk = res.ok || res.status === 401;
 
         if (cancelled) return;
         setServices(prev => prev.map(s => {
           if (s.name === "API Gateway") {
-            return { ...s, status: apiOk ? "operational" : "outage", latency: apiLatency, detail: `${apiLatency}ms avg response` };
+            return { ...s, status: apiOk ? "operational" : "outage", latency: apiLatency, detail: `${apiLatency}ms for one session-endpoint probe; other routes not tested` };
           }
           if (s.name === "Authentication") {
-            return { ...s, status: apiOk ? "operational" : "degraded", detail: res.status === 401 ? "JWT authentication endpoint reachable (not logged in)" : "Session endpoint reachable" };
+            return { ...s, status: apiOk ? "operational" : "degraded", detail: "Session endpoint probe only; successful login, reload and logout are not exercised by this check" };
           }
           return s;
         }));
@@ -210,43 +219,37 @@ export default function HealthPortal() {
       }
 
       if (cancelled) return;
+      try {
+        const readiness = await fetch("/api/health", { method: "GET", signal: controller.signal });
+        const body = await readiness.json();
+        const ready = isPostgresProbeReady(readiness.status, body);
+        if (cancelled) return;
+        setServices(prev => prev.map(s => s.name === "Database" ? {
+          ...s, status: ready ? "operational" : "degraded",
+          detail: ready ? "PostgreSQL SELECT 1 succeeded; this does not certify migrations, backups or all queries" : "PostgreSQL readiness was not confirmed by the query-backed endpoint",
+        } : s));
+      } catch {
+        if (cancelled) return;
+        setServices(prev => prev.map(s => s.name === "Database" ? { ...s, status: "unknown", detail: "Readiness probe unavailable" } : s));
+      }
+      if (cancelled) return;
       setServices(prev => prev.map(s => {
-        switch (s.name) {
-          case "Database":
-            return { ...s, status: "operational", detail: "MySQL (TiDB Cloud) — 45 tables, all migrations applied" };
-          case "MQTT Broker":
-            return { ...s, status: "operational", detail: "emqxsl.com broker — telemetry ingestion active" };
-          case "AI / LLM Service":
-            return { ...s, status: "unknown", detail: "Direct OpenAI integration — provider availability not checked" };
-          case "File Storage (S3)":
-            return { ...s, status: "operational", detail: "AWS S3 bucket accessible — static assets served" };
-          case "Email (ZeptoMail)":
-            return { ...s, status: "operational", detail: "ZeptoMail Send Mail Token configured" };
-          case "Stripe Payments":
-            return { ...s, status: "operational", detail: "Test sandbox active — claim at dashboard.stripe.com" };
-          case "Compliance Engine":
-            return { ...s, status: "operational", detail: "EPR token generation active — CPCB BW-3 reports enabled" };
-          case "Blockchain Audit":
-            return { ...s, status: "operational", detail: "Immutable audit log running — tamper-proof event chain" };
-          case "WebSocket / RT":
-            return { ...s, status: "operational", detail: "tRPC subscriptions + Socket.io live" };
-          case "Analytics Engine":
-            return { ...s, status: "operational", detail: "NL query, chart generation, follow-up suggestions active" };
-          default:
-            return s;
-        }
+        if (["API Gateway", "Authentication", "Database"].includes(s.name)) return s;
+        const disabled = ["MQTT Broker", "Stripe Payments", "Compliance Engine", "Blockchain Audit", "Analytics Engine"].includes(s.name);
+        return { ...s, status: "unknown", detail: disabled ? "Disabled or not accepted; no live integration probe was performed" : "Not tested by this page; configuration or a reachable asset is not provider acceptance" };
       }));
       setLastChecked(new Date());
+      clearTimeout(timeout);
     }
     runChecks();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); controller.abort(); };
   }, [refreshKey]);
 
   const checked     = services.filter(s => s.status !== "unknown");
   const operational = services.filter(s => s.status === "operational").length;
   const degraded    = services.filter(s => s.status === "degraded").length;
   const outages     = services.filter(s => s.status === "outage").length;
-  const uptimePct   = checked.length > 0 ? Math.round((operational / checked.length) * 100) : 0;
+  const probeSuccessPct = checked.length > 0 ? Math.round((operational / checked.length) * 100) : 0;
 
   const handleRefresh = () => {
     setRefreshKey(k => k + 1);
@@ -269,7 +272,7 @@ export default function HealthPortal() {
             Health Portal
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Real-time status of all Circul-AI-r platform services
+            Bounded endpoint observations; external integrations and overall uptime are not certified
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -288,8 +291,8 @@ export default function HealthPortal() {
 
       {/* ── Metric cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MetricCard label="Services Online"  value={`${operational}/${services.length}`} sub="operational"    icon={CheckCircle2} colorClass="text-emerald-500" />
-        <MetricCard label="Uptime"           value={`${uptimePct}%`}                    sub="this session"   icon={TrendingUp}   colorClass="text-primary" />
+        <MetricCard label="Successful Probes" value={`${operational}/${services.length}`} sub="listed checks, not all integrations" icon={CheckCircle2} colorClass="text-emerald-500" />
+        <MetricCard label="Probe Success" value={checked.length ? `${probeSuccessPct}%` : "Unknown"} sub="snapshot; not uptime" icon={TrendingUp} colorClass="text-primary" />
         <MetricCard label="Degraded"         value={String(degraded)} sub="services"    icon={AlertTriangle} colorClass={degraded > 0 ? "text-amber-500" : "text-muted-foreground"} />
         <MetricCard label="Outages"          value={String(outages)}  sub="services"    icon={XCircle}       colorClass={outages  > 0 ? "text-red-500"  : "text-muted-foreground"} />
       </div>
@@ -298,12 +301,12 @@ export default function HealthPortal() {
       <Card className="bg-card border-border/60">
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-sm font-medium text-foreground">Platform Availability</span>
-            <span className="text-sm font-bold text-primary">{uptimePct}%</span>
+            <span className="text-sm font-medium text-foreground">Current Probe Results</span>
+            <span className="text-sm font-bold text-primary">{checked.length ? `${probeSuccessPct}%` : "Unknown"}</span>
           </div>
-          <Progress value={uptimePct} className="h-2" />
+          <Progress value={probeSuccessPct} className="h-2" />
           <p className="text-xs text-muted-foreground mt-2">
-            {operational} of {checked.length} checked services are fully operational
+            {operational} of {checked.length} checked observations succeeded; {services.length - checked.length} remain unverified. This is not time-based availability.
           </p>
         </CardContent>
       </Card>

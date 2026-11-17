@@ -1,8 +1,9 @@
 /**
  * nlQuery.test.ts
  * Unit tests for the analytics.nlQuery tRPC procedure.
- * Tests cover: intent classification, DB query dispatch, result formatting,
- * LLM error handling, and edge cases.
+ * Original 19 case inputs and fixture setups are retained. With unvalidated
+ * intent/private-provider export disabled, each former positive path must deny
+ * before either DB or LLM invocation; query-length validation stays enforced.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
@@ -149,7 +150,7 @@ async function callNlQuery(query: string) {
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
-describe("analytics.nlQuery", () => {
+describe("analytics.nlQuery — former dispatch cases now require fail-closed denial", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -165,13 +166,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries") as any)
         .mockResolvedValueOnce(answerLLMResponse("Your fleet has 1 operational NMC battery with 95% SOH.") as any);
 
-      const result = await callNlQuery("Show me all operational batteries");
-
-      expect(result.intent).toBe("batteries");
-      expect(result.results).toHaveLength(1);
-      expect(result.totalCount).toBe(1);
-      expect(result.answer).toContain("95% SOH");
-      expect(result.query).toBe("Show me all operational batteries");
+      await expect(callNlQuery("Show me all operational batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("applies chemistry filter when specified", async () => {
@@ -181,10 +181,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries", { chemistry: "NMC" }) as any)
         .mockResolvedValueOnce(answerLLMResponse("No NMC batteries found.") as any);
 
-      const result = await callNlQuery("Show NMC batteries");
-
-      expect(result.intent).toBe("batteries");
-      expect(result.filters.chemistry).toBe("NMC");
+      await expect(callNlQuery("Show NMC batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("applies SOH range filters when minSoh and maxSoh are specified", async () => {
@@ -194,10 +196,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries", { minSoh: 60, maxSoh: 80 }) as any)
         .mockResolvedValueOnce(answerLLMResponse("No batteries in that SOH range.") as any);
 
-      const result = await callNlQuery("Batteries with SOH between 60 and 80");
-
-      expect(result.filters.minSoh).toBe(60);
-      expect(result.filters.maxSoh).toBe(80);
+      await expect(callNlQuery("Batteries with SOH between 60 and 80")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("caps limit at 50 even if LLM returns higher value", async () => {
@@ -207,10 +211,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries", { limit: 200 }) as any)
         .mockResolvedValueOnce(answerLLMResponse("No results.") as any);
 
-      await callNlQuery("Show all batteries");
-
-      // The limit is capped at 50 — verify the DB rows chain was called with limit(50)
-      expect(mockDb._rowsChain.limit).toHaveBeenCalledWith(50);
+      await expect(callNlQuery("Show all batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -225,11 +231,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("telemetry", { thermalAnomaly: true }) as any)
         .mockResolvedValueOnce(answerLLMResponse("1 thermal anomaly detected at 52.5°C.") as any);
 
-      const result = await callNlQuery("Show thermal anomalies");
-
-      expect(result.intent).toBe("telemetry");
-      expect(result.results).toHaveLength(1);
-      expect(result.filters.thermalAnomaly).toBe(true);
+      await expect(callNlQuery("Show thermal anomalies")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("returns all telemetry when no filters are applied", async () => {
@@ -239,10 +246,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("telemetry") as any)
         .mockResolvedValueOnce(answerLLMResponse("No telemetry data.") as any);
 
-      const result = await callNlQuery("Show recent telemetry");
-
-      expect(result.intent).toBe("telemetry");
-      expect(result.results).toHaveLength(0);
+      await expect(callNlQuery("Show recent telemetry")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -257,11 +266,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("alerts", { severity: "critical" }) as any)
         .mockResolvedValueOnce(answerLLMResponse("1 critical alert: thermal runaway risk.") as any);
 
-      const result = await callNlQuery("Show critical alerts");
-
-      expect(result.intent).toBe("alerts");
-      expect(result.results).toHaveLength(1);
-      expect(result.filters.severity).toBe("critical");
+      await expect(callNlQuery("Show critical alerts")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("returns warning alerts when severity is 'warning'", async () => {
@@ -271,9 +281,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("alerts", { severity: "warning" }) as any)
         .mockResolvedValueOnce(answerLLMResponse("No warning alerts.") as any);
 
-      const result = await callNlQuery("Show warning alerts");
-
-      expect(result.filters.severity).toBe("warning");
+      await expect(callNlQuery("Show warning alerts")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -288,11 +301,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("soh", { maxSoh: 70 }) as any)
         .mockResolvedValueOnce(answerLLMResponse("1 battery with SOH below 70%, suitable for second life.") as any);
 
-      const result = await callNlQuery("Batteries with low SOH");
-
-      expect(result.intent).toBe("soh");
-      expect(result.results).toHaveLength(1);
-      expect(result.filters.maxSoh).toBe(70);
+      await expect(callNlQuery("Batteries with low SOH")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -322,10 +336,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("marketplace") as any)
         .mockResolvedValueOnce(answerLLMResponse("1 active marketplace listing at ₹85,000.") as any);
 
-      const result = await callNlQuery("Show marketplace listings");
-
-      expect(result.intent).toBe("marketplace");
-      expect(result.results).toHaveLength(1);
+      await expect(callNlQuery("Show marketplace listings")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -336,14 +352,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("summary") as any)
         .mockResolvedValueOnce(answerLLMResponse("Platform has 42 batteries, 10 transactions, and 5 EPR tokens.") as any);
 
-      const result = await callNlQuery("Give me a platform overview");
-
-      expect(result.intent).toBe("summary");
-      expect(result.summaryStats).not.toBeNull();
-      expect(result.summaryStats?.batteries).toBeDefined();
-      expect(result.summaryStats?.marketplace).toBeDefined();
-      expect(result.summaryStats?.epr).toBeDefined();
-      expect(result.totalCount).toBe(1);
+      await expect(callNlQuery("Give me a platform overview")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 
@@ -359,15 +373,12 @@ describe("analytics.nlQuery", () => {
       // Vitest's vi.mock intercepts both static and dynamic imports,
       // so getDb() returns null and the null-guard throws TRPCError.
       // If the mock is working correctly this should throw; if not, skip gracefully.
-      try {
-        const result = await callNlQuery("Show batteries");
-        // If we get here, the mock didn't intercept the dynamic import.
-        // Verify at minimum that the result has the expected shape.
-        expect(result).toHaveProperty("intent");
-      } catch (err) {
-        // Expected: TRPCError thrown by null-guard
-        expect(err).toBeInstanceOf(TRPCError);
-      }
+      await expect(callNlQuery("Show batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("handles LLM classify call returning invalid JSON", async () => {
@@ -381,15 +392,12 @@ describe("analytics.nlQuery", () => {
         choices: [{ message: { content: "not valid json {{" } }],
       } as any);
 
-      try {
-        const result = await callNlQuery("Show batteries");
-        // If the procedure recovered gracefully, verify it still has the right shape
-        expect(result).toHaveProperty("intent");
-        expect(result).toHaveProperty("query");
-      } catch (err) {
-        // Expected path: TRPCError thrown by JSON.parse failure
-        expect(err).toBeInstanceOf(TRPCError);
-      }
+      await expect(callNlQuery("Show batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("returns fallback answer when answer LLM returns null content", async () => {
@@ -399,10 +407,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries", {}, "Fallback explanation") as any)
         .mockResolvedValueOnce({ choices: [{ message: { content: null } }] } as any);
 
-      const result = await callNlQuery("Show batteries");
-
-      // Falls back to explanation when answer content is null/undefined
-      expect(result.answer).toBe("Fallback explanation");
+      await expect(callNlQuery("Show batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("validates query length — rejects empty string", async () => {
@@ -422,17 +432,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries") as any)
         .mockResolvedValueOnce(answerLLMResponse("No batteries found.") as any);
 
-      const result = await callNlQuery("Show all batteries");
-
-      expect(result).toHaveProperty("intent");
-      expect(result).toHaveProperty("query");
-      expect(result).toHaveProperty("explanation");
-      expect(result).toHaveProperty("answer");
-      expect(result).toHaveProperty("results");
-      expect(result).toHaveProperty("totalCount");
-      expect(result).toHaveProperty("summaryStats");
-      expect(result).toHaveProperty("filters");
-      expect(Array.isArray(result.results)).toBe(true);
+      await expect(callNlQuery("Show all batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("returns summaryStats as null for non-summary intents", async () => {
@@ -442,9 +447,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(classifyLLMResponse("batteries") as any)
         .mockResolvedValueOnce(answerLLMResponse("No results.") as any);
 
-      const result = await callNlQuery("Show batteries");
-
-      expect(result.summaryStats).toBeNull();
+      await expect(callNlQuery("Show batteries")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
 
     it("echoes back the original query in the result", async () => {
@@ -455,9 +463,12 @@ describe("analytics.nlQuery", () => {
         .mockResolvedValueOnce(answerLLMResponse("No alerts.") as any);
 
       const originalQuery = "List all warning alerts from this week";
-      const result = await callNlQuery(originalQuery);
-
-      expect(result.query).toBe(originalQuery);
+      await expect(callNlQuery(originalQuery)).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Natural-language exports are unavailable pending validated intent schemas and private-data provider consent",
+      });
+      expect(mockGetDb).not.toHaveBeenCalled();
+      expect(mockInvokeLLM).not.toHaveBeenCalled();
     });
   });
 });

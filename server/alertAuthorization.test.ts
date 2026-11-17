@@ -15,6 +15,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 // No real pool, network, credentials, environment changes, or external providers.
+// Actual db.ts helpers close over their local getDb; mock only URL resolution
+// and the already isolated Pool/Drizzle leaves, not ownership predicates.
+vi.mock("../shared/databaseEnv.cjs", () => ({
+  resolvePostgresConnectionUrl: () => "postgresql://SYNTHETIC:SYNTHETIC@127.0.0.1:5432/SYNTHETIC_never_connected",
+}));
 vi.mock("pg", () => ({
   Pool: class {
     on() {}

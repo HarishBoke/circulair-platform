@@ -1,5 +1,5 @@
 // ─── CIRCUL-WIKI KNOWLEDGE BASE ──────────────────────────────────────────────
-// DeepWiki-inspired structured knowledge base for the Circul-AI-r platform
+// Static reference copy; no certification, physical acceptance or execution evidence.
 
 export interface WikiArticle {
   id: string;
@@ -49,14 +49,14 @@ export const WIKI_CATEGORIES: WikiCategoryInfo[] = [
   {
     id: "compliance",
     title: "Compliance & Regulation",
-    description: "ISO 27001, SOC 2, EPR, BWMR, EU Battery Regulation",
+    description: "Draft evidence and general regulatory concepts; acceptance unverified",
     icon: "Shield",
     color: "#6366f1",
   },
   {
     id: "integration",
     title: "Integration & APIs",
-    description: "REST API, MCP server, MQTT, webhooks, microservices",
+    description: "Source interfaces and integration acceptance boundaries",
     icon: "Plug",
     color: "#ec4899",
   },
@@ -85,239 +85,93 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     title: "What is Circul-AI-r?",
     category: "platform",
     summary:
-      "Circul-AI-r is the operating system for the battery circular economy — a unified platform that tracks batteries from cell manufacturing to material recovery.",
+      "Brand-agnostic battery lifecycle records with explicit development boundaries.",
     content: `## What is Circul-AI-r?
 
-Circul-AI-r is an enterprise-grade **Battery Intelligence Platform** that provides end-to-end traceability, AI-driven health prediction, regulatory compliance, and a second-life marketplace — all in one unified system.
+Circul-AI-r is a brand-agnostic battery record application, not a complete safety or regulatory execution system. Development workflows organize local identities, supplied telemetry, uncalibrated health estimates, warranty records, listings and draft reporting evidence.
 
-### The Problem We Solve
+### Evidence boundaries
 
-The global battery industry faces a critical challenge: once a battery leaves the factory, its lifecycle becomes opaque. Manufacturers lose visibility, recyclers cannot verify battery history, and regulators lack the data needed to enforce environmental obligations. This opacity leads to:
+- Registration and QR records are local identifiers; official BPAN enrollment not verified.
+- Stored telemetry needs source provenance, units, timestamps and authorized device-to-battery binding. A record is not proof of a working physical connection.
+- Deterministic SOH/RUL heuristics are uncalibrated; confidence metadata is not observed accuracy.
+- Candidate triage labels are not approved safety, second-life or recycling decisions.
+- Internal recycling records and local hashes are not official certificates, fulfilled obligations or blockchain receipts.
+- Payments, private document publishing and legacy hardware ingestion are disabled pending separate acceptance. Metadata-only execution and training are unavailable.
 
-- **Safety risks** from batteries with unknown degradation profiles entering second-life applications
-- **Compliance gaps** where producers cannot demonstrate Extended Producer Responsibility (EPR) fulfillment
-- **Economic waste** as batteries with remaining useful life are prematurely recycled instead of remarketed
-
-### How Circul-AI-r Works
-
-The platform assigns every battery a unique **BPAN (Battery Passport Aadhaar Number)** — a digital identity that follows the battery through six lifecycle stages:
-
-1. **Manufacture** — Battery is registered with chemistry, capacity, and origin data
-2. **Deploy** — Battery enters service; warranty is registered with customer contacts
-3. **Monitor** — Real-time IoT telemetry tracks voltage, temperature, SOC, and cycle count
-4. **Predict** — AI models estimate State of Health (SOH) and Remaining Useful Life (RUL)
-5. **Remarket** — Batteries with remaining life are listed on the second-life marketplace
-6. **Recycle** — End-of-life batteries generate EPR compliance tokens
-
-### Key Stakeholders
-
-| Stakeholder | Primary Value |
-|---|---|
-| **OEMs / Manufacturers** | Full lifecycle visibility, warranty management, compliance reporting |
-| **Recyclers** | Verified battery history, material composition data, EPR token generation |
-| **Government / Regulators** | EPR compliance tracking, environmental impact data, policy enforcement |
-| **BESS Operators** | Second-life battery sourcing with verified SOH and warranty status |
-
-### Platform Architecture
-
-Circul-AI-r is built as a modular monolith with three API protocols:
-- **tRPC** for the internal web application (type-safe, real-time)
-- **REST API** at \`/api/v1\` for external microservices integration
-- **MCP Server** at \`/api/mcp\` for AI agent integration`,
+Physical pilot work has not been performed here. The new local pilot is in development and not deployed; no new route is advertised as ready. Dedicated isolated data, qualified supervision, calibrated instruments and independent emergency isolation are prerequisites for separately approved physical work.`,
     tags: ["overview", "introduction", "platform", "battery", "lifecycle"],
     relatedArticles: ["bpan-system", "platform-modules", "stakeholder-guide"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "Globe",
   },
   {
     id: "bpan-system",
-    title: "BPAN — Battery Passport Aadhaar Number",
+    title: "BPAN — Local Battery Identifier",
     category: "platform",
     summary:
-      "BPAN is the unique digital identity assigned to every battery, encoding its origin, chemistry, and capacity in a standardized 19-character format.",
-    content: `## BPAN — Battery Passport Aadhaar Number
+      "Local identity records, legacy aliases and a separate draft; enrollment unverified.",
+    content: `## BPAN — Local Battery Identifier
 
-The BPAN is the foundational identifier of the Circul-AI-r platform. Every registered battery receives a unique BPAN that encodes critical metadata and serves as the primary key for all lifecycle operations.
+The app uses local battery identifiers for registration and record lookup. A generated value or format check is not official issuer allocation, regulatory conformity or proof of physical identity.
 
-### BPAN Format
+Existing records can use legacy formats. A separate 21-character draft is under review. Do not silently replace customer identifiers or discard aliases when introducing an approved canonical mapping. Official BPAN enrollment not verified.
 
-\`\`\`
-{Country}-{Manufacturer}-{Chemistry}-{CapacityCode}-{UniqueID}
-Example: IN-TAT-LFP-A3-X7K9M2P4
-\`\`\`
+### Review requirements
 
-| Segment | Description | Example |
-|---|---|---|
-| Country | ISO 3166-1 alpha-2 country code | IN (India) |
-| Manufacturer | 3-letter manufacturer code | TAT (Tata AutoComp) |
-| Chemistry | Battery chemistry identifier | LFP (Lithium Iron Phosphate) |
-| Capacity Code | Capacity range code (A1-A8) | A3 (5-10 kWh) |
-| Unique ID | 8-character alphanumeric | X7K9M2P4 |
+Preserve the original manufacturer serial and provenance. Confirm the exact registration contract, uniqueness, ownership and field validation with the source owner. Chemistry and capacity metadata are declarations until independently evidenced. A QR code points to a local record, not an approved government passport.
 
-### Capacity Codes
-
-| Code | Range | Typical Application |
-|---|---|---|
-| A1 | 0-1 kWh | Consumer electronics, IoT |
-| A2 | 1-5 kWh | E-bikes, power tools |
-| A3 | 5-10 kWh | E-rickshaws, 2-wheelers |
-| A4 | 10-25 kWh | 3-wheelers, light EVs |
-| A5 | 25-50 kWh | 4-wheeler EVs |
-| A6 | 50-100 kWh | Premium EVs, buses |
-| A7 | 100-500 kWh | Commercial BESS |
-| A8 | 500+ kWh | Grid-scale storage |
-
-### Supported Chemistries
-
-| Code | Full Name | Key Properties |
-|---|---|---|
-| NMC | Nickel Manganese Cobalt | High energy density, moderate cost |
-| LFP | Lithium Iron Phosphate | Long cycle life, thermal stability, low cost |
-| NCA | Nickel Cobalt Aluminum | Highest energy density, premium EVs |
-| LCO | Lithium Cobalt Oxide | Consumer electronics, compact |
-| LMO | Lithium Manganese Oxide | Power tools, medical devices |
-| LMFP | Lithium Manganese Iron Phosphate | Next-gen, balanced performance |
-| Na-ion | Sodium Ion | Low cost, abundant materials |
-| Solid-state | Solid State | Emerging, highest theoretical density |
-
-### How BPAN is Generated
-
-1. User submits battery registration with manufacturer, chemistry, capacity, and origin
-2. System validates all fields against the supported chemistry and application lists
-3. Country code is extracted from the country of origin
-4. Manufacturer code is generated from the first 3 characters (uppercased)
-5. Capacity code is computed from the kWh value
-6. Unique ID is generated using cryptographically secure random characters
-7. All segments are joined with hyphens to form the complete BPAN
-
-### BPAN in the Ecosystem
-
-The BPAN serves as the universal key across all platform modules:
-- **Telemetry** — IoT data is indexed by BPAN
-- **SOH Prediction** — AI models are queried by BPAN
-- **Warranty** — Warranty records are linked to BPAN
-- **Marketplace** — Listings reference the battery's BPAN
-- **Compliance** — EPR tokens are tied to BPAN
-- **Logistics** — Shipments track batteries by BPAN`,
+No universal manufacturer code, chemistry support list or capacity scheme is asserted here. Use an approved offline fixture before an authorized import; no seed or database operation is part of this article.`,
     tags: ["bpan", "battery-passport", "identifier", "registration"],
     relatedArticles: ["platform-overview", "battery-registration", "battery-chemistries"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Fingerprint",
   },
   {
     id: "platform-modules",
-    title: "Platform Modules Overview",
+    title: "Platform Modules and Boundaries",
     category: "platform",
     summary:
-      "Circul-AI-r consists of 10 core modules covering the complete battery lifecycle from registration to recycling.",
-    content: `## Platform Modules
+      "Record workflows are distinct from validated physical or external execution.",
+    content: `## Platform Modules and Boundaries
 
-Circul-AI-r is organized into 10 core modules, each responsible for a specific aspect of battery lifecycle management.
-
-### Module Map
-
-| Module | Purpose | Key Operations |
+| Area | Record workflow | Not established by the record |
 |---|---|---|
-| **BPAN Registry** | Battery registration and identity | Register, search, view battery passport |
-| **Telemetry** | Real-time IoT data ingestion | MQTT/HTTP ingestion, live monitoring, alerts |
-| **SOH Prediction** | AI-powered health assessment | SOH estimation, RUL prediction, triage |
-| **Warranty** | Warranty lifecycle management | Register, check, claim, multi-channel lookup |
-| **Marketplace** | Second-life battery trading | List, browse, warranty-gated listings |
-| **Compliance** | Regulatory compliance | EPR tokens, carbon footprint, audit logs |
-| **Logistics** | Shipment tracking | Create, track, update shipments |
-| **Onboarding** | Bulk battery import | CSV import, auto-BPAN, batch warranty |
-| **Agent** | AI agent operations | Action logging, batch execution, capabilities |
-| **Admin** | System administration | User management, API keys, system health |
+| Registry | Local identity and supplied metadata | Official passport enrollment |
+| Telemetry | Source-labeled records and queries | Working hardware or calibrated instruments |
+| SOH/RUL | Uncalibrated deterministic estimates | Trained model accuracy or safety approval |
+| Warranty | Stored terms and claims | Manufacturer acceptance or repair completion |
+| Marketplace | Listings and review | Verified condition, matching or executed payment |
+| Recycling | Declarations, ratios and internal records | Independently verified recovery or obligation fulfillment |
+| Logistics | Shipment/request records | Carrier booking, dispatch, GPS or delivery |
+| Agent | Capability and action metadata | Real execution; metadata-only actions are unavailable |
+| Administration | Authorized user and configuration records | Certification, service uptime or provider delivery |
 
-### Module Dependencies
-
-\`\`\`
-BPAN Registry ──→ Telemetry ──→ SOH Prediction
-     │                              │
-     ├──→ Warranty                  ├──→ Marketplace
-     │                              │
-     ├──→ Logistics                 └──→ Compliance
-     │
-     └──→ Onbo
-arding
-\`\`\`
-
-The BPAN Registry is the foundation — every other module depends on battery identity. Telemetry feeds SOH Prediction, which drives Marketplace eligibility and Compliance reporting.`,
+Authentication, scope and resource ownership are required independently. API presence does not establish that every capability is enabled. New development changes are not deployed or fully accepted.`,
     tags: ["modules", "architecture", "features"],
     relatedArticles: ["platform-overview", "bpan-system", "architecture-overview"],
-    diagram: `graph TD
-    A[BPAN Registry] --> B[Telemetry]
-    B --> C[SOH Prediction]
-    A --> D[Warranty]
-    C --> E[Marketplace]
-    C --> F[Compliance]
-    A --> G[Logistics]
-    A --> H[Onboarding]
-    F --> I[EPR Tokens]
-    E --> J[Second-Life]`,
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Layers",
   },
   {
     id: "stakeholder-guide",
-    title: "Stakeholder Guide",
+    title: "Stakeholder Record Review",
     category: "platform",
     summary:
-      "How different stakeholders — OEMs, recyclers, government bodies, and BESS operators — use the platform for their specific needs.",
-    content: `## Stakeholder Guide
+      "Role names describe access workflows, not adoption, qualification or endorsement.",
+    content: `## Stakeholder Record Review
 
-Circul-AI-r serves four primary stakeholder groups, each with distinct workflows and value propositions.
+Manufacturers, battery owners, service providers, recyclers and reviewers can organize authorized records according to their application role. Role labels do not prove customer adoption, professional qualification, government endorsement or access to another organization's data.
 
-### OEMs & Battery Manufacturers
+Manufacturers should preserve original identity and warranty evidence. Battery owners should distinguish measured telemetry from synthetic fixtures and heuristic estimates. Service providers need separate authorization and qualified inspection evidence. Recyclers should supply facility, mass-balance and recovery evidence rather than rely on internal token statuses. Reviewers must verify applicable regulatory requirements independently.
 
-**Primary Goal:** Full lifecycle visibility and compliance reporting
-
-| Workflow | Description |
-|---|---|
-| Battery Registration | Register each battery with BPAN at point of manufacture |
-| Warranty Management | Register warranties with customer contacts at point of sale |
-| Telemetry Monitoring | Track fleet health through IoT data ingestion |
-| SOH Analytics | Monitor degradation patterns across product lines |
-| Compliance Reporting | Generate EPR tokens and carbon footprint declarations |
-
-### Recyclers & Material Recovery
-
-**Primary Goal:** Verified battery history for safe, efficient recycling
-
-| Workflow | Description |
-|---|---|
-| Battery Verification | Look up BPAN to verify chemistry, capacity, and history |
-| SOH Assessment | Check remaining useful life before processing |
-| EPR Token Generation | Generate compliance tokens after recycling |
-| Material Tracking | Report recovered materials and yields |
-
-### Government & Regulators
-
-**Primary Goal:** Policy enforcement and environmental compliance
-
-| Workflow | Description |
-|---|---|
-| EPR Compliance Audit | Verify producer obligations are met |
-| Fleet Analytics | Monitor battery population by chemistry, region, status |
-| Environmental Impact | Track carbon footprints and recycling rates |
-| Audit Trail | Access comprehensive audit logs for investigations |
-
-### BESS Operators
-
-**Primary Goal:** Source verified second-life batteries
-
-| Workflow | Description |
-|---|---|
-| Marketplace Browsing | Find batteries with verified SOH for BESS applications |
-| SOH Verification | Check AI-predicted health before purchase |
-| Warranty Check | Verify warranty status before acquisition |
-| Integration | Use REST API or MCP for automated procurement |`,
+Marketplace declarations are not verified second-life condition; logistics records are not carrier dispatch. Consent records alone do not prove enforcement on every data-access path, and revocation cannot recall copies already exported. Server-side ownership and consent enforcement remain controlling boundaries.`,
     tags: ["stakeholders", "oem", "recycler", "government", "bess"],
     relatedArticles: ["platform-overview", "warranty-system", "marketplace-guide"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Users",
   },
@@ -328,50 +182,24 @@ Circul-AI-r serves four primary stakeholder groups, each with distinct workflows
     title: "Battery Chemistry Guide",
     category: "battery-science",
     summary:
-      "Comprehensive guide to lithium-ion battery chemistries — NMC, LFP, NCA, LCO, and emerging technologies like sodium-ion and solid-state.",
+      "General chemistry concepts; no pack-specific performance or safety approval.",
     content: `## Battery Chemistry Guide
 
-Understanding battery chemistry is essential for lifecycle management. Each chemistry has distinct characteristics that affect performance, safety, degradation, and end-of-life handling.
+| Chemistry | General characteristic |
+|---|---|
+| NMC | Nickel, manganese and cobalt cathode family with composition-dependent properties |
+| LFP | Lithium iron phosphate cathode family |
+| NCA | Nickel, cobalt and aluminium cathode family |
+| LCO | Lithium cobalt oxide cathode family |
+| Sodium-ion | Sodium-ion transport chemistry with design-dependent performance |
+| Solid-state | Designs using a solid electrolyte; commercialization and validation vary |
 
-### Chemistry Comparison
+Energy density, cost, cycle life and operating limits depend on cell design, pack integration, condition and test method. This guide supplies no universal numerical operating ranges or pack safety limits. A chemistry label is not evidence of a supported hardware adapter or calibrated prediction model.
 
-| Property | NMC | LFP | NCA | LCO | Na-ion |
-|---|---|---|---|---|---|
-| Energy Density (Wh/kg) | 150-220 | 90-160 | 200-260 | 150-200 | 100-160 |
-| Cycle Life | 1000-2000 | 2000-5000 | 500-1000 | 500-1000 | 1000-3000 |
-| Thermal Stability | Moderate | Excellent | Low | Low | Good |
-| Cost ($/kWh) | $100-130 | $70-100 | $120-150 | $150-200 | $50-80 |
-| Cobalt Content | Yes | No | Yes | Yes | No |
-| Operating Temp (°C) | -20 to 60 | -20 to 60 | -20 to 55 | 0 to 45 | -20 to 60 |
-
-### NMC (Nickel Manganese Cobalt)
-
-NMC batteries offer a balanced combination of energy density, power capability, and cycle life. They dominate the EV market, with variants like NMC 811 (80% Ni, 10% Mn, 10% Co) pushing toward higher energy density while reducing cobalt dependence.
-
-**Best for:** Passenger EVs, premium BESS, power tools
-
-### LFP (Lithium Iron Phosphate)
-
-LFP batteries prioritize safety and longevity over energy density. Their excellent thermal stability makes them ideal for applications where safety is paramount. The absence of cobalt reduces cost and supply chain risk.
-
-**Best for:** E-rickshaws, 2-wheelers, stationary storage, budget EVs
-
-### NCA (Nickel Cobalt Aluminum)
-
-NCA offers the highest energy density among commercial chemistries, making it the choice for premium EVs where range is critical. However, it requires sophisticated thermal management.
-
-**Best for:** Long-range EVs, high-performance applications
-
-### Emerging Technologies
-
-**Sodium-Ion:** Uses abundant sodium instead of lithium, dramatically reducing cost. Ideal for grid-scale storage where energy density is less critical.
-
-**Solid-State:** Replaces liquid electrolyte with solid material, theoretically enabling higher energy density and improved safety. Still in early commercialization.
-
-**LMFP:** Adds manganese to LFP for higher voltage and energy density while maintaining safety advantages.`,
+Consult exact manufacturer documentation and qualified reviewers. Relative chemistry characteristics do not certify a particular battery as safe for reuse, transport, charging, repair or recycling.`,
     tags: ["chemistry", "nmc", "lfp", "nca", "sodium-ion", "solid-state"],
     relatedArticles: ["bpan-system", "soh-prediction", "battery-degradation"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "Atom",
   },
@@ -380,174 +208,61 @@ NCA offers the highest energy density among commercial chemistries, making it th
     title: "Battery Degradation Mechanisms",
     category: "battery-science",
     summary:
-      "How batteries degrade over time — calendar aging, cycle aging, SEI growth, lithium plating, and the factors that accelerate capacity loss.",
+      "General mechanisms; numerical behavior is pack- and condition-specific.",
     content: `## Battery Degradation Mechanisms
 
-Battery degradation is the gradual loss of capacity and power capability over time. Understanding degradation mechanisms is critical for accurate SOH prediction and lifecycle management.
+Calendar ageing occurs over time, including during storage. Cycle ageing results from use. SEI growth, lithium plating, electrolyte reactions, cathode degradation and corrosion can contribute to capacity loss and impedance change. Their prevalence depends on design, chemistry, history and operating conditions.
 
-### Primary Degradation Modes
+State of Charge is a percentage relative to a reference full capacity: 100% means fully charged and 0% means fully discharged under that reference. SOC is distinct from SOH and is not a safety certificate. High SOC, thermal exposure, C-rate and depth of discharge can influence degradation, but no generic numerical rule here is an approved operating limit.
 
-| Mode | Cause | Effect | Reversible? |
-|---|---|---|---|
-| SEI Growth | Electrolyte decomposition at anode | Capacity loss, impedance rise | No |
-| Lithium Plating | Fast charging at low temperature | Capacity loss, safety risk | Partially |
-| Cathode Degradation | Structural changes in cathode | Power fade, capacity loss | No |
-| Electrolyte Decomposition | High temperature exposure | Gas generation, capacity loss | No |
-| Current Collector Corrosion | Over-discharge | Internal resistance rise | No |
-
-### Calendar Aging vs. Cycle Aging
-
-**Calendar Aging** occurs simply from the passage of time, even when the battery is not in use. It is accelerated by high temperature and high state of charge. A battery stored at 100% SOC and 45°C will degrade significantly faster than one stored at 50% SOC and 25°C.
-
-**Cycle Aging** is caused by repeated charge-discharge cycles. It is accelerated by high C-rates (fast charging/discharging), deep depth of discharge, and extreme temperatures.
-
-### Factors Affecting Degradation Rate
-
-| Factor | Impact | Mitigation |
-|---|---|---|
-| Temperature | +10°C doubles degradation rate | Active thermal management |
-| SOC Window | Wider window = faster degradation | Limit to 20-80% SOC |
-| C-Rate | Higher rates = more stress | Moderate charging speeds |
-| Depth of Discharge | Deeper cycles = more wear | Shallow cycling when possible |
-| Calendar Time | Continuous degradation | Minimize storage at high SOC |
-
-### Degradation in the Platform
-
-Circul-AI-r tracks degradation through telemetry data:
-- **Voltage curves** reveal capacity fade
-- **Internal resistance** measurements indicate power fade
-- **Cycle count** tracks cumulative wear
-- **Temperature history** identifies thermal stress events
-
-The SOH prediction engine uses these signals to estimate current health and predict remaining useful life.`,
+Voltage, current, temperature, cycle count and resistance may inform investigation when measured with known units and provenance. Missing values remain unknown; explicit zero must not be overwritten by a healthy default. App SOH/RUL outputs are uncalibrated deterministic estimates, not physical capacity tests or approved lifecycle decisions.`,
     tags: ["degradation", "aging", "sei", "lithium-plating", "cycle-life"],
     relatedArticles: ["battery-chemistries", "soh-prediction", "telemetry-system"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "TrendingDown",
   },
   {
     id: "soh-prediction",
-    title: "AI-Powered SOH Prediction",
+    title: "SOH and RUL Heuristic Estimates",
     category: "battery-science",
     summary:
-      "How the platform uses machine learning to estimate State of Health and predict Remaining Useful Life from telemetry data.",
-    content: `## AI-Powered SOH Prediction
+      "Deterministic uncalibrated estimates, not a trained validated neural model.",
+    content: `## SOH and RUL Heuristic Estimates
 
-State of Health (SOH) is the single most important metric for battery lifecycle management. It determines whether a battery should continue in service, be remarketed for second-life applications, or be recycled.
+Capacity-based SOH is defined as:
 
-### What is SOH?
+> SOH (%) = Current measured capacity / Rated capacity × 100
 
-SOH is expressed as a percentage of the battery's current capacity relative to its rated capacity:
+100% indicates capacity equals the reference rating under specified test conditions. It does not mean a battery is safe. Test conditions and uncertainty must accompany physical measurements.
 
-> **SOH (%) = (Current Capacity / Rated Capacity) × 100**
+The app's current estimate path uses deterministic physics-based heuristics, not a validated trained neural network. SOH and RUL outputs are uncalibrated and depend on supplied assumptions. Legacy confidence and error-like metadata are not measured accuracy, observed RMSE or validated uncertainty intervals. No held-out validation or universal prediction error is established.
 
-A new battery starts at 100% SOH. As it degrades, SOH decreases. Industry convention considers a battery at end-of-first-life when SOH drops below 80%.
-
-### Prediction Model
-
-The platform's SOH prediction engine analyzes multiple telemetry signals:
-
-| Input Feature | What It Reveals |
-|---|---|
-| Voltage patterns | Capacity fade, cell imbalance |
-| Current profiles | Usage patterns, stress levels |
-| Temperature history | Thermal degradation exposure |
-| Cycle count | Cumulative mechanical stress |
-| Internal resistance | Power capability degradation |
-| Charge/discharge curves | Electrochemical health |
-
-### Triage Recommendations
-
-Based on predicted SOH, the engine generates lifecycle recommendations:
-
-| SOH Range | Recommendation | Action |
-|---|---|---|
-| 80-100% | Continue Operation | Normal monitoring |
-| 60-79% | Enhanced Monitoring | Increase telemetry frequency |
-| 40-59% | Second-Life Candidate | List on marketplace |
-| 20-39% | Recycling Recommended | Initiate EPR process |
-| 0-19% | Urgent Recycling | Priority disposal |
-
-### Confidence Intervals
-
-Every prediction includes a confidence interval (low and high bounds) that reflects the model's certainty. Wider intervals indicate less certainty, typically due to limited telemetry data or unusual degradation patterns.
-
-### RUL Prediction
-
-Remaining Useful Life (RUL) estimates how many more charge-discharge cycles the battery can sustain before reaching the end-of-life threshold. This is critical for:
-- **OEMs** planning warranty reserves
-- **BESS operators** evaluating second-life battery value
-- **Recyclers** scheduling collection logistics`,
+RUL estimates time or cycles to a specified performance threshold. Verify units and assumptions; it is not a warranty or maintenance instruction. Reuse, repurposing and recycling labels are candidates for qualified human review, not approved safety, second-life or recycling decisions. Do not control a battery or dispatch a carrier from an estimate.`,
     tags: ["soh", "prediction", "machine-learning", "rul", "triage"],
     relatedArticles: ["battery-degradation", "telemetry-system", "marketplace-guide"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "Brain",
   },
   {
     id: "telemetry-system",
-    title: "Real-Time Telemetry System",
+    title: "Telemetry Records and Provenance",
     category: "battery-science",
     summary:
-      "How the platform ingests, processes, and stores real-time battery telemetry data from IoT devices via MQTT and HTTP.",
-    content: `## Real-Time Telemetry System
+      "Schema fields do not prove live hardware, durable delivery or retention.",
+    content: `## Telemetry Records and Provenance
 
-The telemetry system is the data backbone of the platform, collecting real-time operational data from batteries in the field.
+Source fields can represent supplied voltage, current, temperature and cycle count. Actual measurements require calibrated instruments, documented units, recorded timestamps and authorized device-to-battery binding. Missing readings remain unknown; explicit zero is retained. A source label alone does not independently verify measurement provenance.
 
-### Data Points Collected
+Strict device boundaries distinguish device ID, battery identity, recorded timestamp and measured source. Unsupported aliases, SOC and inferred health must not be silently persisted as physical measurements. Synthetic fixtures and measured records must remain isolated.
 
-| Parameter | Unit | Typical Range | Update Frequency |
-|---|---|---|---|
-| Voltage | V | 2.5-4.2 (per cell) | Every 30s |
-| Current | A | -100 to +100 | Every 30s |
-| Temperature | °C | -20 to 60 | Every 60s |
-| State of Charge | % | 0-100 | Every 60s |
-| Cycle Count | — | 0-10,000+ | On change |
-| Internal Resistance | Ω | 0.01-1.0 | Every 300s |
+Legacy hardware ingestion is blocked with HTTP 503; historical source examples are not working physical acceptance evidence. No physical test was performed here, and the new local pilot is not deployed. No generic operating thresholds, retention duration, delivery frequency, latency or lifecycle-long storage guarantee is supplied.
 
-### Ingestion Methods
-
-**MQTT (Preferred for IoT)**
-
-MQTT is the recommended protocol for BMS and IoT gateway integration. The platform subscribes to a configurable topic prefix:
-
-\`\`\`
-Topic: {MQTT_TOPIC_PREFIX}/telemetry/{bpan}
-QoS: 1 (at least once)
-Payload: JSON
-\`\`\`
-
-**HTTP (REST API)**
-
-For systems that cannot use MQTT, the platform accepts telemetry via HTTP POST:
-
-\`\`\`
-POST /api/v1/batteries/{bpan}/telemetry
-Content-Type: application/json
-\`\`\`
-
-### Alert System
-
-The platform generates alerts when telemetry values exceed safe thresholds:
-
-| Alert Type | Trigger | Severity |
-|---|---|---|
-| Over-temperature | Temperature > 55°C | Critical |
-| Under-voltage | Voltage < 2.5V per cell | High |
-| Over-current | Current exceeds rated max | High |
-| Rapid SOC drop | SOC drops > 20% in 5 minutes | Medium |
-| Cycle anomaly | Unusual charge/discharge pattern | Low |
-
-### Data Retention
-
-Telemetry data is stored in the platform database with the following retention:
-- **Raw data** — 90 days at full resolution
-- **Aggregated data** — Hourly averages retained indefinitely
-- **Alerts** — Retained indefinitely for compliance audit trail`,
+Recorded alerts are not independent emergency protection. Use manufacturer-specific limits and qualified oversight with separate emergency isolation.`,
     tags: ["telemetry", "mqtt", "iot", "monitoring", "alerts"],
     relatedArticles: ["soh-prediction", "battery-degradation", "mqtt-integration"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Activity",
   },
@@ -555,191 +270,77 @@ Telemetry data is stored in the platform database with the following retention:
   // ── COMPLIANCE ────────────────────────────────────────────────────────────
   {
     id: "iso27001-compliance",
-    title: "ISO 27001 Compliance",
+    title: "ISO 27001 — Candidate Controls",
     category: "compliance",
     summary:
-      "How the platform implements ISO 27001:2022 information security controls — audit logging, access control, data classification, and encryption.",
-    content: `## ISO 27001:2022 Compliance
+      "General standard context; certification and control effectiveness are unverified.",
+    content: `## ISO 27001 — Candidate Controls
 
-ISO 27001 is the international standard for Information Security Management Systems (ISMS). Circul-AI-r implements controls from Annex A to protect battery data, customer information, and operational integrity.
+ISO 27001 concerns an information security management system. App code and logs may be candidate evidence for access control, logging, cryptography and change review, but they do not establish an audited management system or certification.
 
-### Key Controls Implemented
+Confirm actual route authentication, resource ownership, key scope enforcement, tenant isolation, logging coverage, retention and credential handling. A role check or input schema alone does not prove protection on every endpoint. TLS deployment and storage access policies need separate evidence.
 
-| Control | Title | Implementation |
-|---|---|---|
-| A.5.1 | Information security policies | Role-based access (admin/user) |
-| A.5.15 | Access control | Protected procedures, API key scoping |
-| A.8.2 | Information classification | 4-tier data classification system |
-| A.8.15 | Logging | Comprehensive audit trail |
-| A.8.16 | Monitoring | Real-time security event monitoring |
-| A.8.24 | Cryptography | JWT signing, TLS, HMAC-SHA256 |
-
-### Data Classification
-
-| Tier | Description | Examples |
-|---|---|---|
-| **Public** | Freely accessible | Platform docs, warranty check |
-| **Internal** | General business data | Battery stats, marketplace |
-| **Confidential** | Sensitive data | Customer contacts, telemetry |
-| **Restricted** | Highly sensitive | API keys, audit logs, credentials |
-
-### Audit Trail
-
-Every platform operation generates an audit log entry with:
-- **Trace ID** — Unique correlation ID (format: \`cai-{uuid}\`)
-- **Actor** — User, agent, system, or API key
-- **Action** — Operation identifier
-- **Data Classification** — Classification tier of accessed data
-- **Duration** — Operation execution time
-- **Status** — Success, error, or denied`,
+No ISO certification, comprehensive audit coverage, data classification enforcement or security effectiveness is claimed. Independent organizational review, policy evidence, risk treatment and audit remain acceptance gates. This article is a development boundary, not an audit report.`,
     tags: ["iso27001", "security", "audit", "compliance", "encryption"],
     relatedArticles: ["soc2-compliance", "audit-logging", "data-classification"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "ShieldCheck",
   },
   {
     id: "soc2-compliance",
-    title: "SOC 2 Type II Compliance",
+    title: "SOC 2 — Evidence Review Pending",
     category: "compliance",
     summary:
-      "How the platform meets SOC 2 Trust Services Criteria for security, availability, processing integrity, confidentiality, and privacy.",
-    content: `## SOC 2 Type II Compliance
+      "No attestation or measured availability is established by application code.",
+    content: `## SOC 2 — Evidence Review Pending
 
-SOC 2 Type II evaluates an organization's controls over an extended period (typically 6-12 months) against the Trust Services Criteria.
+SOC 2 evaluates controls against relevant trust services criteria. An attestation requires independent review and evidence across its stated scope and period; it cannot be inferred from a list of software features.
 
-### Trust Services Criteria Mapping
+Authentication, authorization, key lifecycle, configuration changes and logs may support a candidate evidence inventory. Verify their completeness, retention, integrity and operation. Process age and current-session check ratios are not measured service availability.
 
-| Criteria | Title | Implementation |
-|---|---|---|
-| CC6.1 | Logical Access | JWT sessions, API keys, role-based procedures |
-| CC6.2 | Credential Management | API key lifecycle (create, rotate, revoke) |
-| CC6.3 | Registration | Email/password accounts with bcrypt password hashing |
-| CC7.1 | System Monitoring | Structured logging, security events |
-| CC7.2 | Anomaly Detection | Thermal anomaly detection, rate limiting |
-| CC7.3 | Incident Response | Security event classification and alerting |
-| CC8.1 | Change Management | Configuration change logging |
-
-### Continuous Monitoring
-
-The platform provides continuous evidence generation through:
-1. **Audit logs** — Every operation is logged with actor, action, and timestamp
-2. **Security events** — Classified by severity (low/medium/high/critical)
-3. **Access logs** — API key usage tracking with rate limit enforcement
-4. **Configuration changes** — Before/after values recorded for all config changes
-
-### Audit Preparation
-
-For SOC 2 audits, the platform provides:
-- Audit log export (CSV) for the review period
-- Security event summary by severity and type
-- API key lifecycle documentation
-- Access control evidence through role-based procedures`,
+No SOC 2 attestation, uptime commitment, restore acceptance, incident response delivery or continuous evidence completeness is established here. Provider notifications and operational on-call acceptance remain separate; no test notification is sent by this article.`,
     tags: ["soc2", "trust-services", "audit", "monitoring", "compliance"],
     relatedArticles: ["iso27001-compliance", "audit-logging", "security-events"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Award",
   },
   {
     id: "epr-compliance",
-    title: "Extended Producer Responsibility (EPR)",
+    title: "Extended Producer Responsibility — Draft Records",
     category: "compliance",
     summary:
-      "How the platform supports EPR compliance — tracking producer obligations, generating recycling tokens, and reporting to regulatory bodies.",
-    content: `## Extended Producer Responsibility (EPR)
+      "Internal records do not demonstrate official obligation fulfillment.",
+    content: `## Extended Producer Responsibility — Draft Records
 
-EPR is a policy approach that holds battery producers financially and operationally responsible for the end-of-life management of their products.
+EPR assigns producers responsibilities for product end-of-life management. Applicable rules, targets, reporting periods and facility requirements vary by jurisdiction and battery category. Obtain current regulator materials and qualified review; no universal target schedule is asserted here.
 
-### India Battery Waste Management Rules (2022)
+The app organizes declarations, internal recycling-related records and draft exports. A verified status, computed ratio or local hash is not independent facility verification, mass-balance acceptance, official certificate, blockchain anchoring or fulfilled producer obligation.
 
-India's BWMR requires battery producers to:
-1. **Register** with the Central Pollution Control Board (CPCB)
-2. **Collect** a percentage of batteries sold for recycling
-3. **Recycle** through authorized facilities
-4. **Report** annually on collection and recycling rates
-
-### How Circul-AI-r Supports EPR
-
-| Requirement | Platform Feature |
-|---|---|
-| Producer Registration | BPAN links every battery to its manufacturer |
-| Collection Tracking | Logistics module tracks battery collection |
-| Recycling Verification | EPR tokens generated after recycling |
-| CPCB Reporting | Data export compatible with CPCB format |
-
-### EPR Token System
-
-EPR tokens are digital certificates that prove recycling obligations have been met:
-
-1. Battery reaches end-of-life (SOH < 20%)
-2. Recycler processes the battery at an authorized facility
-3. Recycler reports recovered materials and weight
-4. Platform generates a verifiable EPR token
-5. Token is linked to the battery's BPAN for traceability
-
-### EU Battery Regulation (2023/1542)
-
-The platform's BPAN system aligns with the EU Battery Regulation requirements for:
-- **Digital Battery Passport** — Unique identifier with lifecycle data
-- **Carbon Footprint Declaration** — GHG Protocol compliant
-- **Due Diligence** — Supply chain traceability
-- **End-of-Life Management** — Second-life and recycling tracking`,
+Official BPAN enrollment not verified. No approved regulator-specific format, portal submission, government acceptance or automatic compliance is established. Carrier records do not prove collection or dispatch. Preserve supporting source evidence and report missing or rejected data rather than inventing a positive status.`,
     tags: ["epr", "recycling", "bwmr", "eu-battery-regulation", "compliance"],
     relatedArticles: ["carbon-footprint", "iso27001-compliance", "platform-overview"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Recycle",
   },
   {
     id: "carbon-footprint",
-    title: "Carbon Footprint Declaration",
+    title: "Carbon Footprint — Estimated Evidence",
     category: "compliance",
     summary:
-      "How the platform calculates and reports battery carbon footprints aligned with GHG Protocol and ISO 14067.",
-    content: `## Carbon Footprint Declaration
+      "Numerical estimates require methodology, input and reporting-boundary review.",
+    content: `## Carbon Footprint — Estimated Evidence
 
-The carbon footprint module calculates the lifecycle greenhouse gas emissions of each battery, supporting regulatory compliance and sustainability reporting.
+Carbon footprints quantify greenhouse gas emissions within stated system boundaries and units. App outputs are estimates, not independently verified regulatory declarations. Review inventory data, emission factors, geography, allocation, lifecycle boundary, units and uncertainty.
 
-### Methodology
+GHG Protocol, ISO 14067 and product environmental footprint approaches are general methodology references, not evidence that this implementation conforms to them. No accepted methodology, official performance class or universal stage-percentage breakdown is established.
 
-The platform supports three calculation methodologies:
-
-| Methodology | Standard | Scope |
-|---|---|---|
-| GHG Protocol | Corporate Standard | Scope 1, 2, 3 emissions |
-| ISO 14067 | Product Carbon Footprint | Cradle-to-gate |
-| PEF | EU Product Environmental Footprint | Full lifecycle |
-
-### Emission Categories
-
-| Category | Description | Typical Share |
-|---|---|---|
-| Raw Materials | Mining, refining cathode/anode materials | 40-60% |
-| Cell Manufacturing | Energy for cell assembly, formation | 15-25% |
-| Pack Assembly | Module and pack integration | 5-10% |
-| Transportation | Logistics from factory to deployment | 5-10% |
-| Use Phase | Electricity for charging (grid mix dependent) | 10-30% |
-| End of Life | Recycling or disposal | 2-5% |
-
-### Performance Classes
-
-| Class | CO₂ (kg/kWh) | Rating |
-|---|---|---|
-| A | < 50 | Excellent |
-| B | 50-75 | Good |
-| C | 75-100 | Average |
-| D | > 100 | Below Average |
-
-### Integration with BPAN
-
-Every battery's carbon footprint is linked to its BPAN and accessible through:
-- Battery passport detail page
-- REST API endpoint
-- MCP tool for AI agent queries`,
+Linking an estimate to a battery identity does not certify either. Preserve declared inputs and calculation assumptions and obtain qualified methodology and jurisdiction-specific review before using a draft report.`,
     tags: ["carbon", "ghg", "iso14067", "sustainability", "emissions"],
     relatedArticles: ["epr-compliance", "bpan-system", "platform-overview"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Leaf",
   },
@@ -747,257 +348,81 @@ Every battery's carbon footprint is linked to its BPAN and accessible through:
   // ── INTEGRATION ───────────────────────────────────────────────────────────
   {
     id: "rest-api",
-    title: "REST API Guide",
+    title: "REST API Contract Review",
     category: "integration",
     summary:
-      "Complete guide to the REST API at /api/v1 — authentication, endpoints, rate limiting, and code examples.",
-    content: `## REST API Guide
+      "Historical catalogue entries are not verified enabled routes or request receipts.",
+    content: `## REST API Contract Review
 
-The REST API at \`/api/v1\` provides microservices-compatible access to all platform features. It is designed for external integrations that prefer traditional REST over tRPC.
+REST source interfaces exist, but historical paths and examples are not the enabled API contract. Authentication, endpoint scope, resource ownership and feature gates must be reviewed against current source. Legacy unscoped and hardware paths may return HTTP 503.
 
-### Authentication
+Do not assume all endpoints share one response shape or accept the same key. Confirm the exact session, API-key or strict-device boundary. A successful HTTP response is not a safety, regulatory, carrier or payment receipt.
 
-All API requests require a Bearer token:
+Payments and private document publishing are disabled. Metadata-only execution and training are unavailable. The new local pilot is in development and not deployed; no new route is advertised as ready. Rate limits are configuration-dependent and may be in-process; no free tier, production entitlement or uptime guarantee is asserted.
 
-\`\`\`
-Authorization: Bearer cai_your_api_key_here
-\`\`\`
-
-API keys are managed through the platform admin panel or the tRPC \`apiKey.create\` procedure.
-
-### Base URL
-
-\`\`\`
-https://your-domain.com/api/v1
-\`\`\`
-
-### Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| GET | /batteries | List batteries with filters |
-| GET | /batteries/:bpan | Get battery details |
-| GET | /batteries/:bpan/telemetry | Get latest telemetry |
-| GET | /batteries/:bpan/soh | Get SOH prediction |
-| GET | /batteries/:bpan/warranty | Get warranty status |
-| GET | /warranty/lookup | Multi-channel warranty lookup |
-| GET | /warranty/stats | Warranty statistics |
-| GET | /marketplace | Browse marketplace listings |
-| GET | /marketplace/stats | Marketplace statistics |
-| GET | /compliance/epr | List EPR tokens |
-| GET | /compliance/epr/stats | EPR statistics |
-| GET | /stats/batteries | Fleet statistics |
-
-### Rate Limiting
-
-| Tier | Requests/Minute | Use Case |
-|---|---|---|
-| Free | 10 | Development and testing |
-| Standard | 100 | Production applications |
-| Premium | 500 | High-volume integrations |
-| Enterprise | 2000 | Mission-critical systems |
-
-### Response Format
-
-All responses follow a consistent JSON structure:
-
-\`\`\`json
-{
-  "success": true,
-  "data": { ... },
-  "meta": {
-    "traceId": "cai-abc123",
-    "timestamp": "2026-04-01T12:00:00Z"
-  }
-}
-\`\`\`
-
-### Error Handling
-
-\`\`\`json
-{
-  "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Battery not found"
-  }
-}
-\`\`\`
-
-### Interactive Documentation
-
-Visit \`/api/docs\` for the Swagger UI with interactive endpoint testing.`,
+This article makes no request and provides no runnable write example. Use separately approved offline contract fixtures first.`,
     tags: ["api", "rest", "microservices", "authentication", "endpoints"],
     relatedArticles: ["mcp-integration", "api-keys", "mqtt-integration"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "Code",
   },
   {
     id: "mcp-integration",
-    title: "MCP Server Integration",
+    title: "MCP Contract Review",
     category: "integration",
     summary:
-      "How to connect AI agents to the platform using the Model Context Protocol — tools, resources, prompts, and configuration.",
-    content: `## MCP Server Integration
+      "Protocol and capability metadata are distinct from authorized execution.",
+    content: `## MCP Contract Review
 
-The MCP (Model Context Protocol) server at \`/api/mcp\` enables AI agents to discover and invoke platform capabilities through a standardized interface.
+MCP is a general protocol for tools, resources and prompts. The app contains an MCP interface, but capability discovery does not prove that a tool is implemented, enabled or authorized for the current actor.
 
-### What is MCP?
+Review the actual authentication, key scopes and resource ownership before access. Do not assume the interface is public or that a generic external client package is available. No guessed tool counts, client installation or write request is provided here.
 
-MCP is an open standard that provides a universal contract for AI agent interaction. Instead of writing custom API integrations for each AI system, MCP provides three primitives:
-
-| Primitive | Count | Description |
-|---|---|---|
-| **Tools** | 20 | Executable functions (get battery, check warranty, etc.) |
-| **Resources** | 5 | Bulk data access (battery registry, warranties, etc.) |
-| **Prompts** | 4 | Pre-built context packages for report generation |
-
-### Quick Start
-
-\`\`\`bash
-# Discover tools
-curl -X POST /api/mcp -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-
-# Call a tool
-curl -X POST /api/mcp -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_battery","arguments":{"bpan":"IN-TAT-LFP-A3-X7K9M2P4"}}}'
-\`\`\`
-
-### Available Tools
-
-| Category | Tools |
-|---|---|
-| Battery Registry | get_battery, list_batteries, get_battery_stats |
-| Telemetry | get_telemetry, get_telemetry_history |
-| SOH | get_soh_prediction |
-| Warranty | check_warranty, lookup_warranty, get_warranty_stats |
-| Marketplace | list_marketplace, get_marketplace_stats |
-| Compliance | get_epr_stats, list_epr_tokens |
-| Analytics | get_platform_kpis, get_audit_stats, get_security_stats |
-| Agent | log_agent_action, get_agent_activity |
-
-### Configuring Claude Desktop
-
-\`\`\`json
-{
-  "mcpServers": {
-    "circulair": {
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-client-http"],
-      "env": { "MCP_SERVER_URL": "https://your-domain.com/api/mcp" }
-    }
-  }
-}
-\`\`\``,
+Reading a record does not validate physical condition. Logging an action does not dispatch a carrier, approve a route, train a model or execute battery control. Metadata-only execution and training are gated unavailable. No provider integration or hardware acceptance is established by this article.`,
     tags: ["mcp", "ai-agent", "protocol", "tools", "claude"],
     relatedArticles: ["rest-api", "agent-system", "platform-overview"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 5,
     icon: "Bot",
   },
   {
     id: "mqtt-integration",
-    title: "MQTT IoT Integration",
+    title: "MQTT — Read-Only Review Boundary",
     category: "integration",
     summary:
-      "How to connect BMS and IoT gateways to the platform via MQTT for real-time telemetry ingestion.",
-    content: `## MQTT IoT Integration
+      "Conditional operator-approved source examples, not a working physical gateway.",
+    content: `## MQTT — Read-Only Review Boundary
 
-MQTT is the recommended protocol for connecting Battery Management Systems (BMS) and IoT gateways to the platform for real-time telemetry ingestion.
+Historical gateway source paths exist under gateway/. They are conditional, operator-approved review examples only, not accepted firmware, connector pinouts or register maps. Physical testing not performed. Legacy hardware ingestion is blocked with HTTP 503.
 
-### Connection Configuration
+Before any connection, independently approve the exact manufacturer's interface documentation, passive receive behavior, isolation design, calibrated instruments, device-to-battery binding, units, timestamps, broker access controls, topic allowlists and revocation. Dedicated isolated pilot data is required; preserve production records.
 
-| Setting | Value |
-|---|---|
-| Protocol | MQTT 3.1.1 / 5.0 |
-| Transport | TLS (mqtts://) recommended |
-| QoS | 1 (at least once delivery) |
-| Topic Format | \`{prefix}/telemetry/{bpan}\` |
+No pin guessing, register/unit scanning, control/write commands, charging, discharging or public broker production use is approved. Do not reuse an MQTT password as a REST device token. TLS configuration and QoS alone do not prove correct decoding, durable storage or delivery.
 
-### Payload Format
-
-\`\`\`json
-{
-  "bpan": "IN-TAT-LFP-A3-X7K9M2P4",
-  "voltage": 3.28,
-  "current": 12.5,
-  "temperature": 32.1,
-  "soc": 78,
-  "cycleCount": 450,
-  "internalResistance": 0.045
-}
-\`\`\`
-
-### Security
-
-- Always use TLS (mqtts://) in production
-- Authenticate with username/password credentials
-- Use unique client IDs per device
-- Implement last-will messages for disconnect detection
-
-### Monitoring
-
-The platform provides MQTT connection status in the Super Admin panel:
-- Connection state (connected/disconnected)
-- Messages received count
-- Last message timestamp
-- Subscription status`,
+The new local pilot is in development and not deployed. Uncalibrated voltage/age heuristics are not approved SOH, safety, second-life or recycling evidence. Independent emergency isolation remains necessary.`,
     tags: ["mqtt", "iot", "bms", "telemetry", "real-time"],
     relatedArticles: ["telemetry-system", "rest-api", "architecture-overview"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Wifi",
   },
   {
     id: "api-keys",
-    title: "API Key Management",
+    title: "API Key and Ownership Review",
     category: "integration",
     summary:
-      "How to create, manage, and secure API keys for REST API access — scoping, rate limits, rotation, and revocation.",
-    content: `## API Key Management
+      "Key contracts differ; a valid key alone does not authorize every resource.",
+    content: `## API Key and Ownership Review
 
-API keys provide programmatic access to the REST API for microservices and external integrations.
+The application has separate key/session contracts. Confirm the exact enabled endpoint's key format, issuer, hashing/storage behavior, scopes, expiry, revocation and owner binding with its source owner. A valid key alone does not authorize every battery or organization.
 
-### Key Format
+Use least privilege, keep secrets out of documentation and approve rotation/revocation procedures. Do not assume historical scope names or rate tiers are current. Resource ownership and feature gates remain independent of authentication.
 
-\`\`\`
-cai_{32-character-random-string}
-Example: cai_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
-\`\`\`
-
-Keys are generated using cryptographically secure random bytes and stored as SHA-256 hashes in the database.
-
-### Key Lifecycle
-
-| State | Description |
-|---|---|
-| **Active** | Valid and accepting requests |
-| **Expired** | Past expiration date, automatically rejected |
-| **Revoked** | Manually invalidated, permanently disabled |
-
-### Scoping
-
-API keys can be scoped to specific modules:
-
-| Scope | Access |
-|---|---|
-| batteries:read | Read battery data |
-| telemetry:read | Read telemetry data |
-| warranty:read | Read warranty data |
-| marketplace:read | Read marketplace data |
-| compliance:read | Read compliance data |
-| all:read | Read all data |
-
-### Best Practices
-
-1. **Rotate keys regularly** — Create new keys and revoke old ones periodically
-2. **Use minimum scopes** — Only grant access to required modules
-3. **Set expiration dates** — Avoid indefinite keys
-4. **Monitor usage** — Track request counts and error rates per key
-5. **Revoke immediately** — If a key is compromised, revoke it instantly`,
+Strict-device ingestion additionally requires documented device/battery binding and measured provenance. It must not silently accept inferred data or another owner's records. No free tier, automatic commercial upgrade, working hardware or notification acceptance is implied by a displayed key.`,
     tags: ["api-keys", "authentication", "security", "rate-limiting"],
     relatedArticles: ["rest-api", "iso27001-compliance", "soc2-compliance"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Key",
   },
@@ -1005,177 +430,58 @@ API keys can be scoped to specific modules:
   // ── ARCHITECTURE ──────────────────────────────────────────────────────────
   {
     id: "architecture-overview",
-    title: "System Architecture",
+    title: "System Architecture — Source Boundaries",
     category: "architecture",
     summary:
-      "High-level architecture of the Circul-AI-r platform — client layer, server layer, API protocols, data access, and infrastructure.",
-    content: `## System Architecture
+      "Modular record application; deployment configuration and acceptance are separate.",
+    content: `## System Architecture — Source Boundaries
 
-Circul-AI-r follows a **modular monolith** architecture that provides the organizational benefits of microservices while maintaining the operational simplicity of a single deployment unit.
+The application is a modular monolith with a React client and server-side interfaces for tRPC, REST and MCP. Source modules organize records and queries; protocol presence does not establish complete feature coverage or enabled execution.
 
-### Technology Stack
+Native session authentication, API-key scopes and resource ownership have distinct contracts. Do not assume MCP is public, that every route shares one gate or that a key permits cross-tenant access. Database dialect and storage behavior depend on the configured implementation; this article supplies no connection instructions or schema completeness claim.
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19, Tailwind CSS 4, shadcn/ui |
-| API (Internal) | tRPC 11 with Superjson |
-| API (External) | Express REST with OpenAPI 3.1 |
-| API (AI Agents) | MCP JSON-RPC 2.0 |
-| Server | Express 4, Node.js 22 |
-| Database | MySQL (TiDB) with Drizzle ORM |
-| Storage | S3-compatible object storage |
-| Real-time | Socket.io, MQTT |
-| Auth | Email/password authentication with JWT sessions |
-
-### Three API Protocols
-
-The platform exposes three API protocols, all backed by the same business logic:
-
-| Protocol | Path | Use Case | Auth |
-|---|---|---|---|
-| tRPC | /api/trpc | Internal web app | JWT session cookie |
-| REST | /api/v1 | External microservices | API key |
-| MCP | /api/mcp | AI agents | None (public) |
-
-### Module Boundaries
-
-Each module owns its data access layer and business logic. Modules communicate through shared database access rather than inter-service calls:
-
-| Module | Data Layer | Tables |
-|---|---|---|
-| BPAN | db.ts | batteries, telemetry_data, soh_predictions |
-| Warranty | db-warranty.ts | warranty_records |
-| Compliance | compliance.ts | audit_logs, epr_tokens |
-| Agent | db-agent.ts | agent_actions |
-
-### Database Schema
-
-The platform uses 16 tables organized by module, with Drizzle ORM providing type-safe database access and migration management.`,
+Physical gateways, broker access, providers, payment, publishing and regulator submission have separate acceptance boundaries. Logs and capability metadata are not execution receipts. New development changes are not deployment evidence. No uptime, restoration, safety, certification or external delivery is established here.`,
     tags: ["architecture", "tech-stack", "modular-monolith", "database"],
     relatedArticles: ["platform-modules", "security-architecture", "data-model"],
-    diagram: `graph TB
-    subgraph Client
-        A[React 19 SPA]
-        B[tRPC Client]
-        C[Socket.io]
-    end
-    subgraph Server
-        D[Express 4]
-        E[tRPC Router]
-        F[REST Gateway]
-        G[MCP Server]
-    end
-    subgraph Data
-        H[(MySQL/TiDB)]
-        I[(S3 Storage)]
-        J[MQTT Broker]
-    end
-    A --> B --> E --> H
-    A --> C --> D
-    F --> H
-    G --> H
-    D --> I
-    J --> D`,
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Server",
   },
   {
     id: "security-architecture",
-    title: "Security Architecture",
+    title: "Security Architecture — Review Gates",
     category: "architecture",
     summary:
-      "Defense-in-depth security model — transport encryption, security headers, rate limiting, input validation, authentication, and audit logging.",
-    content: `## Security Architecture
+      "Candidate technical controls require route-level and operational acceptance.",
+    content: `## Security Architecture — Review Gates
 
-Circul-AI-r implements a defense-in-depth security model with multiple layers of protection.
+Authentication, resource ownership, key scopes, input validation, headers and logs are candidate technical controls. Their presence in source does not establish universal protection, DDoS prevention or independently reviewed security.
 
-### Defense Layers
+Confirm per-resource owner isolation on reads, writes, history, attachments, exports and aggregate queries. Check deny behavior for absent, expired, revoked or incorrectly scoped credentials. Preserve honest errors rather than defaulting to healthy or successful states.
 
-| Layer | Implementation | Purpose |
-|---|---|---|
-| Transport | TLS (HTTPS) | Encrypt data in transit |
-| Headers | Helmet.js | CSP, HSTS, X-Frame-Options |
-| Rate Limiting | express-rate-limit | Prevent abuse and DDoS |
-| Input Validation | Zod schemas | Prevent injection attacks |
-| Authentication | JWT + API keys | Verify identity |
-| Authorization | Role-based + scope-based | Enforce access control |
-| Audit | Comprehensive logging | Detect and investigate |
-| Monitoring | Security events | Real-time alerting |
-
-### Authentication Flows
-
-**Web Application (Email/Password):**
-\`\`\`
-User → Login → Email/Password Validation → JWT Cookie → Protected Procedures
-\`\`\`
-
-**REST API (API Key):**
-\`\`\`
-Client → Bearer Token → Gateway → Key Validation → Scope Check → Handler
-\`\`\`
-
-### Security Event Classification
-
-| Severity | Examples | Response |
-|---|---|---|
-| Low | Successful login, profile update | Log only |
-| Medium | Failed login, API key created | Log + monitor |
-| High | Multiple failures, unauthorized access | Log + alert |
-| Critical | Breach attempt, mass data export | Log + alert + block |`,
+TLS, storage policy, audit coverage, restoration and provider delivery need separate acceptance. Logging an event does not prove paging, blocking, investigation or incident response occurred. No certification, comprehensive security coverage or notification test is claimed.`,
     tags: ["security", "authentication", "authorization", "encryption"],
     relatedArticles: ["iso27001-compliance", "soc2-compliance", "api-keys"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Lock",
   },
   {
     id: "data-model",
-    title: "Data Model Reference",
+    title: "Data Model — Reference Boundaries",
     category: "architecture",
     summary:
-      "Complete database schema reference — all 16 tables with column definitions, relationships, and indexing strategy.",
-    content: `## Data Model Reference
+      "Consult current schema owners; no complete static table inventory is asserted.",
+    content: `## Data Model — Reference Boundaries
 
-The platform uses 16 tables in a MySQL (TiDB) database, managed through Drizzle ORM.
+Registry, telemetry, estimates, warranty, listings, recycling, documents, actions and consent are record categories. The current schema and authorized data-access owners define actual fields, relationships and dialect. Historical table counts and sample schemas are not authoritative.
 
-### Table Overview
+Preserve local identifiers and aliases. Distinguish declared, synthetic, inferred and measured provenance; missing values remain unknown and explicit zero is retained. A status label such as verified is an internal state, not independent physical or regulatory certification.
 
-| Table | Module | Purpose | Key Columns |
-|---|---|---|---|
-| users | Auth | Platform users | id, openId, name, email, role |
-| batteries | BPAN | Battery registry | id, bpan, manufacturer, chemistry, status |
-| telemetry_data | Telemetry | IoT readings | id, bpan, voltage, current, temperature, soc |
-| soh_predictions | SOH | AI predictions | id, bpan, predictedSoh, rulCycles |
-| warranty_records | Warranty | Warranty data | id, bpan, customerPhone, customerEmail, status |
-| marketplace_listings | Marketplace | Listings | id, batteryId, listingType, priceInr |
-| audit_logs | Compliance | Audit trail | id, traceId, actorType, action, module |
-| epr_tokens | Compliance | EPR certificates | id, batteryId, recyclerName, status |
-| carbon_footprints | Compliance | Carbon data | id, batteryId, totalCo2Kg, performanceClass |
-| agent_actions | Agent | Agent tracking | id, actorType, action, module, status |
-| api_keys | Admin | API keys | id, name, keyHash, scopes, rateLimitTier |
-| shipments | Logistics | Shipments | id, batteryId, fromLocation, toLocation |
-| alerts | Telemetry | Alert system | id, bpan, alertType, severity |
-| bulk_onboarding_jobs | Onboarding | Batch imports | id, totalBatteries, successCount |
-| webhook_subscriptions | Integration | Webhooks | id, url, events, status |
-| sessions | Auth | User sessions | id, userId, token, expiresAt |
-
-### Relationships
-
-\`\`\`
-users (1) ──→ (N) batteries
-batteries (1) ──→ (N) telemetry_data
-batteries (1) ──→ (N) soh_predictions
-batteries (1) ──→ (1) warranty_records
-batteries (1) ──→ (N) marketplace_listings
-batteries (1) ──→ (N) epr_tokens
-batteries (1) ──→ (N) carbon_footprints
-batteries (1) ──→ (N) shipments
-batteries (1) ──→ (N) alerts
-\`\`\``,
+Direct database edits bypass application ownership and validation. No credentials, seed commands, migrations or database writes are supplied here. New pilot records require isolated design and separate acceptance rather than reuse of production customer rows.`,
     tags: ["database", "schema", "tables", "drizzle", "mysql"],
     relatedArticles: ["architecture-overview", "bpan-system", "platform-modules"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Database",
   },
@@ -1183,486 +489,136 @@ batteries (1) ──→ (N) alerts
   // ── OPERATIONS ────────────────────────────────────────────────────────────
   {
     id: "warranty-system",
-    title: "Warranty Management System",
+    title: "Warranty Record Review",
     category: "operations",
     summary:
-      "Complete guide to warranty registration, multi-channel lookup, claim workflow, and warranty impact on platform operations.",
-    content: `## Warranty Management System
+      "Stored warranty status is not issuer acceptance or a completed service claim.",
+    content: `## Warranty Record Review
 
-The warranty system provides end-to-end warranty lifecycle management with multi-channel customer verification.
+The app organizes supplied warranty terms, contacts and claim records. Displayed active, expired or claimed states reflect records and calculations; they do not independently prove manufacturer acceptance, coverage, repair completion or entitlement.
 
-### Why Warranty Matters
+Confirm original issuer documents, dates, conditions, customer authorization and resource ownership. Contact-channel lookup must not be assumed public or unrestricted. A matching phone or email is not proof of identity and must not disclose another owner's records.
 
-In the Indian battery market, warranty verification is a high-volume operation. Battery providers receive inquiries through phone calls, WhatsApp messages, and emails daily. The platform eliminates manual lookup by enabling instant verification through any contact channel.
-
-### Warranty Types
-
-| Type | Description | Typical Term |
-|---|---|---|
-| Standard | Basic manufacturer warranty | 12-24 months |
-| Extended | Paid extended coverage | 24-48 months |
-| Premium | Comprehensive all-risk | 36-60 months |
-
-### Multi-Channel Lookup
-
-Customers and service providers can verify warranty using five channels:
-
-| Channel | Example | Use Case |
-|---|---|---|
-| BPAN | IN-TAT-LFP-A3-X7K9M2P4 | Technical lookup |
-| Serial Number | TAT-2024-001 | Label-based lookup |
-| Phone | +919876543210 | Customer call-in |
-| Email | customer@example.com | Email inquiry |
-| WhatsApp | +919876543210 | WhatsApp message |
-
-### Warranty Status Engine
-
-| Status | Description | In Warranty? |
-|---|---|---|
-| Active | Within warranty period | Yes |
-| Expired | Past end date | No |
-| Voided | Invalidated (tampering, etc.) | No |
-| Claimed | Claim processed | No |
-| Pending Activation | Start date in future | No |
-
-### Platform Impact
-
-Warranty status affects other modules:
-- **Marketplace:** In-warranty batteries receive a warning when listed
-- **Battery Detail:** Warranty status shown on passport page
-- **Compliance:** Warranty claims count toward EPR tracking`,
+Warranty terms are issuer-specific; no universal coverage period or all-risk promise is made. A warranty record does not demonstrate recycling obligation fulfillment or second-life suitability. Outbound email/phone acceptance and provider delivery remain separate, unverified gates.`,
     tags: ["warranty", "multi-channel", "lookup", "claims", "customer"],
     relatedArticles: ["battery-registration", "marketplace-guide", "stakeholder-guide"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "BadgeCheck",
   },
   {
     id: "marketplace-guide",
-    title: "Second-Life Marketplace",
+    title: "Marketplace Listing Review",
     category: "operations",
     summary:
-      "How the marketplace connects battery owners with buyers for second-life applications — listing, warranty gates, and SOH verification.",
-    content: `## Second-Life Marketplace
+      "Seller declarations and estimates are not independently verified physical condition.",
+    content: `## Marketplace Listing Review
 
-The marketplace module connects battery owners with buyers seeking verified second-life batteries for BESS, backup power, and other applications.
+The marketplace organizes asking-price and battery listing records. No SOH percentage alone qualifies a battery for reuse, refurbishment or recycling. Seller declarations and uncalibrated SOH/RUL estimates need source provenance, qualified inspection and manufacturer-specific review.
 
-### Listing Types
+Uploaded documents are not automatically verified certificates. Warranty states need separate issuer review. Official BPAN enrollment not verified. A listing does not establish matching, buyer acceptance, carrier booking or completed delivery.
 
-| Type | Description | Typical SOH |
-|---|---|---|
-| Second Life | Batteries suitable for less demanding applications | 40-79% |
-| Refurbished | Batteries that have been reconditioned | 60-90% |
-| Recycling | Batteries at end of useful life | < 40% |
-
-### Creating a Listing
-
-1. Enter the battery's BPAN
-2. System auto-fills battery details and current SOH
-3. Select listing type
-4. Set asking price (INR)
-5. Add description
-
-### Warranty Gate
-
-The marketplace enforces a warranty check on all listings:
-- **In-warranty batteries** receive a prominent warning
-- The rationale: customers with active warranties should use the warranty claim process
-- Listings are not blocked but clearly flagged
-
-### SOH Verification
-
-Every marketplace listing includes the AI-predicted SOH:
-- Predicted SOH percentage
-- Confidence interval
-- Triage recommendation
-- Last telemetry timestamp
-
-This gives buyers confidence in the battery's actual condition, unlike traditional second-hand markets where battery health is unknown.`,
+Payments and private document publishing are disabled pending separate acceptance. No completed sale, pricing accuracy, model verification or safe second-life condition is promised. Review authorized records without changing or relabeling production data as a pilot.`,
     tags: ["marketplace", "second-life", "bess", "listing", "soh"],
     relatedArticles: ["soh-prediction", "warranty-system", "stakeholder-guide"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Store",
   },
   {
     id: "battery-registration",
-    title: "Battery Registration Guide",
+    title: "Battery Registration Review",
     category: "operations",
     summary:
-      "Step-by-step guide to registering batteries — single registration, bulk onboarding, and auto-BPAN generation.",
-    content: `## Battery Registration Guide
+      "Local identity source workflows, subject to ownership and validation.",
+    content: `## Battery Registration Review
 
-Battery registration is the first step in the lifecycle management process. Every battery must be registered to receive a BPAN.
+Registration source workflows organize supplied manufacturer, chemistry, capacity, voltage, application and serial-number information. Accepted fields and authorization depend on the current enabled contract. Declarations require independent evidence where used for physical or regulatory decisions.
 
-### Single Registration
+Preserve original serial numbers and legacy aliases. A generated local identity or QR code is not an official passport; official BPAN enrollment not verified. A separate 21-character draft remains subject to issuer and mapping review.
 
-1. Navigate to **BPAN Registry** > **Register New Battery**
-2. Fill in required fields:
-   - Manufacturer name
-   - Chemistry type
-   - Capacity (kWh)
-   - Nominal voltage (V)
-   - Application type
-   - Country of origin
-3. Click **Generate BPAN**
-
-### Bulk Onboarding
-
-For organizations with existing battery fleets:
-
-**Manual Entry:**
-- Register one battery at a time with optional warranty auto-registration
-
-**CSV Import:**
-Prepare a CSV with columns:
-\`\`\`csv
-manufacturer,chemistry,capacityKwh,nominalVoltage,application,countryOfOrigin,serialNumber
-\`\`\`
-
-Upload the file and the system will:
-1. Validate each row
-2. Generate BPANs automatically
-3. Optionally create warranty records
-4. Report success/failure for each battery
-
-### Auto-BPAN Generation
-
-The system parses manufacturer, chemistry, and capacity to automatically generate compliant BPANs. Serial numbers from the original manufacturer are preserved as additional identifiers for cross-referencing.`,
+Use non-sensitive authorized offline fixtures first. Actual import requires separate approval and per-row honest acceptance/error reporting. Do not re-seed, overwrite or relabel production customer data to create a pilot. No registration operation is executed by this article.`,
     tags: ["registration", "onboarding", "csv-import", "bpan-generation"],
     relatedArticles: ["bpan-system", "warranty-system", "bulk-onboarding"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "PlusCircle",
   },
   {
     id: "agent-system",
-    title: "Agentic Operations",
+    title: "Agent Metadata — Execution Unavailable",
     category: "operations",
     summary:
-      "How AI agents interact with the platform — action logging, batch execution, capability discovery, and the Super Admin monitoring panel.",
-    content: `## Agentic Operations
+      "Action logging and capability discovery do not perform real operations.",
+    content: `## Agent Metadata — Execution Unavailable
 
-The platform is designed to be fully agentic — every operation can be triggered and tracked by AI agents.
+Capability lists, round/version metadata and action logs are not execution receipts. Metadata-only agent execution and batch execution are gated unavailable; they do not perform carrier dispatch, route approval, battery control, government submission or financial transactions.
 
-### Agent Action Logging
+Federated round/version records do not aggregate model weights or train a model. Training is gated unavailable. Healthy defaults, declared success states and invented accuracy must not be treated as operational evidence.
 
-Every agent operation is logged with:
-
-| Field | Description |
-|---|---|
-| Actor Type | user, agent, system, api_key |
-| Action | Operation identifier |
-| Module | Platform module |
-| Description | Human-readable description |
-| Input/Output | Sanitized parameters and results |
-| Status | success, error, pending |
-| Duration | Execution time in milliseconds |
-
-### Available Agent Endpoints
-
-| Endpoint | Description |
-|---|---|
-| agent.logAction | Log an agent action |
-| agent.execute | Execute a platform operation |
-| agent.batchExecute | Execute multiple operations |
-| agent.listActions | List action history |
-| agent.stats | Action statistics |
-| agent.recentActivity | Live activity feed |
-| agent.systemHealth | System health check |
-| agent.capabilities | List all capabilities |
-
-### Super Admin Panel
-
-The Super Admin panel at \`/admin/system\` provides:
-- **System Overview** — Server health, memory, MQTT status
-- **Agent Actions** — Filterable action log
-- **Live Activity** — Real-time operation feed
-
-### Batch Execution
-
-Agents can execute multiple operations in a single call:
-\`\`\`json
-{
-  "actions": [
-    { "type": "check_warranty", "params": { "bpan": "..." } },
-    { "type": "get_soh", "params": { "bpan": "..." } },
-    { "type": "list_marketplace", "params": {} }
-  ]
-}
-\`\`\``,
+Any future action requires explicit actor/resource authorization, human approval where appropriate, durable idempotency and independently accepted external adapters. Safety, second-life and recycling decisions require qualified review and cannot be approved by an uncalibrated estimate. This article supplies no execution or batch-write payload.`,
     tags: ["agent", "agentic", "automation", "batch", "super-admin"],
     relatedArticles: ["mcp-integration", "rest-api", "architecture-overview"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 4,
     icon: "Cpu",
   },
   {
     id: "audit-logging",
-    title: "Audit Logging System",
+    title: "Audit Records — Coverage Review",
     category: "operations",
     summary:
-      "How the platform's audit logging system works — trace IDs, actor tracking, data classification, and SIEM integration.",
-    content: `## Audit Logging System
+      "Logs may support investigation, not complete certification or external receipts.",
+    content: `## Audit Records — Coverage Review
 
-The audit logging system provides comprehensive traceability for all platform operations, supporting ISO 27001 and SOC 2 compliance requirements.
+Audit records can capture actors, actions, timestamps and outcomes where writers are implemented. Confirm actual fields and coverage with current source rather than assuming every operation is logged, every field is populated, or all sensitive values are redacted.
 
-### Audit Log Entry Structure
+An action marked successful may represent metadata or a completed local write, not real external execution. A local hash is not a blockchain receipt or immutable independently anchored evidence. Audit queries and exports require resource ownership, tenant isolation and private-document boundaries.
 
-| Field | Type | Description |
-|---|---|---|
-| traceId | string | Unique correlation ID (cai-{uuid}) |
-| actorType | enum | user, agent, system, api_key |
-| actorId | string | Identifier of the actor |
-| action | string | Operation identifier |
-| module | enum | Platform module |
-| dataClassification | enum | public, internal, confidential, restricted |
-| ipAddress | string | Client IP address |
-| inputSummary | JSON | Sanitized input (PII redacted) |
-| outputSummary | JSON | Operation result |
-| status | enum | success, error, denied |
-| durationMs | integer | Execution time |
-
-### Trace ID Propagation
-
-Every request receives a unique trace ID (format: \`cai-{uuid}\`) that propagates through all operations triggered by that request. This enables end-to-end request tracing across modules.
-
-### Data Classification Tags
-
-Every audit entry is tagged with a data classification tier:
-- **Public** — No sensitive data accessed
-- **Internal** — General business data
-- **Confidential** — Customer PII, telemetry
-- **Restricted** — Credentials, security events
-
-### SIEM Integration
-
-Audit logs are available in SIEM-ready JSON format through:
-1. tRPC procedure: \`compliance.auditLogs\`
-2. REST endpoint: \`/api/v1/compliance/audit-logs\`
-3. CSV export from the Super Admin panel`,
+Retention, integrity, complete trace propagation, SIEM delivery and operational review need separate acceptance. No ISO certification, SOC 2 attestation, comprehensive logging or notification delivery is established. Preserve rejected/unknown states and raw evidence instead of inferring success.`,
     tags: ["audit", "logging", "trace-id", "siem", "compliance"],
     relatedArticles: ["iso27001-compliance", "soc2-compliance", "security-architecture"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "FileText",
   },
   {
     id: "bulk-onboarding",
-    title: "Bulk Battery Onboarding",
+    title: "Bulk Onboarding — Offline Fixture Review",
     category: "operations",
     summary:
-      "How to migrate existing battery fleets to the platform — CSV import format, auto-BPAN generation, and batch warranty registration.",
-    content: `## Bulk Battery Onboarding
+      "Approved application import required; no seed or direct database write.",
+    content: `## Bulk Onboarding — Offline Fixture Review
 
-The bulk onboarding module enables organizations to migrate existing battery fleets to the platform efficiently.
+Historical CSV examples are not the enabled import contract. Confirm required fields, units, identifier mapping and resource ownership with the current owner. Use an isolated non-sensitive offline fixture before an authorized import.
 
-### CSV Import Format
+Preserve original serial numbers and aliases; official BPAN enrollment not verified. Report row validation failures and acceptance counts honestly. A line count is not parsed CSV or a persisted-row receipt. Quoted multiline fields require a proper parser in the approved workflow.
 
-\`\`\`csv
-manufacturer,chemistry,capacityKwh,nominalVoltage,application,countryOfOrigin,serialNumber
-Tata AutoComp,LFP,3.5,3.2,ev_2w,IN,TAT-2024-001
-Exide Industries,NMC,5.0,3.7,bess,IN,EXD-2024-002
-Amara Raja,LFP,2.8,3.2,ev_3w,IN,AMR-2024-003
-\`\`\`
-
-### Required Fields
-
-| Field | Type | Description |
-|---|---|---|
-| manufacturer | string | Company name |
-| chemistry | string | NMC, LFP, NCA, etc. |
-| capacityKwh | number | Rated capacity |
-| nominalVoltage | number | Rated voltage |
-| application | string | ev_2w, bess, etc. |
-| countryOfOrigin | string | ISO country code |
-
-### Optional Fields
-
-| Field | Type | Description |
-|---|---|---|
-| serialNumber | string | Manufacturer serial |
-| modelNumber | string | Model identifier |
-
-### Auto-BPAN Generation
-
-For each row in the CSV:
-1. System validates all fields
-2. Generates a unique BPAN from manufacturer, chemistry, and capacity
-3. Preserves the original serial number as an additional identifier
-4. Creates the battery record in the registry
-
-### Batch Warranty Registration
-
-When enabled, the import process also creates warranty records:
-- Warranty type and terms are specified once for the entire batch
-- Customer details can be provided per-battery or batch-wide
-- Warranty start date defaults to the import date
-
-### Job Tracking
-
-Each bulk import creates a job record with:
-- Total batteries in the batch
-- Success and failure counts
-- Error log for failed rows
-- Job status (processing, completed, failed)`,
+No database seed, migration, warranty creation or import is executed here. Do not regenerate or overwrite production customer rows. Supplied capacity, voltage and condition metadata are declarations until independently measured and reviewed.`,
     tags: ["bulk", "onboarding", "csv", "import", "migration"],
     relatedArticles: ["battery-registration", "bpan-system", "warranty-system"],
-    lastUpdated: "2026-04-01",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 3,
     icon: "Upload",
   },
   {
     id: "write-api-scope-strategy",
-    title: "Write API Key Scope Strategy",
+    title: "Write API Strategy — Not a Released Contract",
     category: "integration",
     summary:
-      "Design strategy for defining and implementing write API key scopes — covering the eleven new scopes, enforcement middleware, rate-limit tiers, Developer Portal UI updates, and WhatsApp integration requirements.",
-    content: `## Overview
+      "Historical design ideas must not be confused with enabled routes or dispatch.",
+    content: `## Write API Strategy — Not a Released Contract
 
-The platform's API key system currently supports seven read-only scopes enforced at the MCP layer. This document defines the strategy for introducing write scopes that enable external systems — including WhatsApp workflow bots, n8n automations, and Make scenarios — to create and modify platform data through the REST API with properly scoped keys.
+This article records design boundaries, not a released write API. Historical scope names, endpoint lists, rate tiers and implementation phases must be reviewed against current enabled source; they are not operational promises.
 
-## Current State
+Every future write requires authenticated actor identity, exact scopes, resource ownership, validated inputs and honest rejection behavior. Read access must not imply write access. Device writes additionally require accepted device/battery binding and measured provenance. Metadata-only execution and training remain unavailable.
 
-| Scope ID | Label | Access Type | Enforced At |
-|---|---|---|---|
-| \`soh_predict\` | SOH Prediction | Read | MCP only |
-| \`bpan_validate\` | BPAN Validation | Read | MCP only |
-| \`compliance_report\` | Compliance Reports | Read | MCP only |
-| \`telemetry_read\` | Telemetry Read | Read + 1 write | MCP only |
-| \`marketplace_read\` | Marketplace Read | Read | MCP only |
-| \`carbon_report\` | Carbon Footprint | Read | MCP only |
-| \`digital_twin\` | Digital Twin | Read | MCP only |
+Legacy hardware ingestion is blocked with HTTP 503. Payments and private document publishing are disabled. No new local pilot route is advertised as ready or deployed. Carrier dispatch, regulatory submission, notifications and automated safety approval require separate accepted adapters and authorization.
 
-**Key gap:** The REST gateway (\`/api/v1\`) validates the API key but does not enforce per-endpoint scope checks — any valid key can call any REST endpoint regardless of its declared scopes.
-
-## Design Principles
-
-**Least Privilege by Default.** Write scopes are opt-in and never bundled with read scopes automatically.
-
-**Verb-Prefixed Naming.** All new scopes follow the \`resource:verb\` pattern (e.g. \`battery:write\`, \`warranty:write\`) to make intent unambiguous in logs, UI, and error messages.
-
-**Flat Scope Hierarchy.** No implicit inheritance — each scope is independently checked. \`battery:write\` does not imply \`telemetry:write\`.
-
-**Write Scopes Require Elevated Rate-Limit Tier.** Keys with any write scope are automatically assigned \`premium\` or \`enterprise\` tier at creation time.
-
-**Every Write Endpoint Logs to the Audit Trail.** Write endpoints log the resource ID and actor identity in the \`metadata\` field of the existing audit log.
-
-**Admin-Only Scopes Require Platform Role Check.** Scopes that affect other users' data additionally verify \`ctx.user.role === "admin"\` at the procedure level.
-
-## Eleven New Write Scopes
-
-| Scope ID | Label | What It Unlocks | Min Tier |
-|---|---|---|---|
-| \`battery:write\` | Battery Registry Write | Register batteries, update status, bulk import | Premium |
-| \`telemetry:write\` | Telemetry Ingest | Push telemetry readings via REST | Standard |
-| \`warranty:write\` | Warranty Write | Register warranty, submit and update claims | Premium |
-| \`marketplace:write\` | Marketplace Write | Create/update/withdraw listings, make offers | Premium |
-| \`alert:write\` | Alert Write | Create manual alerts, mark alerts read | Standard |
-| \`logistics:write\` | Logistics Write | Request pickups, update shipment status | Premium |
-| \`compliance:write\` | Compliance Write | Issue EPR tokens, submit yield verification | Enterprise |
-| \`document:write\` | Document Write | Upload documents, attach to batteries | Standard |
-| \`assistant:query\` | AI Assistant Query | POST natural-language queries to AI assistant | Standard |
-| \`webhook:manage\` | Webhook Management | Create, list, delete webhook subscriptions | Standard |
-| \`admin:user_write\` | Admin User Write | Update user roles (admin-only) | Enterprise |
-
-## Scope-to-Endpoint Mapping
-
-| Scope | New REST Endpoints | tRPC Procedures Wrapped |
-|---|---|---|
-| \`battery:write\` | \`POST /api/v1/batteries\` · \`PATCH /api/v1/batteries/:bpan/status\` | \`bpan.generate\` · \`bpan.updateStatus\` |
-| \`telemetry:write\` | \`POST /api/v1/batteries/:bpan/telemetry\` (existing, now scoped) | \`telemetry.ingest\` |
-| \`warranty:write\` | \`POST /api/v1/warranty\` · \`POST /api/v1/warranty/:id/claim\` | \`warranty.register\` · \`warranty.submitClaim\` |
-| \`marketplace:write\` | \`POST /api/v1/marketplace/listings\` · \`PATCH /api/v1/marketplace/listings/:id\` | \`marketplace.createListing\` · \`marketplace.update\` |
-| \`alert:write\` | \`POST /api/v1/alerts\` · \`PATCH /api/v1/alerts/:id/read\` | \`alerts.markRead\` |
-| \`logistics:write\` | \`POST /api/v1/logistics/pickup\` | \`logistics.requestPickup\` |
-| \`compliance:write\` | \`POST /api/v1/compliance/epr/tokens\` | \`epr.verifyYield\` |
-| \`document:write\` | \`POST /api/v1/documents\` | \`documents.upload\` |
-| \`assistant:query\` | \`POST /api/v1/assistant/query\` | \`assistant.chat\` |
-| \`webhook:manage\` | \`POST /api/v1/webhooks\` · \`GET /api/v1/webhooks\` · \`DELETE /api/v1/webhooks/:id\` | \`webhook.create\` · \`webhook.list\` · \`webhook.delete\` |
-| \`admin:user_write\` | \`PATCH /api/v1/admin/users/:id/role\` | \`admin.updateUserRole\` |
-
-## Rate-Limit Tiers
-
-| Tier | Requests/min | Max Burst | Write Ops/min |
-|---|---|---|---|
-| Standard | 100 | 20 | — |
-| Premium | 500 | 100 | 200 |
-| Enterprise | 2 000 | 500 | 1 000 |
-
-The tier is resolved automatically at key creation based on the most privileged scope selected — no manual tier selection is required.
-
-## Implementation Phases
-
-### Phase A — Core Infrastructure
-Extend \`ApiPermission\` union type in \`server/apiMarketplace.ts\` with all eleven new scope IDs. Add \`WRITE_PERMISSIONS\` set, \`MINIMUM_TIER\` map, and \`ADMIN_ONLY_SCOPES\` set as named constants.
-
-### Phase B — Scope Enforcement Middleware
-Add a \`requireScope(scope)\` middleware factory to \`server/apiGateway.ts\`. Apply it to all existing read endpoints (closing the current unguarded gap) and all new write endpoints. The middleware returns \`403 Forbidden\` with \`requiredScope\` and \`yourScopes\` in the response body, and logs a security event.
-
-\`\`\`typescript
-function requireScope(scope: ApiPermission) {
-  return (req, res, next) => {
-    const scopes = (req as any).apiKey?.scopes ?? [];
-    if (!scopes.includes(scope)) {
-      return res.status(403).json({
-        error: "forbidden",
-        message: \`This endpoint requires the '\${scope}' scope.\`,
-        yourScopes: scopes,
-      });
-    }
-    next();
-  };
-}
-\`\`\`
-
-### Phase C — Rate-Limit Tier Enforcement
-At key creation (\`developerApi.createKey\`), automatically resolve the tier from the selected scopes and apply the corresponding rate limit. No manual tier selection is exposed to users.
-
-### Phase D — Developer Portal UI
-Group permissions into **Read Access** and **Write Access** sections with a warning banner on write scopes. Auto-display the resolved tier. Colour-code scope badges: green for read, amber for write, red for admin.
-
-### Phase E — MCP Tool Extensions
-Add write tool definitions to \`TOOL_SCOPE_MAP\` in \`mcpServer.ts\` so AI agent workflows can invoke write operations through the MCP interface.
-
-### Phase F — Shared Scope Constants
-Extract the scope list to \`shared/apiScopes.ts\` as a single source of truth, eliminating the sync risk between \`apiMarketplace.ts\` and the Zod enum in \`routers.ts\`.
-
-## Backward Compatibility
-
-All seven existing scope IDs are preserved unchanged. Keys issued before this change continue to work exactly as before. The only behavioural change for existing keys is that REST endpoints will now enforce their declared scope — keys that previously called any endpoint without the correct scope will receive \`403 Forbidden\`. This is a security improvement, not a breaking change for correctly-scoped keys.
-
-A migration notice will be sent to all existing API key holders via the Developer Portal.
-
-## WhatsApp Integration Key Requirements
-
-For a WhatsApp workflow bot to manage all platform functionality, the API key issued to the WA integration should include:
-
-| Scope | Purpose in WA Workflow |
-|---|---|
-| \`bpan_validate\` | Look up battery by BPAN sent in WA message |
-| \`warranty:write\` | Register warranty when customer sends purchase proof |
-| \`telemetry_read\` | Reply with live battery health on customer query |
-| \`soh_predict\` | Reply with SOH prediction on demand |
-| \`alert:write\` | Create manual alert when field engineer reports issue via WA |
-| \`assistant:query\` | Route free-text WA messages to AI assistant for NL response |
-| \`webhook:manage\` | Register WA webhook URL to receive platform event pushes |
-
-This key should be **Premium tier** (500 req/min) with a 1-year expiry and stored as an environment secret, not in the platform's user-facing key list.
-
-## Testing Strategy
-
-| Test Type | Coverage |
-|---|---|
-| Unit — \`requireScope\` middleware | Returns 403 when scope missing; passes when scope present; logs security event on denial |
-| Unit — \`MINIMUM_TIER\` resolver | Correct tier selected for all scope combinations |
-| Unit — \`parsePermissions\` | New scope IDs parse correctly; unknown scopes are filtered |
-| Integration — \`createKey\` | Key with \`battery:write\` gets \`premium\` tier; key with \`admin:user_write\` gets \`enterprise\` tier |
-| Integration — REST endpoints | Each new endpoint returns 403 without scope, 201/200 with scope |
-| E2E — WA workflow | Full flow: generate key with \`warranty:write\` → \`POST /api/v1/warranty\` → record created |`,
+No migration notice, external bot, provider setup, credentials or test notification is performed here. Prefer approved offline fixtures; do not bypass application gates through direct database access.`,
     tags: ["api", "scopes", "write", "whatsapp", "integration", "security", "rate-limiting", "developer"],
     relatedArticles: ["api-reference", "developer-portal", "webhook-integration"],
-    lastUpdated: "2026-07-09",
+    lastUpdated: "2026-11-18",
     readTimeMinutes: 8,
     icon: "KeyRound",
   },
@@ -1707,22 +663,20 @@ export function getWikiSystemPrompt(): string {
     (a) => `- **${a.title}** (${a.category}): ${a.summary}`
   ).join("\n");
 
-  return `You are CirculWiki AI, the intelligent assistant for the Circul-AI-r Battery Intelligence Platform. You have deep knowledge of:
-
-1. The Circul-AI-r platform — all modules, features, and workflows
-2. Battery science — chemistries, degradation, SOH prediction, lifecycle management
-3. Regulatory compliance — ISO 27001, SOC 2, EPR, BWMR, EU Battery Regulation
-4. Integration — REST API, MCP server, MQTT, webhooks
-5. Architecture — system design, data model, security
+  return `You are a reference assistant for Circul-AI-r local battery records. The knowledge base describes development boundaries, not complete features or released physical integrations.
 
 Available knowledge base articles:
 ${articleSummaries}
 
-When answering questions:
-- Be specific and reference platform features by name
-- Use tables for comparisons
-- Provide code examples for API/integration questions
-- Reference relevant articles for further reading
-- If unsure, say so and suggest where to find the answer
-- Keep responses concise but comprehensive`;
+When answering:
+- Distinguish source implementation, configuration, enabled contracts, measured evidence and separate acceptance.
+- SOH/RUL and triage heuristics are uncalibrated; legacy confidence/error metadata is not observed accuracy.
+- Never approve safety, second-life, recycling, battery control, carrier dispatch or regulatory fulfillment.
+- Local identities are not officially enrolled passports; official BPAN enrollment not verified.
+- Internal yields, statuses and local hashes are not independent certificates or blockchain receipts.
+- Metadata-only execution and training are unavailable. Legacy hardware ingestion, payments and private publishing are disabled.
+- The new local pilot is in development and not deployed. Do not guess or advertise a ready route.
+- No physical test, provider delivery, uptime, certification or government acceptance is established.
+- Do not give guessed pins/register maps, control/write commands, public broker production setup, direct database writes or seed commands.
+- Preserve unknown and error states, missing values and explicit zero. Reference articles and state uncertainty honestly.`;
 }

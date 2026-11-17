@@ -1,62 +1,41 @@
 /**
- * Carbon Accounting Module — Lifecycle Carbon Footprint Calculator
- * Computes manufacturing, transport, operational, and end-of-life emissions
- * per battery in kg CO2e, aligned with EU Battery Regulation Article 7.
+ * Unverified lifecycle carbon ESTIMATE, in kg CO2e. Not a regulatory declaration.
+ * Embedded grid/process factors are demonstration assumptions, not live verified
+ * datasets. Counts ALL charging energy (delivered energy / assumed efficiency),
+ * including losses; it does not count only charging losses.
  */
+import { requireFiniteRange } from "./numericalUnits";
 
-// ─── Grid Carbon Intensity (gCO2/kWh) by region ──────────────────────────────
+/** Embedded historical grid assumptions, g CO2e per kWh drawn from the grid. */
 export const GRID_INTENSITY: Record<string, number> = {
-  IN: 713,   // India (CEA 2023)
-  CN: 581,   // China
-  US: 386,   // USA (EPA 2023)
-  EU: 255,   // EU average (EEA 2023)
-  DE: 380,   // Germany
-  FR: 58,    // France (nuclear-heavy)
-  NO: 26,    // Norway (hydro)
-  AU: 560,   // Australia
-  JP: 471,   // Japan
-  KR: 415,   // South Korea
-  GLOBAL: 450, // Global average fallback
+  IN: 713, CN: 581, US: 386, EU: 255, DE: 380, FR: 58,
+  NO: 26, AU: 560, JP: 471, KR: 415, GLOBAL: 450,
 };
 
-// ─── Manufacturing emissions (kg CO2e per kWh capacity) by chemistry ─────────
+/** kg CO2e per kWh of nominal battery capacity; unverified assumptions. */
 const MFG_KG_CO2_PER_KWH: Record<string, number> = {
-  LFP: 60,       // Lower — no cobalt/nickel
-  NMC: 85,       // Higher — cobalt & nickel mining
-  NCA: 90,       // Similar to NMC
-  LCO: 110,      // Highest — cobalt-intensive
-  LMO: 70,
-  LEAD_ACID: 35, // Low but toxic
-  SOLID_STATE: 95, // Emerging — energy-intensive production
+  LFP: 60, NMC: 85, NCA: 90, LCO: 110, LMO: 70, LEAD_ACID: 35, SOLID_STATE: 95,
 };
-
-// ─── Transport emissions (kg CO2e per kWh per 1000 km) ───────────────────────
-const TRANSPORT_KG_CO2_PER_KWH_PER_1000KM = 2.5; // Road freight average
-
-// ─── End-of-life processing (kg CO2e per kWh) ────────────────────────────────
 const EOL_KG_CO2_PER_KWH: Record<string, number> = {
-  LFP: 8,
-  NMC: 12,
-  NCA: 13,
-  LCO: 15,
-  LMO: 10,
-  LEAD_ACID: 5,
-  SOLID_STATE: 14,
+  LFP: 8, NMC: 12, NCA: 13, LCO: 15, LMO: 10, LEAD_ACID: 5, SOLID_STATE: 14,
 };
+/** kg CO2e / (kWh capacity × 1000 km). */
+const TRANSPORT_KG_CO2_PER_KWH_PER_1000KM = 2.5;
+const CHARGING_EFFICIENCY = 0.92;
 
 export interface CarbonCalculationInput {
   bpan: string;
   chemistry: string;
+  /** Strictly positive nominal capacity (kWh); zero capacity has undefined intensity. */
   capacityKwh: number;
-  /** Estimated transport distance in km (cell origin to manufacturer + to end user) */
+  /** Total estimated transport distance (km); explicit zero is valid. */
   transportDistanceKm?: number;
-  /** Country/region code for grid intensity lookup */
+  /** Supported embedded region code; unknown codes are rejected, not silently relabelled. */
   gridRegion?: string;
-  /** Total energy discharged over lifetime (kWh) — for operational emissions */
+  /** Lifetime delivered/discharged energy (kWh); explicit zero overrides age/cycle defaults. */
   totalEnergyKwh?: number;
-  /** Battery age in years (for operational estimate if totalEnergyKwh not provided) */
   ageYears?: number;
-  /** Average cycles per year (for operational estimate) */
+  /** Full-equivalent cycles per year, not percentage. */
   cyclesPerYear?: number;
 }
 
@@ -67,70 +46,51 @@ export interface CarbonCalculationResult {
   operationalKgCo2: number;
   eolKgCo2: number;
   totalKgCo2: number;
+  /** g CO2e per kWh of grid energy; NOT kg/kWh. */
   gridCarbonIntensity: number;
   gridRegion: string;
-  /** kg CO2e per kWh of usable capacity — for comparison */
+  /** Lifecycle kg CO2e per kWh of NOMINAL capacity, not lifetime throughput. */
   intensityKgCo2PerKwh: number;
-  /** EU Article 7 compliance threshold (150 kg CO2e/kWh for 2027) */
-  euCompliant: boolean;
-  /** Breakdown percentages */
-  breakdown: {
-    manufacturingPct: number;
-    transportPct: number;
-    operationalPct: number;
-    eolPct: number;
-  };
+  /** Legacy field retained as unknown. No legal threshold is evaluated by this model. */
+  euCompliant: null;
+  complianceStatus: "not_assessed";
+  estimateStatus: "estimated_unverified";
+  method: "all_grid_charging_energy";
+  chargingEfficiency: number;
+  lifetimeDeliveredEnergyKwh: number;
+  energyDrawnFromGridKwh: number;
+  assumptions: string[];
+  /** Unrounded percentage shares of the unrounded total. */
+  breakdown: { manufacturingPct: number; transportPct: number; operationalPct: number; eolPct: number };
 }
 
-/**
- * Calculate the full lifecycle carbon footprint of a battery.
- */
 export function calculateCarbonFootprint(input: CarbonCalculationInput): CarbonCalculationResult {
   const {
-    bpan,
-    chemistry,
-    capacityKwh,
-    transportDistanceKm = 5000, // Default: cell origin (Asia) to India
-    gridRegion = "IN",
-    totalEnergyKwh,
-    ageYears = 3,
-    cyclesPerYear = 200,
+    bpan, chemistry, capacityKwh, transportDistanceKm = 5000,
+    gridRegion = "IN", totalEnergyKwh, ageYears = 3, cyclesPerYear = 200,
   } = input;
+  requireFiniteRange("capacity (kWh)", capacityKwh, Number.MIN_VALUE);
+  requireFiniteRange("transport distance (km)", transportDistanceKm, 0);
+  requireFiniteRange("age (years)", ageYears, 0);
+  requireFiniteRange("cycles/year", cyclesPerYear, 0);
+  if (totalEnergyKwh !== undefined) requireFiniteRange("delivered energy (kWh)", totalEnergyKwh, 0);
+  if (!Object.hasOwn(GRID_INTENSITY, gridRegion)) throw new RangeError("Unsupported grid region; supply a documented factor before adding a new region");
+  if (!Object.hasOwn(MFG_KG_CO2_PER_KWH, chemistry)) throw new RangeError("Unsupported chemistry; no invented NMC fallback");
 
-  const gridIntensity = GRID_INTENSITY[gridRegion] ?? GRID_INTENSITY["GLOBAL"];
-  const mfgFactor = MFG_KG_CO2_PER_KWH[chemistry] ?? MFG_KG_CO2_PER_KWH["NMC"];
-  const eolFactor = EOL_KG_CO2_PER_KWH[chemistry] ?? EOL_KG_CO2_PER_KWH["NMC"];
-
-  // Manufacturing emissions
-  const manufacturingKgCo2 = mfgFactor * capacityKwh;
-
-  // Transport emissions
-  const transportKgCo2 =
-    (TRANSPORT_KG_CO2_PER_KWH_PER_1000KM * capacityKwh * transportDistanceKm) / 1000;
-
-  // Operational emissions (charging losses ~15% round-trip efficiency loss)
-  const chargingEfficiency = 0.92; // 92% round-trip
-  const lifetimeEnergyKwh =
-    totalEnergyKwh ?? capacityKwh * cyclesPerYear * ageYears;
-  const energyDrawnFromGrid = lifetimeEnergyKwh / chargingEfficiency;
-  const operationalKgCo2 = (energyDrawnFromGrid * gridIntensity) / 1_000_000; // gCO2 → kgCO2
-
-  // End-of-life processing
-  const eolKgCo2 = eolFactor * capacityKwh;
-
+  const gridIntensity = GRID_INTENSITY[gridRegion];
+  const manufacturingKgCo2 = MFG_KG_CO2_PER_KWH[chemistry] * capacityKwh;
+  const transportKgCo2 = TRANSPORT_KG_CO2_PER_KWH_PER_1000KM * capacityKwh * (transportDistanceKm / 1000);
+  const lifetimeEnergyKwh = totalEnergyKwh ?? capacityKwh * cyclesPerYear * ageYears;
+  const energyDrawnFromGrid = lifetimeEnergyKwh / CHARGING_EFFICIENCY;
+  // kWh × g/kWh = g; 1000 g = 1 kg. Includes all charging energy AND losses.
+  const operationalKgCo2 = energyDrawnFromGrid * (gridIntensity / 1000);
+  const eolKgCo2 = EOL_KG_CO2_PER_KWH[chemistry] * capacityKwh;
   const totalKgCo2 = manufacturingKgCo2 + transportKgCo2 + operationalKgCo2 + eolKgCo2;
-
   const intensityKgCo2PerKwh = totalKgCo2 / capacityKwh;
-
-  // EU Battery Regulation 2023/1542 Article 7 — 150 kg CO2e/kWh threshold (2027)
-  const euCompliant = intensityKgCo2PerKwh <= 150;
-
-  const breakdown = {
-    manufacturingPct: Math.round((manufacturingKgCo2 / totalKgCo2) * 100),
-    transportPct: Math.round((transportKgCo2 / totalKgCo2) * 100),
-    operationalPct: Math.round((operationalKgCo2 / totalKgCo2) * 100),
-    eolPct: Math.round((eolKgCo2 / totalKgCo2) * 100),
-  };
+  for (const [name, value] of Object.entries({ manufacturingKgCo2, transportKgCo2, lifetimeEnergyKwh, energyDrawnFromGrid, operationalKgCo2, eolKgCo2, totalKgCo2, intensityKgCo2PerKwh })) {
+    requireFiniteRange(name, value, 0);
+  }
+  if (totalKgCo2 === 0) throw new RangeError("Capacity is below representable model precision");
 
   return {
     bpan,
@@ -139,14 +99,28 @@ export function calculateCarbonFootprint(input: CarbonCalculationInput): CarbonC
     operationalKgCo2: round2(operationalKgCo2),
     eolKgCo2: round2(eolKgCo2),
     totalKgCo2: round2(totalKgCo2),
-    gridCarbonIntensity: gridIntensity,
-    gridRegion,
+    gridCarbonIntensity: gridIntensity, gridRegion,
     intensityKgCo2PerKwh: round2(intensityKgCo2PerKwh),
-    euCompliant,
-    breakdown,
+    euCompliant: null, complianceStatus: "not_assessed", estimateStatus: "estimated_unverified",
+    method: "all_grid_charging_energy", chargingEfficiency: CHARGING_EFFICIENCY,
+    lifetimeDeliveredEnergyKwh: lifetimeEnergyKwh, energyDrawnFromGridKwh: energyDrawnFromGrid,
+    assumptions: [
+      "Embedded historical grid and process factors are unverified estimates, not a certified lifecycle assessment.",
+      "Operational emissions count all charging energy at assumed 92% efficiency, not only losses.",
+      "Defaults, when omitted: 5000 km transport, 3 years, 200 full-equivalent cycles/year, IN grid.",
+      "No recycling credit, time-varying grid mix, electricity provenance or regulatory compliance evaluation.",
+      "Mass outputs rounded to 0.01 kg; total rounded independently, so displayed stages may differ by 0.01 kg.",
+    ],
+    breakdown: {
+      manufacturingPct: manufacturingKgCo2 / totalKgCo2 * 100,
+      transportPct: transportKgCo2 / totalKgCo2 * 100,
+      operationalPct: operationalKgCo2 / totalKgCo2 * 100,
+      eolPct: eolKgCo2 / totalKgCo2 * 100,
+    },
   };
 }
 
 function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  // Avoid overflowing n * 100 for a finite large value.
+  return Number(n.toFixed(2));
 }

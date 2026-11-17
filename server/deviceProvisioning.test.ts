@@ -275,3 +275,41 @@ describe("Device Provisioning — input validation", () => {
     expect(() => schema.parse({ id: 1, status: "active" })).not.toThrow();
   });
 });
+
+// Legacy CRUD cases above exercise an in-memory mock, not SQL authorization.
+// These additional cases exercise the new actual owner-scoped query helpers.
+describe("Device access boundary — actual helpers with inert query doubles", () => {
+  it("denies invalid actors before querying the database", async () => {
+    const { getDb } = await import("./db");
+    vi.mocked(getDb).mockClear();
+    const { listOwnedDevices, getOwnedDevice } = await import("./deviceAccessBoundary");
+    await expect(listOwnedDevices({ id: 0 })).rejects.toThrow("denied");
+    expect(await getOwnedDevice({ id: -1 }, 1)).toBeNull();
+    expect(getDb).not.toHaveBeenCalled();
+  });
+  it("database absence is explicit failure rather than an empty success", async () => {
+    const { listOwnedDevices, getOwnedDeviceStats } = await import("./deviceAccessBoundary");
+    await expect(listOwnedDevices({ id: 7 })).rejects.toThrow("unavailable");
+    await expect(getOwnedDeviceStats({ id: 7 })).rejects.toThrow("unavailable");
+  });
+  it("uses explicit nonsecret SQL projections and an owner predicate", async () => {
+    const { getDb } = await import("./db");
+    const projections: any[] = [], predicates: any[] = [];
+    const select = vi.fn((columns: any) => {
+      projections.push(columns);
+      const query: any = { then: (resolve: any) => Promise.resolve([]).then(resolve) };
+      for (const method of ["from", "orderBy", "limit", "offset", "groupBy"]) query[method] = vi.fn(() => query);
+      query.where = vi.fn((condition: unknown) => { predicates.push(condition); return query; });
+      return query;
+    });
+    vi.mocked(getDb).mockResolvedValueOnce({ select } as any);
+    const { listOwnedDevices } = await import("./deviceAccessBoundary");
+    const result = await listOwnedDevices({ id: 7 }, { limit: 10 });
+    expect(result).toEqual({ items: [], total: 0 });
+    expect(Object.keys(projections[0])).not.toContain("mqttPassword");
+    expect(Object.keys(projections[0])).not.toContain("mqttUsername");
+    expect(Object.keys(projections[0])).toContain("registeredBy");
+    expect(predicates).toHaveLength(2);
+    expect(predicates.every(Boolean)).toBe(true);
+  });
+});

@@ -11,6 +11,7 @@
  */
 
 import Stripe from "stripe";
+import { blockMarketplaceMoneyAction } from "./marketplaceSafety";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { stripePaymentIntents, marketplaceOffers, marketplaceListings } from "../drizzle/schema";
@@ -69,6 +70,7 @@ export interface CheckoutSessionResult {
 export async function createCheckoutSession(
   params: CreateCheckoutParams
 ): Promise<CheckoutSessionResult> {
+  blockMarketplaceMoneyAction();
   const stripe = getStripe();
 
   // Stripe minimum: $0.50 USD equivalent. For INR that's ~42 paise.
@@ -143,6 +145,8 @@ export async function handleStripeWebhook(
   rawBody: Buffer,
   signature: string
 ): Promise<{ received: boolean; eventType?: string }> {
+  // Reject with existing non-success webhook response; manual reconciliation remains required.
+  blockMarketplaceMoneyAction();
   const stripe = getStripe();
 
   let event: Stripe.Event;

@@ -1,5 +1,8 @@
 import { useState, useId } from "react";
 import { trpc } from "@/lib/trpc";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../server/routers";
+import { twinChartData, comparisonChartData, daysToMarkerLabel } from "@/lib/numericalPresentation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,15 +14,17 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Area, AreaChart,
 } from "recharts";
-import { Cpu, TrendingDown, Calendar, Zap, AlertTriangle, CheckCircle2, Clock, RefreshCw, GitCompare, ArrowLeftRight } from "lucide-react";
+import { Cpu, TrendingDown, Calendar, Zap, Clock, RefreshCw, GitCompare, ArrowLeftRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+
+type Outputs = inferRouterOutputs<AppRouter>;
 
 export default function DigitalTwin() {
   const [bpan, setBpan] = useState("");
   const [bpanB, setBpanB] = useState("");
   const [horizon, setHorizon] = useState(365); // default 12 months
-  const [result, setResult] = useState<any>(null);
-  const [compareResult, setCompareResult] = useState<any>(null);
+  const [result, setResult] = useState<Outputs["digitalTwin"]["generate"] | null>(null);
+  const [compareResult, setCompareResult] = useState<Outputs["digitalTwin"]["compare"] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
 
@@ -87,27 +92,7 @@ export default function DigitalTwin() {
     }
   };
 
-  const nominalPoints = result?.scenarios?.nominal ?? [];
-  const conservativePoints = result?.scenarios?.conservative ?? [];
-  const aggressivePoints = result?.scenarios?.aggressive ?? [];
-  const chartData = nominalPoints.map((p: any, i: number) => ({
-    day: p.day,
-    nominal: Number(p.predictedSoh.toFixed(1)),
-    conservative: Number((conservativePoints[i]?.predictedSoh ?? p.predictedSoh).toFixed(1)),
-    aggressive: Number((aggressivePoints[i]?.predictedSoh ?? p.predictedSoh).toFixed(1)),
-  }));
-
-  const getStatusColor = (status: string) => {
-    if (status === "healthy") return "text-emerald-400";
-    if (status === "degrading") return "text-amber-400";
-    return "text-red-400";
-  };
-
-  const getStatusIcon = (status: string) => {
-    if (status === "healthy") return <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />;
-    if (status === "degrading") return <AlertTriangle className="w-4 h-4 text-amber-400" aria-hidden="true" />;
-    return <AlertTriangle className="w-4 h-4 text-red-400" aria-hidden="true" />;
-  };
+  const chartData = result ? twinChartData(result) : [];
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -119,16 +104,18 @@ export default function DigitalTwin() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Battery Digital Twin</h1>
           <p className="text-sm text-muted-foreground">
-            Physics-informed trajectory simulation with confidence intervals
+            Uncalibrated scenario estimates — not hardware safety or accuracy certification
           </p>
         </div>
         <Badge
           variant="outline"
           className="ml-auto border-violet-500/30 text-violet-400 bg-violet-500/10"
         >
-          v2.0
+          Demo / uncalibrated
         </Badge>
       </div>
+
+      <p className="text-sm text-muted-foreground">Scenarios assume future usage and temperature, not measured conditions. Current SOH must have a verified source. No calibrated confidence interval, hardware control or cutoff protection is provided.</p>
 
       {/* Input Panel */}
       <Card className="border-border/50 bg-card/50">
@@ -164,12 +151,12 @@ export default function DigitalTwin() {
                     <SelectValue placeholder="Select a battery…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {batteries.map((b: any) => (
+                    {batteries.map((b) => (
                       <SelectItem key={b.bpan} value={b.bpan} className="font-mono">
                         <span className="font-mono">{b.bpan}</span>
                         {b.chemistry && (
                           <span className="ml-2 text-xs text-muted-foreground">
-                            {b.chemistry} · {b.nominalCapacityKwh ? `${b.nominalCapacityKwh} kWh` : ""}
+                            {b.chemistry} · {b.capacityKwh != null ? `${b.capacityKwh} kWh` : "capacity unknown"}
                           </span>
                         )}
                       </SelectItem>
@@ -245,12 +232,12 @@ export default function DigitalTwin() {
                     <SelectValue placeholder="Select second battery…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {batteries.filter((b: any) => b.bpan !== bpan).map((b: any) => (
+                    {batteries.filter((b) => b.bpan !== bpan).map((b) => (
                       <SelectItem key={b.bpan} value={b.bpan} className="font-mono">
                         <span className="font-mono">{b.bpan}</span>
                         {b.chemistry && (
                           <span className="ml-2 text-xs text-muted-foreground">
-                            {b.chemistry} · {b.nominalCapacityKwh ? `${b.nominalCapacityKwh} kWh` : ""}
+                            {b.chemistry} · {b.capacityKwh != null ? `${b.capacityKwh} kWh` : "capacity unknown"}
                           </span>
                         )}
                       </SelectItem>
@@ -290,7 +277,7 @@ export default function DigitalTwin() {
         role="status"
       >
         {result
-          ? `Digital twin generated for ${result.bpan ?? bpan}. Current SOH: ${result.currentSoh?.toFixed(1)}%. Status: ${result.healthStatus ?? "unknown"}.`
+          ? `Digital twin generated for ${result.bpan ?? bpan}. Current SOH: ${result.currentSoh?.toFixed(1)}%. Uncalibrated estimate; safety status not assessed.`
           : isLoading
           ? "Generating digital twin simulation, please wait."
           : ""}
@@ -318,7 +305,7 @@ export default function DigitalTwin() {
             {(["a", "b"] as const).map((key) => {
               const side = compareResult[key];
               const pts = side.forecast?.scenarios?.nominal ?? [];
-              const endSoh = pts[pts.length - 1]?.predictedSoh;
+              const endSoh = pts[pts.length - 1]?.soh;
               return (
                 <Card key={key} className={`border-border/50 ${key === "a" ? "bg-violet-500/5" : "bg-blue-500/5"}`}>
                   <CardHeader className="pb-2">
@@ -346,16 +333,14 @@ export default function DigitalTwin() {
                         <dd className="text-sm font-medium text-foreground">{side.capacityKwh} kWh</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-muted-foreground">RUL (nominal)</dt>
+                        <dt className="text-xs text-muted-foreground">Days to 80% marker (estimate)</dt>
                         <dd className="text-sm font-medium text-foreground">
-                          {side.forecast?.rulDaysNominal ? `${side.forecast.rulDaysNominal} days` : "N/A"}
+                          {daysToMarkerLabel(side.forecast.rulDaysNominal)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-muted-foreground">Health Status</dt>
-                        <dd className={`text-sm font-medium capitalize ${getStatusColor(side.forecast?.healthStatus)}`}>
-                          {side.forecast?.healthStatus ?? "—"}
-                        </dd>
+                        <dt className="text-xs text-muted-foreground">Model status</dt>
+                        <dd className="text-sm font-medium text-amber-400">Demo / uncalibrated</dd>
                       </div>
                     </dl>
                   </CardContent>
@@ -379,19 +364,12 @@ export default function DigitalTwin() {
               {/* Accessible summary for screen readers */}
               <p className="sr-only">
                 Comparison chart. Battery A ({compareResult.a.bpan}) nominal SOH ends at{" "}
-                {(compareResult.a.forecast?.scenarios?.nominal ?? []).at(-1)?.predictedSoh?.toFixed(1) ?? "—"}%.
+                {(compareResult.a.forecast?.scenarios?.nominal ?? []).at(-1)?.soh?.toFixed(1) ?? "—"}%.
                 Battery B ({compareResult.b.bpan}) nominal SOH ends at{" "}
-                {(compareResult.b.forecast?.scenarios?.nominal ?? []).at(-1)?.predictedSoh?.toFixed(1) ?? "—"}%.
+                {(compareResult.b.forecast?.scenarios?.nominal ?? []).at(-1)?.soh?.toFixed(1) ?? "—"}%.
               </p>
               {(() => {
-                const ptsA = compareResult.a.forecast?.scenarios?.nominal ?? [];
-                const ptsB = compareResult.b.forecast?.scenarios?.nominal ?? [];
-                const maxLen = Math.max(ptsA.length, ptsB.length);
-                const chartData = Array.from({ length: maxLen }, (_, i) => ({
-                  day: ptsA[i]?.day ?? ptsB[i]?.day ?? i * 30,
-                  batteryA: ptsA[i] ? Number(ptsA[i].predictedSoh.toFixed(1)) : null,
-                  batteryB: ptsB[i] ? Number(ptsB[i].predictedSoh.toFixed(1)) : null,
-                }));
+                const chartData = comparisonChartData(compareResult.a.forecast, compareResult.b.forecast);
                 return (
                   <ResponsiveContainer width="100%" height={320} aria-hidden="true">
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -407,7 +385,7 @@ export default function DigitalTwin() {
                         labelFormatter={(l) => `Day ${l}`}
                       />
                       <ReferenceLine y={80} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: "80%", fill: "#f59e0b", fontSize: 10 }} />
-                      <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "60% EOL", fill: "#ef4444", fontSize: 10 }} />
+                      <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "60% reference only", fill: "#ef4444", fontSize: 10 }} />
                       <Line type="monotone" dataKey="batteryA" stroke="#8b5cf6" strokeWidth={2} dot={false} name="batteryA" />
                       <Line type="monotone" dataKey="batteryB" stroke="#3b82f6" strokeWidth={2} dot={false} name="batteryB" />
                     </LineChart>
@@ -433,21 +411,21 @@ export default function DigitalTwin() {
                 },
                 {
                   label: "Predicted SOH (EOH)",
-                  value: `${result.scenarios?.nominal?.[result.scenarios.nominal.length - 1]?.predictedSoh?.toFixed(1) ?? "—"}%`,
+                  value: `${result.scenarios?.nominal?.[result.scenarios.nominal.length - 1]?.soh?.toFixed(1) ?? "—"}%`,
                   icon: <TrendingDown className="w-4 h-4 text-amber-400" aria-hidden="true" />,
                   color: "text-amber-400",
                 },
                 {
-                  label: "Remaining Useful Life",
-                  value: result.rulDaysNominal ? `${result.rulDaysNominal} days` : "N/A",
+                  label: "Days to 80% marker (estimate)",
+                  value: daysToMarkerLabel(result.rulDaysNominal),
                   icon: <Calendar className="w-4 h-4 text-blue-400" aria-hidden="true" />,
                   color: "text-blue-400",
                 },
                 {
-                  label: "Health Status",
-                  value: result.healthStatus ?? "—",
-                  icon: getStatusIcon(result.healthStatus),
-                  color: getStatusColor(result.healthStatus),
+                  label: "Model status",
+                  value: "Demo / uncalibrated",
+                  icon: <Cpu className="w-4 h-4 text-amber-400" aria-hidden="true" />,
+                  color: "text-amber-400",
                 },
               ].map((card) => (
                 <Card key={card.label} className="border-border/50 bg-card/50">
@@ -471,7 +449,7 @@ export default function DigitalTwin() {
                 SOH Trajectory Forecast
               </CardTitle>
               <CardDescription>
-                Predicted state-of-health with ±95% confidence interval
+                Estimated scenarios, not a statistical confidence interval; 80% and 60% markers are illustrative only
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -523,13 +501,13 @@ export default function DigitalTwin() {
                     y={80}
                     stroke="#f59e0b"
                     strokeDasharray="4 4"
-                    label={{ value: "80% threshold", fill: "#f59e0b", fontSize: 11 }}
+                    label={{ value: "80% illustrative marker", fill: "#f59e0b", fontSize: 11 }}
                   />
                   <ReferenceLine
                     y={60}
                     stroke="#ef4444"
                     strokeDasharray="4 4"
-                    label={{ value: "60% EOL", fill: "#ef4444", fontSize: 11 }}
+                    label={{ value: "60% reference only", fill: "#ef4444", fontSize: 11 }}
                   />
                   <Area
                     type="monotone"
@@ -562,50 +540,15 @@ export default function DigitalTwin() {
             </CardContent>
           </Card>
 
-          {/* Degradation Breakdown */}
-          {result.degradationBreakdown && (
-            <Card className="border-border/50 bg-card/50">
-              <CardHeader>
-                <CardTitle className="text-base">Degradation Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Object.entries(result.degradationBreakdown).map(([key, val]: [string, any]) => (
-                    <div key={key} className="space-y-1">
-                      <dt className="text-xs text-muted-foreground capitalize">
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </dt>
-                      <dd className="text-sm font-semibold text-foreground">
-                        {typeof val === "number" ? `${val.toFixed(2)}%` : String(val)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recommendations */}
-          {result.recommendations && result.recommendations.length > 0 && (
-            <Card className="border-border/50 bg-card/50">
-              <CardHeader>
-                <CardTitle className="text-base">Recommendations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2" aria-label="Maintenance recommendations">
-                  {result.recommendations.map((rec: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <CheckCircle2
-                        className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"
-                        aria-hidden="true"
-                      />
-                      {rec}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="border-border/50 bg-card/50">
+            <CardHeader><CardTitle className="text-base">Uncalibrated model assumptions</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-2">Model: {result.modelVersion}. Evaluated: {result.evaluationDate}. Accuracy and hardware safety status are unknown.</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                {result.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}
+              </ul>
+            </CardContent>
+          </Card>
        </>)}
     </div>
   );

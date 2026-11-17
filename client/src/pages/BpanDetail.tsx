@@ -15,7 +15,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, AreaChart, Area,
 } from "recharts";
-import { useTelemetrySocket } from "@/hooks/useTelemetrySocket";
+import type { UseTelemetrySocketResult } from "@/hooks/useTelemetrySocket";
+import { BPAN_LOCAL_PILOT_LABEL, bpanFormatLabel } from "@shared/bpanContract";
 import { useState, useMemo } from "react";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -80,7 +81,7 @@ export default function BpanDetail() {
   usePageTitle("Battery Details");
   const params = useParams<{ bpan: string }>();
   const bpan = params.bpan ?? "";
-  const [liveEnabled, setLiveEnabled] = useState(true);
+  const liveEnabled = false;
   const [historyPage, setHistoryPage] = useState(0);
   const HISTORY_PAGE_SIZE = 20;
 
@@ -94,21 +95,6 @@ export default function BpanDetail() {
     onSuccess: () => { toast.success("AI prediction completed!"); refetch(); },
     onError: (e) => toast.error(e.message),
   });
-  const simulateMutation = trpc.telemetry.simulate.useMutation({
-    onSuccess: (d) => {
-      toast.success(`Simulated ${d.records} telemetry records`);
-      refetch();
-      refetchHistory();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const complianceCertMutation = trpc.pdf.batteryComplianceCert.useMutation({
-    onSuccess: (d) => {
-      toast.success("Compliance Certificate ready!", { description: "Opening in new tab..." });
-      window.open(d.url, "_blank");
-    },
-    onError: (e) => toast.error("Certificate generation failed", { description: e.message }),
-  });
   const pdfMutation = trpc.pdf.healthPassport.useMutation({
     onSuccess: (d) => {
       toast.success("Health Passport PDF ready!", { description: "Opening in new tab..." });
@@ -117,8 +103,10 @@ export default function BpanDetail() {
     onError: (e) => toast.error("PDF generation failed", { description: e.message }),
   });
 
-  // Live Socket.io stream — auto-starts simulation when subscribed
-  const { latest, history: liveHistory, connectionState, anomalies } = useTelemetrySocket(liveEnabled ? bpan : null);
+  // The existing socket hook opens a connection even with a null BPAN. Do not call it until owned-device streaming is verified.
+  const { latest, history: liveHistory, connectionState, anomalies } = useMemo<UseTelemetrySocketResult>(() => ({
+    latest: null, history: [], connectionState: "disconnected", anomalies: [], isSubscribed: false, pushReading: () => {},
+  }), []);
 
   const voltageChartData = useMemo(() =>
     liveHistory.map((r, i) => ({ idx: i + 1, vPack: r.vPack, vMin: r.vMin, vMax: r.vMax })),
@@ -157,13 +145,16 @@ export default function BpanDetail() {
       <div className="p-6 text-center py-20">
         <QrCode className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
         <h2 className="font-display text-xl font-bold mb-2">Battery Not Found</h2>
-        <p className="text-muted-foreground text-sm mb-6">BPAN <span className="font-mono text-primary">{bpan}</span> is not registered.</p>
+        <p className="text-muted-foreground text-sm mb-6">Local asset <span className="font-mono text-primary">{bpan}</span> was not returned. This is not an official BPAN registry lookup.</p>
         <Link href="/batteries"><Button variant="outline" className="border-border">Back to Registry</Button></Link>
       </div>
     );
   }
 
   const { battery, latestTelemetry, latestSoh, sohHistory } = data;
+  if (battery.bpan !== bpan || !Number.isSafeInteger(battery.id) || battery.id <= 0) {
+    return <div className="p-6" role="alert">Battery identity mismatch. Actions are unavailable; do not substitute a caller-provided battery ID.</div>;
+  }
   const displayTelemetry = latest ?? latestTelemetry;
   const soh = Number(latestSoh?.predictedSoh ?? battery.currentSoh ?? 100);
   const sohColor = soh > 75 ? "text-primary" : soh > 50 ? "text-chart-4" : "text-destructive";
@@ -195,18 +186,19 @@ export default function BpanDetail() {
           <Button
             size="sm" variant="outline"
             className={`border-border h-8 text-xs ${liveEnabled ? "border-primary/40 text-primary" : ""}`}
-            onClick={() => setLiveEnabled((v) => !v)}
+            disabled
+            title="Disabled until read-only device authorization and synthetic-data isolation are verified"
           >
-            {liveEnabled ? <><Square className="w-3 h-3 mr-1.5 fill-current" /> Stop Live</> : <><Play className="w-3 h-3 mr-1.5" /> Start Live</>}
+            <WifiOff className="w-3 h-3 mr-1.5" /> Live Connection Gated
           </Button>
           <Button
             size="sm" variant="outline"
             className="border-border h-8 text-xs"
-            disabled={simulateMutation.isPending}
-            onClick={() => simulateMutation.mutate({ bpan, batteryId: battery.id, cycles: 10 })}
+            disabled
+            title="Synthetic readings must not be written to a real battery's history"
           >
             <Activity className="w-3.5 h-3.5 mr-1.5" />
-            {simulateMutation.isPending ? "Simulating..." : "Simulate (10 pts)"}
+            Simulation Gated
           </Button>
           <Button
             size="sm" variant="outline"
@@ -220,11 +212,11 @@ export default function BpanDetail() {
           <Button
             size="sm" variant="outline"
             className="border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs"
-            disabled={complianceCertMutation.isPending}
-            onClick={() => complianceCertMutation.mutate({ bpan })}
+            disabled
+            title="No authoritative compliance assessment or BPAN allocation has been verified"
           >
             <Shield className="w-3.5 h-3.5 mr-1.5" />
-            {complianceCertMutation.isPending ? "Generating..." : "Compliance Cert"}
+            Certification Unverified
           </Button>
           <Button
             size="sm"
@@ -236,6 +228,10 @@ export default function BpanDetail() {
             {predictMutation.isPending ? "Predicting..." : "Run AI Prediction"}
           </Button>
         </div>
+      </div>
+
+      <div role="note" className="border border-chart-4/30 bg-chart-4/10 rounded-xl p-4 text-xs">
+        {BPAN_LOCAL_PILOT_LABEL}. {bpanFormatLabel(battery.bpan)}. The stored row supplies identity and specifications; legacy codes are not rewritten. Live connection and simulation are disabled. Stored telemetry may include historical synthetic data and is not proof of a physical battery connection or a safety measurement.
       </div>
 
       {/* Thermal anomaly banner */}
@@ -343,7 +339,7 @@ export default function BpanDetail() {
           ) : (
             <div className="text-center py-6">
               <Activity className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-muted-foreground text-xs">No telemetry yet. Click "Start Live" or "Simulate" to generate data.</p>
+              <p className="text-muted-foreground text-xs">No stored telemetry. Physical connection requires a separately approved, read-only pilot; this page cannot start hardware or simulation.</p>
             </div>
           )}
         </div>
@@ -467,7 +463,7 @@ export default function BpanDetail() {
         <div className="bg-card border border-border rounded-xl p-8 text-center">
           <Loader2 className="w-8 h-8 text-primary/40 mx-auto mb-3 animate-spin" />
           <p className="font-mono text-xs text-muted-foreground">Waiting for live telemetry stream…</p>
-          <p className="font-mono text-[10px] text-muted-foreground/60 mt-1">The simulator starts automatically when connected. Or click "Simulate (10 pts)" for instant data.</p>
+          <p className="font-mono text-[10px] text-muted-foreground/60 mt-1">Live streaming is gated pending owned-device validation. Simulation is not a physical connection.</p>
         </div>
       )}
 
@@ -511,7 +507,7 @@ export default function BpanDetail() {
         {historyRows.length === 0 ? (
           <div className="p-8 text-center">
             <Database className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-muted-foreground text-xs">No telemetry readings yet. Start the live stream or simulate data.</p>
+            <p className="text-muted-foreground text-xs">No stored readings. Use the approved local pilot procedure; do not generate synthetic history for a real asset.</p>
           </div>
         ) : (
           <>

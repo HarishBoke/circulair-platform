@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "platform": "linux/amd64",
+  "images": {
+    "kuma": {
+      "repository": "docker.io/louislam/uptime-kuma",
+      "tag": "2.5.12",
+      "tag_digest": "sha256:8e4b6bef96417ec98a35dc103c99cc64fc229a01e584e56d95d9004d2003c02a",
+      "amd64_digest": "sha256:bc81e600a1b18824e7eaecbb0167c2a1c732475fc499c1e3253752b965946036",
+      "reference": "docker.io/louislam/uptime-kuma:2.5.12@sha256:bc81e600a1b18824e7eaecbb0167c2a1c732475fc499c1e3253752b965946036",
+      "config_digest": "sha256:5333e469894c80fc0b1ad06190595a6af4dd46679a3ee665b27605eb53fd79ff",
+      "runtime": {
+        "User": null,
+        "Entrypoint": [
+          "/usr/bin/dumb-init",
+          "--"
+        ],
+        "Cmd": [
+          "node",
+          "server/server.js"
+        ],
+        "WorkingDir": "/app"
+      },
+      "verified_at": "Tue, 17 Nov 2026 19:50:05 GMT",
+      "source": "https://registry-1.docker.io/v2/louislam/uptime-kuma/manifests/2.5.12"
+    },
+    "ntfy": {
+      "repository": "docker.io/binwiederhier/ntfy",
+      "tag": "v2.38.1",
+      "tag_digest": "sha256:038da2be5e668fee6d36a62884eea48975e1b71c29a56964e5298c1b9165a573",
+      "amd64_digest": "sha256:6ceb27333175e3ce7d021bb883658858f2b8b883db316a73d0755dfa0b306fc4",
+      "reference": "docker.io/binwiederhier/ntfy:v2.38.1@sha256:6ceb27333175e3ce7d021bb883658858f2b8b883db316a73d0755dfa0b306fc4",
+      "config_digest": "sha256:758c18e6e6d58133f2684ca182aff417324db8df43511b4d8c52354fa341c6a1",
+      "runtime": {
+        "User": null,
+        "Entrypoint": [
+          "ntfy"
+        ],
+        "Cmd": null,
+        "WorkingDir": "/"
+      },
+      "verified_at": "Tue, 17 Nov 2026 19:50:08 GMT",
+      "source": "https://registry-1.docker.io/v2/binwiederhier/ntfy/manifests/v2.38.1"
+    },
+    "alertmanager": {
+      "repository": "docker.io/prom/alertmanager",
+      "tag": "v0.35.0",
+      "tag_digest": "sha256:e638797febd034838eca8b98cdbd46f951e9bf7f178777aa8669167406a9946c",
+      "amd64_digest": "sha256:0f6727a39ff00b6cf95e8a5ebaf7442c55af855b79c689fb9a060e2bada1ecbf",
+      "reference": "docker.io/prom/alertmanager:v0.35.0@sha256:0f6727a39ff00b6cf95e8a5ebaf7442c55af855b79c689fb9a060e2bada1ecbf",
+      "config_digest": "sha256:0f7fe4e2351f9f07c89ddc48be52c7bfd24577c5df6fccc0a59bcb2178a75a01",
+      "runtime": {
+        "User": "nobody",
+        "Entrypoint": [
+          "/bin/alertmanager"
+        ],
+        "Cmd": [
+          "--config.file=/etc/alertmanager/alertmanager.yml",
+          "--storage.path=/alertmanager"
+        ],
+        "WorkingDir": "/alertmanager"
+      },
+      "verified_at": "Tue, 17 Nov 2026 19:50:11 GMT",
+      "source": "https://registry-1.docker.io/v2/prom/alertmanager/manifests/v0.35.0"
+    },
+    "caddy": {
+      "repository": "docker.io/library/caddy",
+      "tag": "2.11.9",
+      "tag_digest": "sha256:4851e54a46b206517c574821bb5cc67f170d2156041e9fbc4c9193b45e84a75b",
+      "amd64_digest": "sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424",
+      "reference": "docker.io/library/caddy:2.11.9@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424",
+      "config_digest": "sha256:5813f7eb9b94fac4970f9f576695fe1ed1d53d41586fd3eaa350caf7c4627d9c",
+      "runtime": {
+        "User": null,
+        "Entrypoint": null,
+        "Cmd": [
+          "caddy",
+          "run",
+          "--config",
+          "/etc/caddy/Caddyfile",
+          "--adapter",
+          "caddyfile"
+        ],
+        "WorkingDir": "/srv"
+      },
+      "verified_at": "Tue, 17 Nov 2026 19:50:13 GMT",
+      "source": "https://registry-1.docker.io/v2/library/caddy/manifests/2.11.9"
+    }
+  }
+}

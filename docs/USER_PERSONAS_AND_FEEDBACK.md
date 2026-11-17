@@ -1,293 +1,339 @@
-# Circul-AI-r Platform — Fictional Personas and Real-User Feedback Plan
+# Circul-AI-r Platform — Fictional Role Composites and Real-User Feedback Guide
 
-**Document Version:** 3.0 — bounded handoff refresh
-**Date:** 17 November 2026
-**Prepared for:** Circul-AI-r / Setoo product and engineering handoff
-**Purpose:** Seven fictional composite role groups, safe voluntary recruitment and evidence-based UAT capture
-**Research status:** No actual participant recruitment, interviews, quotes, ratings, employer endorsements or sign-offs are evidenced by this document
+**Document version:** 4.0 — 18 November 2026 boundary refresh
+**Purpose:** Plan safe manual UAT for seven user categories; recruit real consenting reviewers and capture evidence without inventing results.
+**Research status:** No real recruitment, participant session, quote, completed scorecard, consensus or sign-off is evidenced here.
 
-## 1. Truthful Persona and Research Boundary
+## 1. What This Document Is — and Is Not
 
-**Every profile below is a FICTIONAL COMPOSITE**, a planning aid rather than a real person or recruited participant. The personal names, employers, ages, financial losses and operational volumes in the July version were not supported by research evidence and have been removed. Generic OEM, recycler, BESS, service, regulator, manufacturer and operator descriptions imply no employer or government endorsement. Goals and pain points are **hypotheses to investigate**, not observed feedback.
+**All seven personas below are FICTIONAL COMPOSITES.** They describe possible workflows and needs to investigate, not real profiles or findings. There are no invented personal names, companies, employers, ages, operational volumes, losses or quotations. A role description implies no organization, OEM or government endorsement. Goals and pain points are hypotheses until a consenting real reviewer supplies evidence.
 
-No feedback has been invented. The questions, schedules, forms and workflow expectations are a proposed protocol. They cannot be counted as real UAT results or approvals. Record actual consenting participants separately under pseudonymous IDs, without representing them as the composites or implying that their employer endorses the product.
+The earlier July “real reviewers,” average scores, approval counts and completed-UAT claims remain superseded. The previous seven specialist composites are replaced with seven broader workflow categories so public users, operators, fleet owners, recyclers, OEM reviewers, administrators and integration developers each have a practical path. Procurement, service, manufacturing and compliance interests can be captured within the appropriate category without claiming an additional real participant or certified role.
 
-This document supersedes the July “real reviewers” and launch-score claims. Use [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) for current consolidated evidence and [RELEASE_GATES.md](RELEASE_GATES.md) for release decisions. Use the dated report and evidence summary to identify the exact verified snapshot. Historical feature inventories, development completion and mock/unit passes are not acceptance certificates; there is no guaranteed uptime, 100% functionality, platform-wide security/compliance or neural accuracy evidence.
+This is a **recruitment and feedback protocol, not an executed study or acceptance certificate**. A facilitator script is proposed wording, not a participant quotation. A filled research record must come from an actual consented session. Internal engineering QA must be labeled internal, not external-user research.
 
-### 1.1 Current product boundary for research invitations
+Use [QA_DOCUMENTATION.md](QA_DOCUMENTATION.md) for the current manual cases, expected requirements, prior unrun cases, safety rule and role-specific release criteria. [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) and [RELEASE_GATES.md](RELEASE_GATES.md) provide engineering/release context; check their date and exact build before using older statements. Preference or confidence cannot certify privacy, payment, hardware, physics, scientific accuracy or compliance.
 
-Render commit `54920faa9c392fa03a1689e4cbe151d67323edda` is live; configuration redeploy `dep-dbu0nbg8v5cc73bj680g` was observed live on 17 November at 08:11:24 UTC. Managed PostgreSQL new login/session user `circulair_runtime_20261117`, rotated random 64-character JWT secret and canonical `APP_URL` have recorded configuration evidence. AutoDeploy is Off; the old exposed database credential remains valid and not revoked. The protective Render logical export was ready at 07:41 UTC but was not downloaded or restore-tested. The additive outbox table/index were applied and verified; PagerDuty remains disabled (`false`), with no real on-call test.
+### 1.1 Truthful product description for invitations
 
-Recorded production HTTP smoke was **14/14** and anonymous telemetry handshake returned `Unauthorized`. **Successful production email/password login has not been verified.** These observations do not qualify production as a safe default user-test environment or certify provider workflows.
-
-The November 17 development fixes cover alert authorization, MQTT synthetic-source preservation, simulator resistance units, role-aware alert UI, environment-only PostgreSQL resolution, explicit-input admin bootstrap scripts and gateway REST transport. Final local verification is complete; these newer fixes are **not deployed to Render**. The saved development identifier is recorded in the evidence summary; the live release remains `54920faa`. Consult [RETEST_SECURITY_REPORT.md](RETEST_SECURITY_REPORT.md) for exact counts, commands, warnings and remaining defects. Strix has not run; dependency advisories and broad launch blockers remain.
-
-**Global alert rules are administrator-only in the local remediation**, including listing rules/defaults and all changes. Ordinary participants should request an administrator change; do not ask them to configure global rules themselves. Viewing/marking an account alert is not PagerDuty acknowledgement or resolution. Declared MQTT demo/test labels suppress paging but do not establish hardware identity or complete simulation data/state isolation. The simulator is an uncalibrated demo, not a battery safety model.
-
-## 2. Seven Fictional Composite Role Groups
-
-All tasks below are **planned, unverified or blocked** until separately executed with recorded evidence in an approved isolated staging environment. Use small synthetic fixtures; no customer datasets, live devices, real purchases or regulatory submissions. Label/disable known unsupported features rather than asking participants to pretend they work.
-
-### Persona P1 — OEM Fleet Operations Manager (FICTIONAL COMPOSITE)
-
-| Attribute | Planning hypothesis |
+| Boundary | What the facilitator may accurately say |
 |---|---|
-| Organization type | Generic EV OEM / fleet operator; no named employer |
-| Platform role group | OEM |
-| Technical context | Dashboard/CSV user; limited API experience |
-| Goal hypothesis | Reconcile registered packs, review condition and prepare service/warranty decisions |
-| Pain-point hypothesis | Fragmented spreadsheets/BMS exports and unclear asset identifiers |
+| Production | Full commit **`122e209b52cdcd01f55690363193d7a09659e0c2`**, deployment **`dep-dbua7eui0phs7397qbng`**, latest read-only settings **17 November 2026, 23:09:40 UTC**, **Set 5k / Standard / Oregon / main**, service **`srv-d87hoqcm0tmc739tv580`**, **AutoDeploy Off / PR Previews Off**. Same bounded native login **200 at 19:17 and 19:40 UTC**, dashboard reached, password hash absent. No new production login/release/SQL/resources/payment inventory; production reload/logout and broad tenant acceptance remain unperformed |
+| Local repairs | Source is an **unreleased candidate**; publication status is separately dated delivery evidence. Exact **Node 24.14.1 / pnpm 10.34.5** final root run started **22:54:20 UTC**: **65 suites / 1,916 passed / 0 failed / 28 opt-in PG skipped / 1,944 collected**, typecheck **0**. Earlier exact sterile CI-default passed same totals plus normal build **0**, worker **8/8**, Python **50/50** before font correction. Final exact sterile default-CI-equivalent acceptance completed **23:12 UTC**, six command exits **0** including build/worker/Python; hosted CI not started at preparation, verify exact candidate run before release |
+| Browser evidence | Fresh Chromium **178/178**, started **22:55:03 UTC**; focused **18/18**, started **22:54:22 UTC**; Getting Started **4/4**; HTTP **14/14**. One worker, zero retries/skips/flaky cases, fresh guarded server per suite and unchanged rate budget; no MCP/CDP/existing-browser reuse. Mostly auth gates, not all-business-positive workflows or real iPhone/Safari acceptance; owned servers stopped exit **0**, port **3001** closed |
+| Pilot evidence | Separate private QA PostgreSQL TSX and compiled ESM runs each passed **15 groups**, using real store/RPC/loopback REST, not production. Corrected SQL SHA-256: `edff6d0267a8b38d4f47f3c08f03d57589a989260587d41812e6482735745a3e`; nullable source CHECK corrected to require `IS TRUE`; **no new production pilot or incident SQL** |
+| Incident boundary | Separate incident **123 tests** include 28 guarded real local PG with mocked sender, 35 offline and 60 adapter; new integration has **47 tests**. Do not merge these counts into full-suite totals. Same-transaction trusted-live/critical-only gating exists locally; all current `createAlert` callers remain contextless/nonpaging |
+| Security | Full/production-scope advisory occurrences **250 → 42 / 155 → 16**. Residual full: **3 critical, 14 high, 20 moderate, 5 low**; production: **0 critical, 8 high, 5 moderate, 3 low**. Strix **NOT RUN**; final Semgrep **23:08:48 UTC**, **294 rules / 451 targets / 10 flags / 12 errors / approximately 99.9% parsed / exit 0**. Four explicit-USER flags removed; ten operator-controlled QA subprocess flags retained unsuppressed. Initial **20:38 UTC, 449 / 14 / 13** and post-hardening **21:02 UTC, 451 / 10 / 12** preserved; not full pentest/zero vulnerabilities |
+| Money/providers | Money actions **disabled, not functional**; webhook non-2xx. In-flight inventory, retry deadlines and accountable manual reconciliation required before webhook-rejecting release; no payment inventory occurred. No provider payment, S3/private-storage, email, restore, phone, calibration or OEM-decoder acceptance; no official BPAN issued |
+| Monitoring | Exact five single-instance Oregon services already approved at **$53.75/month additional compute/three-disk baseline**, not a reconfirmation or automatic increase; **not created**. Native **9/9**, final affected Kuma/gateway **105/105**, 19 nonroot/zero-granted-capability snapshots; ntfy/Alertmanager retain earlier positives, not new strict proof. Render disk/memory/readiness and restore remain pending. Receiver/relay/paging OFF; no iPhone push, consented acknowledgement or physical notification; same-Render blind spot remains |
 
-**Planned tasks:** Import a small synthetic fleet CSV with reviewed valid/invalid rows; find a registered pack and review its identifier; explore fleet filters and known synthetic telemetry; inspect a health estimate with explicit model limitations; review a synthetic warranty record; **request an administrator** thermal-rule change; review a sample draft health passport. Do not connect a factory broker or make a real safety/warranty decision.
+No local unit, real private-database or native-infrastructure result is a recruited-user session. The 28 full-suite skips are explicit opt-in cases, separately executed successfully in the bounded incident work; they are not ignored failures and must not be relabeled as full-suite passes.
 
-**Known boundary:** BPAN downstream contracts, lifecycle authorization, warranties and SOH calibration remain blocked/unverified. Live telemetry/safety thresholds are not certified. Administrator handling of the requested rule is a separate controlled QA task.
+The Home heading preserves words at **24 / 30 / 36 / 48 px**, fixing **320 px viewport / 341 px scroll-width overflow**. Preserve pre-origin **16/18** and **175/178** (two hostile-Origin 500s, shared-budget malformed-auth 429 and overflow), post-origin **177/178** (overflow only), and failed decorative-wrapper-only attempt; narrow font fix passed the fresh **178/178**. Synthetic legacy fixtures were **21 batteries plus one informational alert per bounded fresh owner**, explicitly not official generator output; generator stays **412 disabled**, read-only decode unverified and foreign reads **404**.
 
-**Neutral questions:** Which fields would you need to identify this pack? What do you think the estimate means, and what independent evidence would you require before a decision? How would you request a threshold change? Where did you become uncertain or need help?
+Final affected monitoring changes only removed Kuma sudo setuid (**4755 → 755**) and unused Caddy **`cap_net_bind_service=p`** via existing guarded `setcap -r` in Kuma/gateway, exact pins preserved, one new build each. Container flag **`1`**, upstream/settings DB unchanged. **CapPrm/CapEff/CapInh/CapAmb = 0** for nonroot descendants across 19 initial/restart/post-auth snapshots, including pre-QA exec; **CapBnd is not zero**, not an all-OS audit. Preserve prior **109 = 106 pass / 3 fail**, sudo **92 = 80 pass / 12 fail**, new preflight **8 = 7 pass / 1 wrong-tag QA-oracle fail** with mount exit **125**, and new raw **113 = 112 pass / 1 fail**. Cleanup **66 private files 0600 / 8 dirs 0700 / env 0600**, owned containers/mapped application-UID processes zero; new secret scan **181 files / 72 candidates / 0 matches**. Disabled cgroups do not prove 2 GB enforcement; actual native details remain in the [monitoring guide](../infra/monitoring/README.md).
 
-### Persona P2 — Recycler Operations Lead (FICTIONAL COMPOSITE)
+**`/local-battery-pilot`** is owner-only, uses UUID/local profiles created once and displays an **`lp1_` ingestion credential once in a read-only field**; later device lists must not expose tokens/hashes. There is no accepted hardware adapter. `BMS_REPORTED` is a declaration, not physical inspection, genuine BMS acquisition, calibration or verified-live paging eligibility. Append-only records/revocation do not prove physical shutdown. Local labels/passports are nonofficial. No automatic paging is produced by the current pilot or contextless alert callers, even if flags were later enabled.
 
-| Attribute | Planning hypothesis |
+Final exact sterile CI-equivalent acceptance completed **23:12 UTC**, from a **454-file** snapshot including final Home font and both Dockerfiles with all `.env` filenames omitted: default Vitest configuration (no custom setup), started **23:09:37 UTC**, **65 suites / 1,916 passed / 0 failed / 28 opt-in PostgreSQL skipped / 1,944 collected**, **61.63 seconds**; typecheck **0**, normal frontend/server/real-worker build **0**, compiled worker **8/8**, Python compile **0**, offline Python **50/50**; **all six command exits 0**. The earlier **22:54:20 UTC** guarded root run is a distinct positive snapshot, not the default-CI proof. Local checks do not establish hosted CI; verify the exact candidate run before release. Hosted CI had not started at document preparation; later source publication and hosted-run status are separately dated delivery evidence.
+
+## 2. Seven Fictional Composite Role Categories
+
+The manual cases referenced below are **Not run** until separately executed and recorded on an approved build. Where a feature/environment is unavailable or a safety/provider gate is unmet, record **Blocked**. A role category is not an account-permission guarantee: provision and verify the actual least-privilege role before testing, and never substitute admin to make an ordinary-user task succeed.
+
+All **54 new manual cases remain NOT RUN**; all **seven personas are fictional**, and all scorecards remain blank. Local browser/container acceptance is not actual UAT.
+
+### P1 — Public / Prospective User (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone evaluating the public site or a shared sample without a platform account. Technical experience may vary. They may need to understand what a public label means before deciding whether to request access.
+
+**Need hypotheses:** Clear sign-in, minimal public information, readable limitations and a way to report confusion. Ambiguous empty screens, local identifiers or impressive-looking labels may be mistaken for verified evidence.
+
+**Planned manual tasks:** PUB-01–04 and applicable UAT-C01/C08–12. Review an approved synthetic public sample, find sign-in from a private destination, distinguish public from private fields, and explain draft/nonofficial/unknown/disabled-money labels. No private data or account mutation.
+
+**Neutral prompts:** “What do you think this label proves?” “Which information should be public?” “What would you expect to happen next?” “How would you tell that a feature is unavailable rather than successful?”
+
+**Boundary:** No official BPAN/passport, purchase, public private-document access or guaranteed availability claim. Understanding the page does not certify it.
+
+### P2 — Operator / Field-Service User (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone reviewing an assigned asset, telemetry or service information, possibly on mobile. This could include a technician or operational coordinator; no employer or actual reviewer is asserted.
+
+**Need hypotheses:** Correct asset binding, clear timestamps/units, useful connection/errors and a safe escalation path. Missing readings and empty alerts might otherwise be interpreted as zero measurements or healthy equipment.
+
+**Planned manual tasks:** OPS-01–04 plus relevant shared sign-in, ownership, zero/unknown, error and mobile cases. Find an assigned synthetic asset; review known readings; mark an owned alert read only in approved QA; request, rather than make, a global threshold change; review revoked/disconnected instructions without a device connection.
+
+**Neutral prompts:** “How do you know which asset this is?” “What does an absent reading tell you?” “What would you do if this connection failed?” “Who should approve a threshold change?”
+
+**Boundary:** Ordinary operators cannot manage global rules. Mark-read is not on-call acknowledgement/recovery. No real device commissioning, thermal event, BMS trust or safety recommendation is accepted.
+
+### P3 — Fleet Owner / Asset Owner (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone responsible for a small or larger asset group who needs to create a local record and manage authorized access. Fleet/procurement interests can be explored without assuming operational scale.
+
+**Need hypotheses:** One unambiguous local identity, owner-private records, a clear one-time credential flow, accurate readings and understood revocation. Local UUIDs and a source declaration could be mistaken for official identification or physical proof.
+
+**Planned manual tasks:** FLT-01–04 plus shared auth/ownership/error tasks. Create one disposable profile at `/local-battery-pilot`; reopen it; review a prepared device/reading fixture; observe the one-time read-only credential UI without capturing it; revoke a disposable device; compare A versus B ownership, including a foreign admin fixture handled by the facilitator.
+
+**Neutral prompts:** “What identity was created, and is it official?” “What would you do if the one-time credential was lost?” “Which records remain after revocation?” “What does this source declaration establish—and not establish?”
+
+**Boundary:** Profile creation is once-only/append-only, not an editable production registry. No physical-label attestation, accepted hardware adapter, real procurement/payment or physical shutdown proof. Use fixture credential handling, not real tokens in notes.
+
+### P4 — Recycler / Recovery-Evidence Reviewer (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone reconciling intake, recovery evidence or a draft report. A compliance-oriented reviewer may join under this category in a personal/authorized usability capacity, without agency endorsement.
+
+**Need hypotheses:** Scoped identifiers, evidence provenance, units, reporting period and organization context. Repeated credits, omitted measurements or draft documents may be misleading.
+
+**Planned manual tasks:** REC-01–04 plus privacy/zero/unknown/error tasks. Trace a synthetic intake and approved private evidence; compare positive/zero/invalid/repeated yield fixtures; review a draft ledger; inspect an authorized versus prohibited lifecycle transition. Writes occur only if the owner has approved a validated disposable QA fixture.
+
+**Neutral prompts:** “What evidence would you need to reconcile this intake?” “Can you identify organization and period?” “How would you detect a repeated entry?” “Which fields or documents should not be public?”
+
+**Boundary:** No real processing/transport, official credit, certificate, regulatory filing or process-safety approval. A missing workflow is Blocked, not a fictional completed report.
+
+### P5 — OEM / Manufacturing-Quality Reviewer (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone reviewing manufacturing identifiers, sample batch imports, warranty/service evidence or draft declarations. This role can include engineering, quality or compliance experience without claiming any OEM relationship.
+
+**Need hypotheses:** Consistent identifiers across consumers, precise import errors, reported versus estimated data and explicit evidence gaps. Model output may otherwise be interpreted as calibrated SOH or a real BMS measurement.
+
+**Planned manual tasks:** OEM-01–04 plus shared ownership/privacy/zero/unknown cases. Inspect reviewed valid/invalid/duplicate synthetic CSV rows; compare reported, missing and estimated metrics; review draft passport/warranty/service and known-unit declaration fixtures; describe the decoder/acquisition/calibration evidence needed before operational use.
+
+**Neutral prompts:** “Which identifier would you use downstream?” “Which values are measurements, estimates or unknown?” “What source or unit is missing?” “What independent acceptance is needed before using this with real equipment?”
+
+**Boundary:** No OEM decoder/hardware calibration, scientific accuracy, actual warranty claim, ERP connection, official BPAN allocation or regulatory acceptance. No confidential production or customer export is requested.
+
+### P6 — Administrator / Platform Operations (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone accountable for access, audit, feedback and operational interpretation. This is not a real named staff reviewer or assumed authorization to change production.
+
+**Need hypotheses:** Clear privilege boundaries, honest disabled/unknown health, auditability and explicit incident/reconciliation responsibilities. Empty status counts may otherwise appear healthy.
+
+**Planned manual tasks:** ADMIN-01–04 and INC-01–04 with an explicitly provisioned QA admin. Compare ordinary/admin global-rule permissions using disposable fixtures; view default-off incident status and denied commands; inspect sanitized synthetic audit/feedback; discuss manual money reconciliation and a provider-wide outage tabletop.
+
+**Neutral prompts:** “Which state is measured versus configured or unknown?” “What does `databaseReady:false` mean?” “What evidence would you need before enabling delivery or declaring recovery?” “Who owns reconciliation and escalation?”
+
+**Boundary:** OFF status is configuration-only, not live DB health; mounted OFF commands fail closed, including destination review. No production role/settings/SQL, five-service creation, paging, relay, phone push or human acknowledgement test. Render remains a single-provider blind spot.
+
+### P7 — Integration Developer / API Reviewer (FICTIONAL COMPOSITE)
+
+**Context hypothesis:** Someone evaluating the native and ingestion contract for a possible future integration. Technical experience may vary; willingness to review documentation does not establish an implemented integration.
+
+**Need hypotheses:** Clear session/device-auth separation, exact error/receipt semantics, bounded wire schema and honest trust limits. An authenticated submitted value might be mistaken for trusted physical acquisition.
+
+**Planned manual tasks:** DEV-01–04 and approved PIL observation cases. Review local profile/credential contracts; observe synthetic loopback prepared new/replayed/changed readings; inspect revoked/foreign/invalid requests; explain disabled-feature behavior and why `BMS_REPORTED` or caller “live” claims cannot auto-page.
+
+**Neutral prompts:** “What does a 201 versus 200 receipt mean?” “Which response distinguishes a changed replay?” “How should a client handle revocation or missing data?” “What server-owned acquisition evidence is absent?”
+
+**Boundary:** Use only reviewed disposable fixtures supplied by an authorized facilitator. No production requests, raw SQL, copied credentials, external integration, hardware adapter or notification activation. Real-store engineering passes are separate from this manual review.
+
+## 3. Recruit Actual Consenting Reviewers
+
+### 3.1 Recommended small exploratory round — not a completed sample
+
+An authorized research coordinator should **recommend one or two consenting real reviewers per category**, then review gaps and recruit more only as needed. This is a proposed exploratory target, not an achieved count, statistically representative sample or claim of market consensus. Recruit varied technical experience and relevant desktop/mobile/accessibility needs. Include a public/non-specialist perspective rather than only insiders.
+
+Use permission-based professional contacts or opt-in communities after outreach approval. Do not scrape contact lists, impersonate employers or infer consent from a public biography. For OEM/recycler reviewers, relevant experience is sufficient; do not publish company identities as endorsements. For an unavailable role, report **not recruited**. An internal QA tester can provide internal findings but cannot fill an external-reviewer gap under a false label.
+
+Suggested minimal screener fields are role category, recent relevant workflow experience in broad terms, preferred device/language, optional accessibility accommodation, availability and any confidentiality/workplace-permission constraints. Do not request names of customers, credentials, employee IDs, asset/BPAN lists, commercially sensitive figures or proof via a private production export. Contact details belong in a separate restricted recruitment record, not the shared scorecard.
+
+No invitations, appointments, compensation, participant recruitment or messages have been arranged by this document. Compensation, if approved, must be disclosed before consent and must not depend on a positive rating or successful completion.
+
+### 3.2 Invitation template — send only after authorization
+
+> We are inviting volunteers with experience in [role-relevant workflow], or public users interested in understanding the site, to a 30–45 minute exploratory usability review of Circul-AI-r. We will use an approved isolated test environment with synthetic data or a clearly labeled prototype. Several features are incomplete, disabled or unverified; this is not a certified safety, payment or regulatory system. Participation is voluntary: you may skip a task, decline recording or stop at any time without affecting services or employment. We will not request customer data, credentials, real payments, broker changes, hardware operation, regulatory submissions or on-call tests. Before the session, we will explain data use and retention and ask for separate consent for notes, recording, quotations and follow-up. Participation does not imply employer endorsement. If interested, reply through the approved channel with your role category and availability.
+
+This proposed text is not a sent invitation or a real-user quote.
+
+### 3.3 Consent and data minimization
+
+Before outreach/session capture, an accountable owner must set the organizer/contact, purpose, audience, restricted storage location/access, **specific retention and deletion dates**, withdrawal/deletion procedure and any anonymization limits. Do not invent a privacy guarantee or leave raw recordings indefinitely retained.
+
+Obtain separate affirmative decisions for participation, note-taking, screen/audio/video recording, quotation use and follow-up. Recording is OFF by default; declining it must not exclude an otherwise eligible reviewer. Explain any workplace-permission concern and allow a participant to decline confidential tasks. No consent for usability research authorizes production mutations, payments, notifications, SQL or hardware trials.
+
+Assign a pseudonymous participant ID. Keep contact and consent evidence restricted and separate from workflow findings. Shared records contain role/build/date/device, task observations and sanitized evidence IDs only. Exclude personal names, faces, email/phone/address, employer-sensitive information, customer identifiers, credentials, tokens, hashes, cookies, private URLs and raw traces. Prefer text observations or tightly redacted screenshots to recordings. Any quotation must be actual, verifiable, separately permissioned and attributed only at the approved pseudonymous level; never reconstruct or blend statements into a supposed quote.
+
+If sensitive data appears, **STOP capture**, secure the material, notify the authorized owner and follow the approved deletion/redaction process. Do not upload raw evidence to a public issue or the feedback UI. Honor stop/withdrawal requests according to the notice; record the handling without publishing identity details.
+
+## 4. Session Setup and Facilitation
+
+### 4.1 Entry checklist
+
+| Item | Required before the session |
 |---|---|
-| Organization type | Generic battery recycler / material-recovery operator |
-| Platform role group | Recycler |
-| Technical context | Process-data and audit-document user |
-| Goal hypothesis | Reconcile intake, recovery evidence and draft reporting |
-| Pain-point hypothesis | Separate process measurements, identifiers and reporting records |
+| Scope | Owner-approved isolated QA/staging or prototype; production not the default; explicit unverified/blocked features |
+| Build | Exact local snapshot/build, date/time/timezone and feature/provider mode. New local repairs not announced as live |
+| Accounts/data | Verified least-privilege roles; synthetic A/B owners/foreign/missing/zero/unknown fixtures; explicitly approved separate admin |
+| Providers | OFF/mocked: no money, email/storage provider, broker, push/on-call, government filing or live hardware operation |
+| Tasks | Two or three role-appropriate cases plus necessary shared cases; approved expected fixture results; facilitator handles any controlled errors/API fixtures |
+| Consent/evidence | Plain-language notice, separate choices, retention/deletion dates, restricted records and tested redaction procedure |
+| Safety | STOP procedure and owner escalation; no bypasses, no raw SQL, no copying one-time tokens into evidence |
 
-**Planned tasks:** Trace a synthetic intake record; inspect the canonical battery ID/BPAN; enter approved synthetic yield fixtures only after engineering validation; review a draft ledger and draft CPCB-style report; identify missing mineral recovery/context fields; review synthetic recycling-certificate metadata with privacy expectations.
+**Force STOP** on participant request, privacy/security exposure, unexpected money/provider action, live hardware contact, distress or a dangerous recommendation. **No hardware trial until qualified specialists separately establish pack-specific operating limits, authenticated acquisition/OEM-decoder behavior and a reviewed emergency-stop/safe procedure.** QA envelope checks, a source declaration, model output or user ratings are not physical safety certification.
 
-**Known boundary:** Repeated/negative yield credit, atomicity, canonical IDs, private documents, organization/period scope and report methodology remain blockers. Draft tokens are not official credits; PDF generation is not regulatory acceptance. No filing or process-system connection occurs.
+Global rules remain administrator-only in the local repair. An ordinary reviewer requests a change; only an approved QA admin handles a reversible disposable rule task. Do not enable notification flags or send a test page to make the demo appear complete. The one-time `lp1_` field can be observed with fixture handling but must never be captured in screenshots/notes.
 
-**Neutral questions:** What evidence would you need to reconcile an intake and yield? Which report fields are absent or ambiguous? How would you detect repeated credit? Do not ask for confirmation that a draft is legally compliant without a qualified independent review.
+### 4.2 Proposed 30–45 minute facilitator script
 
-### Persona P3 — BESS Project/Procurement Engineer (FICTIONAL COMPOSITE)
+1. **Introduction/consent, about five minutes:** Explain that the design is being tested, not the participant; features may be blocked; synthetic data only; skip/stop is permitted. Confirm participation and notes consent, and separately any recording. Verify accommodations.
+2. **Context, about five minutes:** Ask about broad workflow needs without customer/employer secrets. Do not read a fictional composite as the participant's biography or encourage them to match it.
+3. **Two or three tasks, about 15–25 minutes:** Give a neutral goal such as “Find the sample asset and tell me which evidence you would need next.” Record build, case and start rule. Observe without coaching; think-aloud is optional. Record assistance and pauses. At a missing/unsafe path, stop and mark Blocked, then ask about expectations without pretending the workflow succeeded.
+4. **Debrief, about five minutes:** Ask what was expected, what happened, where uncertainty occurred and what is missing. Invite optional anchored ratings only for experienced dimensions. Read back observations for correction; do not pressure a positive score or launch approval.
+5. **Close:** Explain agreed follow-up/deletion channels. Give only approved next steps, no unagreed fixes/deploy dates. Thank the reviewer regardless of criticism or completion.
 
-| Attribute | Planning hypothesis |
-|---|---|
-| Organization type | Generic stationary-storage developer / second-life buyer |
-| Platform role group | BESS Developer |
-| Technical context | Engineering/specification reviewer; may understand APIs |
-| Goal hypothesis | Compare candidate second-life assets and evidence quality |
-| Pain-point hypothesis | Inconsistent condition claims, units and supporting records |
+## 5. Blank Research Forms — Fill Only from Actual Evidence
 
-**Planned tasks:** Browse synthetic listings with chemistry/capacity/SOH filters; inspect sample passport/telemetry/service evidence; prepare a nonbinding offer draft without checkout; list integration fields needed for an internal procurement system; review advanced forward-order/carbon screens as labeled scaffolds only.
+These templates contain **no completed responses or invented scores**. Leave unknown/unanswered fields blank; use N/A or Not tested explicitly when appropriate. Missing rating is not zero. Behavioral outcome and expected-versus-actual evidence come before ratings.
 
-**Known boundary:** Settlement, authorization, reservation, currency/refund/payout and foreign-battery/photo controls block real-money use. SOH accuracy, carbon methodology, forward matching and SDK/interface claims are unverified. No purchase, payment, reservation or external ERP connection is made.
+### 5.1 Restricted recruitment and consent reference
 
-**Neutral questions:** What would make a condition claim credible to you? Which units or filters were unclear? What would you need before approving procurement? Which missing evidence stopped you? Do not solicit trust in an unvalidated estimate as proof of accuracy.
-
-### Persona P4 — Field Service Engineer (FICTIONAL COMPOSITE)
-
-| Attribute | Planning hypothesis |
-|---|---|
-| Organization type | Generic battery maintenance / field-service provider |
-| Platform role group | Service Provider |
-| Technical context | Mobile-first technician; may configure BMS hardware |
-| Goal hypothesis | Locate assigned asset, review telemetry and record service history |
-| Pain-point hypothesis | Unstructured service notes and ambiguous device-to-pack binding |
-
-**Planned tasks:** On an approved mobile device, locate a synthetic assigned pack; follow a written/sample provisioning flow without broker changes or real credentials; review gateway/flow-tester instructions; add a synthetic service note only after canonical-ID gates; inspect a synthetic account alert and mark read in isolated QA; report missing fields and connection/error messaging. If a rule needs changing, request an administrator.
-
-**Known boundary:** Device credential authorization, revocation/heartbeat, topic/payload identity and service ID/BPAN contracts remain blocked. No real device is commissioned or thermal event induced. Browser ingestion intentionally rejects unsupported writes; mark-read does not resolve an on-call incident.
-
-**Neutral questions:** At what point did you know which pack/device you were viewing? What would help diagnose a failed connection? Could you distinguish loading, failure and no alerts? Which mobile controls or instructions were difficult?
-
-### Persona P5 — Compliance/Regulatory Reviewer (FICTIONAL COMPOSITE)
-
-| Attribute | Planning hypothesis |
-|---|---|
-| Organization type | Generic oversight/compliance office; no named agency affiliation |
-| Platform role group | Government / Regulator |
-| Technical context | Portal/document reviewer, varied technical experience |
-| Goal hypothesis | Understand traceability and evidence underlying draft reports |
-| Pain-point hypothesis | Inconsistent fields, periods, organizations and audit provenance |
-
-**Planned tasks:** Review an authorized read-only synthetic compliance dashboard; inspect draft ledger/report fields; trace an example pack through authorized lifecycle records; identify collection-target/actual gaps; inspect a synthetic public passport and distinguish public from private fields.
-
-**Known boundary:** Global all-time reporting, authorization, credit legitimacy and methodology remain unresolved. Participation is personal/role-based usability research unless explicitly authorized otherwise; it is not government approval, certification, a regulatory audit or a submission.
-
-**Neutral questions:** Which evidence would you need to verify this draft claim independently? Can you identify reporting organization and period? Which fields should never be public? What review questions remain unanswered?
-
-### Persona P6 — Battery Manufacturing Quality/Compliance Manager (FICTIONAL COMPOSITE)
-
-| Attribute | Planning hypothesis |
-|---|---|
-| Organization type | Generic battery/cell manufacturer |
-| Platform role group | Battery Manufacturer |
-| Technical context | Production-data, quality and compliance workflow user |
-| Goal hypothesis | Associate production data, declarations and draft passports |
-| Pain-point hypothesis | Supply-chain evidence and manufacturing identifiers in separate systems |
-
-**Planned tasks:** Register a small synthetic production batch; review carbon/recycled-content inputs using known fixtures; inspect a clearly draft passport and sample QR; explore language labels; identify required integration fields from a static API example. No real ERP upload or regulated declaration occurs.
-
-**Known boundary:** Numeric units, methodology, period/organization scope, thresholds/legal interpretation, BPAN consumers and API scope remain unverified/blocked. No regulatory deadline, complete mandatory-field claim or batch-capacity guarantee is certified by this session.
-
-**Neutral questions:** Which inputs have a known source, and which need clarification? What unit/reference would you expect? Which labels need specialist translation review? What independent review would be needed before using the draft operationally?
-
-### Persona P7 — Platform Operations Administrator (FICTIONAL COMPOSITE)
-
-| Attribute | Planning hypothesis |
-|---|---|
-| Organization type | Generic platform operator; not a real named staff reviewer |
-| Platform role group | Platform Admin |
-| Technical context | Access, audit, monitoring and operational workflow user |
-| Goal hypothesis | Understand system state and safely administer authorized users/rules |
-| Pain-point hypothesis | Misleading green/empty states, unclear privileges and incident provenance |
-
-**Planned tasks:** With an explicitly approved QA admin account, inspect synthetic users/audit; perform a reviewed reversible role change without removing the last admin; compare owner vs global alerts; list/create/edit/toggle/delete a QA global rule and test errors/Retry; inspect clearly mocked/unknown provider statuses and feedback queue; discuss outage/recovery expectations from a tabletop scenario.
-
-**Known boundary:** No production roles/settings, broker configuration, routing key, incident or Cron is changed. PagerDuty stays disabled. Real browser/cache/API acceptance of the newer alert UI is open. Synthetic provenance is not hardware trust; empty results do not prove health. No ISO/security/availability certification is implied.
-
-**Neutral questions:** Can you tell what is measured, unavailable or merely configured? Can you identify the scope of a rule change? What evidence would you need before enabling paging or declaring recovery? Which actions need additional approval/audit context?
-
-## 3. Practical Voluntary Real-User Recruitment
-
-### 3.1 Recruitment plan
-
-A designated research coordinator should recruit **actual willing adults from each of the seven role groups** through authorized professional contacts, opt-in communities or permission-based outreach. Do not scrape personal contact lists, impersonate employers/regulators or infer participation from a public biography. These composites are not named recruitment targets.
-
-For an initial exploratory round, propose one or two consenting participants per group, then review gaps and seek more only if needed. This is a recruitment target, not a achieved sample or statistically representative study. Include varied technical experience, organization scale and mobile/desktop needs. If a role cannot be recruited, record “not recruited,” do not fabricate ratings or substitute an internal tester as external-user evidence. Engineering QA may proceed separately under its own label.
-
-Use a short screener: role category; recent relevant workflow experience; preferred device/language; accessibility accommodation; availability; voluntary participation and confidentiality constraints. Ask no customer names, credentials, employee identifiers or commercially sensitive figures. Store contact details separately from pseudonymous research records with restricted access. Do not collect an employer name unless truly necessary and separately consented; never publish it as endorsement.
-
-### 3.2 Invitation template — send only after outreach authorization
-
-> We are inviting volunteers who work with [role-relevant battery workflow] to a 30–45 minute exploratory usability session for Circul-AI-r. You would use an isolated test environment with synthetic data or review a prototype. Several workflows are incomplete or blocked; this is not a certified production, safety or regulatory system. Participation is optional, you may skip questions or stop at any time, and your decision will not affect access to services or employment. We will not ask for customer data, credentials, payments, broker changes, regulatory submissions or on-call tests. We will explain data use and request separate consent before any recording. Your participation does not imply employer endorsement. If interested, please reply through the approved contact channel with your role category and availability.
-
-The coordinator must disclose any approved compensation before consent and make clear it is not contingent on positive feedback. No compensation, invitations or appointments have been arranged by this document.
-
-### 3.3 Consent checklist and data handling
-
-Before the session, provide a plain-language notice stating the organizer/contact, purpose, test environment, approximate duration, tasks and blocked features, voluntary nature, stop/skip/withdrawal procedure, data collected, intended audience, storage/access controls and **specific retention/deletion dates**. An owner must set these dates before recruitment; they are not silently open-ended.
-
-Obtain affirmative consent to participate, separately to notes, separately to screen/audio/video recording (off by default), and separately to any quotation or future follow-up. A refusal to record must not exclude otherwise eligible participants. Ask whether workplace permission is required and avoid confidentiality conflicts. Do not solicit confidential customer/employer information. Confirm the participant understands there are **no real payments, broker changes, regulatory submissions or on-call tests**. If any proposed task exceeds that boundary, stop and seek a separate owner-approved engineering test, not expanded implied participant consent.
-
-Record consent date/version and a participant ID; keep personal contact/consent records restricted and separate from workflow findings. Explain how to request withdrawal/deletion and any stated anonymization limit before consent. Delete raw recordings according to the agreed policy and verify access permissions before sharing evidence. Redact PII and sensitive information from notes, logs and screenshots: names, faces, emails/phones, addresses, customer BPANs, credentials, cookies, tokens, private URLs and employer-sensitive data. If accidental exposure occurs, stop capture, secure the material, notify the authorized owner and follow the approved removal process; do not upload raw screenshots to a public issue.
-
-## 4. Environment, Entry Gates and Facilitator Script
-
-### 4.1 Safe session setup
-
-| Setup item | Required preparation |
-|---|---|
-| Environment | Owner-approved isolated staging/QA or prototype; **not production by default** |
-| Data | Small synthetic fixtures with agreed expected results; no July seed count assumed current |
-| Accounts | Explicit assigned role; approved separate admin; no first-registrant auto-promotion assumption |
-| Providers | Disabled/mocked; no real Stripe checkout, broker publication/configuration, government filing, on-call message or live device operation |
-| Blocked features | Clearly labeled demo/scaffold/unknown or disabled; facilitator records blocked rather than simulates success |
-| Build/evidence | Identify local snapshot/commit and provider mode; consult current retest report and QA_DOCUMENTATION.md |
-| Consent/capture | Written notice and affirmative consent; recording only if separately opted in; tested redaction process |
-| Safety/stop rule | Stop on security/privacy issue, unexpected external action, distress or participant request; log blocker without unsafe probing |
-
-Full UAT for advertised workflows is gated by unresolved defects; narrowly scoped research on safe staging/prototypes can be approved separately without implying product acceptance. An intermediate passing unit run is not sufficient UAT entry evidence for all modules.
-
-### 4.2 Facilitator script (30–45 minute proposal, not a completed schedule)
-
-1. **Introduction and consent, about 5 minutes:** “We are testing the design, not you. Some features are incomplete. Please do not enter real customer data or credentials. You can skip a task or stop at any time. We will use synthetic data and will not make payments, change brokers, submit reports or send on-call alerts. May I confirm your participation and note-taking consent? Recording is optional and separate.” Verify any requested accommodation.
-2. **Context, about 5 minutes:** Ask about the participant's typical workflow without personal/customer/employer-sensitive details. Identify information they normally need; do not read the fictional profile as their biography.
-3. **Two or three tasks, about 15–25 minutes:** State a neutral outcome, e.g. “Find the sample pack and tell me what evidence you would need next,” not “Click this working feature.” Start the timer when the task is understood; allow think-aloud optionally. Observe without coaching; if help is needed, record the intervention. Stop at a blocked/unsafe boundary. A task not attempted is not a failure or pass.
-4. **Debrief, about 5 minutes:** Ask “What did you expect?”, “What actually happened?”, “Where did you become uncertain?”, “What is missing?” and “What would need to change before use?” Do not pressure a positive score or a launch approval. Read back findings for correction.
-5. **Close:** Explain next steps, consented follow-up channel and deletion/withdrawal contact. Do not promise fixes or deployment dates that the owner has not agreed. Thank the participant regardless of criticism or completion.
-
-For an ordinary persona encountering alert thresholds, use: “If you need a global rule changed, describe your request to an administrator.” For the admin composite/task, use approved isolated QA changes only. If a feature is unavailable, record the blocker and ask about the expected workflow rather than pretending completion.
-
-## 5. Feedback Capture — Blank Templates, No Invented Results
-
-### 5.1 Required session/workflow record
-
-Capture expected vs actual behavior, completion time and blocker/severity for **every attempted task**, including assisted, abandoned or blocked tasks. Ratings are optional and cannot replace behavioral evidence.
+Keep this record restricted; share only participant ID and consent reference with the findings.
 
 ```markdown
-## Session / Workflow Feedback
-Participant ID (pseudonym):
-Role group (P1–P7; actual experience, not composite identity):
-Consent notice version/date and restricted record reference:
-Notes consent: Yes / No
-Recording consent: Yes / No (off unless separately approved)
-Quote/recontact consent: separate Yes / No fields
-Session date/time/timezone; facilitator:
-Environment, build/local snapshot/deployed commit (if relevant):
-Browser/version, OS/device; real hardware or emulation:
-Provider mode: disabled / mocked / isolated test
-Workflow / QA case ID; synthetic fixture:
-
-Task goal and expected result:
-Steps actually attempted:
-Actual result (observed, not assumed):
-Outcome: Completed / Completed with assistance / Failed / Blocked / Not attempted
-Completion time (seconds/minutes; start/end rule, pauses recorded):
-Assistance/interventions:
-Blocker and severity: None / Critical / High / Medium / Low
-Reproducibility / scope / safety stop reason:
-Participant comment (verbatim only if recorded and separately consented for use):
-Facilitator observation (separate from participant quote):
-Hypothesis / interpretation (clearly labeled, not a fact):
-Optional rating and N/A / not tested:
-What is missing / suggested improvement:
-Sanitized screenshot/log evidence reference (PII/secrets redacted):
-Owner / defect ID / proposed action / retest status:
-Follow-up permission/reference; retention/deletion date:
+## Recruitment / Consent Record — blank
+Participant ID:
+Internal reviewer or external consenting reviewer:
+Actual role category / broad relevant experience:
+Authorized recruitment channel / coordinator:
+Invitation date (if actually sent):
+Session scheduled date (if actually agreed):
+Restricted contact-record reference (no contact details here):
+Workplace permission/confidentiality constraints (minimal):
+Device/language / optional accommodation:
+Notice version / consent date/time/timezone:
+Participation consent decision:
+Notes consent decision:
+Recording consent decision (OFF until affirmative separate consent):
+Quotation-use consent decision:
+Follow-up consent decision:
+Compensation disclosure reference (if approved):
+Access owner / restricted storage reference:
+Retention/deletion date:
+Withdrawal/deletion procedure reference:
+Recruitment status: Not invited / Invited / Declined / Scheduled / Consented / Withdrawn
 ```
 
-A missing rating is N/A, not zero. A blocked feature is not “tested successfully.” A quote must be actual, accurately attributed to a pseudonym with appropriate permission; do not reconstruct a quote from a composite or blend multiple participants into purported evidence.
+### 5.2 Per-task feedback and evidence record
 
-### 5.2 Optional feedback dimensions
+```markdown
+## Session / Task Feedback — blank
+Session ID / execution ID:
+Participant pseudonym:
+Actual role category (P1–P7) / permissions verified:
+Internal QA or external reviewer:
+Restricted consent reference / notice version/date:
+Session date/time/timezone / facilitator:
+Environment / exact build or local snapshot / deployed identifier if applicable:
+Browser/version / OS / device / real hardware or emulation:
+Provider/feature mode (disabled / mocked / approved isolated fixture):
+QA case ID / synthetic fixture IDs:
 
-| Dimension | Prompt | Qualification |
+Task goal:
+Expected result:
+Steps actually attempted:
+Actual result (observed; include zero/unknown/empty/error distinction):
+Execution status: Pass / Fail / Blocked / Not run
+Participant outcome: Completed unaided / Completed with assistance / Failed / Blocked / Not attempted
+Completion time / start-end rule / pauses:
+Assistance/interventions:
+Severity: Critical / High / Medium / Low / None
+Safety STOP reason (if any):
+Reproducibility / affected role and scope:
+Sanitized evidence ID (NO tokens, hashes, cookies, PII or private URLs):
+Participant comment (actual only; quotation permission required for quotation use):
+Facilitator observation (separate):
+Interpretation/hypothesis (explicitly labeled):
+Missing information / suggested improvement:
+Optional scorecard reference / N/A or Not tested:
+Responsible owner / defect ID / proposed next action:
+Retest build/date / actual result / evidence ID:
+Follow-up permission reference / retention/deletion date:
+```
+
+A false-success screen is recorded as actual behavior, not a completed payment or successful persistence. A completed usability task may still reveal defects. A facilitator interpretation is not a participant quote. No consent or score may be inferred from attendance, silence or a fictional persona.
+
+### 5.3 Standard optional feedback scorecard — anchored, unfilled
+
+Use **1–5**, **N/A**, **Not tested** or **Declined**. Apply a score only to the task actually experienced. Intermediate scores 2 and 4 lie between the stated anchors. Do not assign fake consensus or average absent ratings; a small exploratory scorecard is not representative market validation.
+
+| Dimension | 1 anchor | 3 anchor | 5 anchor | What it does not prove |
+|---|---|---|---|---|
+| Task completion / functionality | Task could not complete as expected | Completed only partly or with material workaround | Completed as expected in this task | Whole-platform functionality or settlement |
+| Ease of use | Could not find/understand path without substantial help | Noticeable confusion or some help | Clear path without help | Complete accessibility compliance |
+| Information completeness | Essential task information missing | Some useful information missing | Information sufficient for this limited task | Complete mandatory regulatory fields |
+| State/label clarity | Could not distinguish error/empty/unknown/disabled/draft | Some states ambiguous | States and nonofficial limits clear | Actual provider health or physical proof |
+| Responsiveness perception | Waiting prevented progress | Noticeable waiting but progress possible | Waiting did not interfere | p95/capacity/uptime benchmark |
+| Device/accessibility experience | Controls unreadable/unusable in this setup | Barriers requiring workaround | No barrier observed in this task/setup | All-device, Safari/iPhone or WCAG certification |
+| Evidence clarity / reported-versus-estimated | Sources/units/unknowns could not be understood | Some evidence or distinction unclear | Evidence and limits understood for this task | Scientific accuracy, safety or trustworthiness of measurement |
+
+Fill a fresh copy per task; the rating column below is intentionally blank.
+
+| Dimension | Rating: 1–5 / N/A / Not tested / Declined | Reason / observed example / evidence ID |
 |---|---|---|
-| Functionality | Did the attempted task complete as expected? | Record actual outcome first |
-| Usability | Where was the path unclear or assistance needed? | Record time/intervention; optional 1–5 |
-| Performance | Did waiting interfere with your task? | Perception is not a p95 benchmark |
-| Completeness | Which information/action was missing? | Separate feature request from defect |
-| Accuracy | Which value could you check against known evidence? | User confidence is not scientific/regulatory validation |
-| Mobile/accessibility | Which controls/readability barriers occurred? | Specify device/assistive technology and scope |
+| Task completion / functionality | | |
+| Ease of use | | |
+| Information completeness | | |
+| State/label clarity | | |
+| Responsiveness perception | | |
+| Device/accessibility experience | | |
+| Evidence clarity | | |
 
-### 5.3 Collection channels and backup capture
+```markdown
+## Scorecard Header / Debrief — blank
+Participant pseudonym / session / task ID:
+Build / date / role / browser/device:
+Behavioral outcome and completion time:
+Linked expected-versus-actual record / sanitized evidence ID:
+Most important missing item:
+What must change before this limited workflow is useful:
+Additional comment (not a reconstructed quote):
+Facilitator correction/read-back confirmation (if given):
+```
 
-The historical CirculWiki feedback interface includes rating/type/comment and an admin review queue at `/admin/feedback`; its end-to-end persistence/access acceptance must be verified before relying on it. Use the restricted pseudonymous template as a fallback. Never assume empty in-app feedback means no issues or successful submission. Do not publish raw recordings or screenshots in the app. Proposed post-launch surveys/support reviews require separate authorization and privacy handling; no existing NPS, enterprise reviews, analytics cadence or participant channel is asserted.
+### 5.4 Role coverage ledger — no approvals claimed
 
-### 5.4 Role coverage ledger — not a scorecard of approvals
+No recruitment or session evidence has been supplied for these categories. Replace a cell only with linked real consented-session evidence, not a composite narrative or internal test total.
 
-| Role group | Recruitment/session evidence | Workflow results / blockers | Status at this document refresh |
-|---|---|---|---|
-| P1 OEM | Not supplied | Not supplied | Planned; no verified participant |
-| P2 Recycler | Not supplied | Not supplied | Planned; no verified participant |
-| P3 BESS developer | Not supplied | Not supplied | Planned; no verified participant |
-| P4 Service provider | Not supplied | Not supplied | Planned; no verified participant |
-| P5 Government/regulatory reviewer | Not supplied | Not supplied | Planned; no verified participant |
-| P6 Battery manufacturer | Not supplied | Not supplied | Planned; no verified participant |
-| P7 Platform administrator | Not supplied | Not supplied | Planned; no verified participant |
+| Category | Recruitment / session evidence | Current research status |
+|---|---|---|
+| P1 Public | Not supplied | No verified participant/session |
+| P2 Operator | Not supplied | No verified participant/session |
+| P3 Fleet owner | Not supplied | No verified participant/session |
+| P4 Recycler | Not supplied | No verified participant/session |
+| P5 OEM reviewer | Not supplied | No verified participant/session |
+| P6 Administrator | Not supplied | No verified participant/session |
+| P7 Integration developer | Not supplied | No verified participant/session |
 
-Only replace these cells with linked actual consenting-session evidence. Report attempted/completed/blocked task denominators, assistance, time ranges and recruitment gaps. Do not average absent ratings or use a small exploratory sample as representative market validation.
+For a real round, report invitations/consents/sessions separately; attempted, completed unaided, assisted, failed and blocked tasks with their denominators; time ranges; device/build scope; Critical/High blockers and missing role recruitment. Do not publish a “seven personas approved” result or count hypothetical tasks as sessions. No aggregate score is calculated here.
 
-## 6. Feedback-to-Action and Retest
+## 6. Capture Channels and Feedback-to-Action
 
-Separate observed defects, participant suggestions, facilitator hypotheses and source-confirmed pre-existing blockers. Have product, engineering and research owners review sanitized records, assign severity/owner and agree a response; the former automatic 24-/48-hour promises are not verified SLAs.
+The historical in-app feedback interface and `/admin/feedback` queue must have current authorized submission/readback/access and error handling verified before they are the record of truth. Empty feedback is not proof of no issues. Use the restricted pseudonymous forms as fallback; do not put raw recordings or secrets in the app. No post-launch survey, NPS, push/reminder channel or regular outreach schedule is created by this document.
 
-| Severity | Handling proposal |
+Separate **observed defect**, **actual participant suggestion**, **facilitator hypothesis** and **source-confirmed pre-existing blocker**. Link each item to its task/build/evidence ID, assign a responsible owner and review scope/severity. Proposed handling is:
+
+| Severity | Handling |
 |---|---|
-| Critical | Stop affected use/test; notify authorized owner for security, data loss, financial or dangerous outcome |
-| High | Primary workflow blocked/major incorrect data; prioritize before broader release |
-| Medium | Partial failure with safe workaround; track and schedule |
-| Low | Cosmetic/usability/documentation; prioritize with owner |
+| Critical | Force STOP for security/privacy exposure, data loss, financial integrity or dangerous outcome; notify authorized owner and protect evidence |
+| High | Primary workflow blocked/major incorrect data; remediate and retest before affected release |
+| Medium | Partial failure with safe workaround; record limitations and agree priority |
+| Low | Cosmetic/usability/documentation issue; record and prioritize |
 
-No feedback item independently authorizes a hotfix, payment, broker change or deploy. After a reviewed fix, identify whether it is local, checkpointed or actually deployed, then repeat the same safe task with consented follow-up and recorded expected/actual outcome. Communicate only agreed actions: acknowledge the issue, give its reference/owner and explain whether a fix is planned, locally tested or deployed. Do not announce a local fix as live.
+These are not response-time promises. Feedback does not authorize a hotfix, Git change, payment, broker/Render change, SQL, notification or deployment. Tell the reviewer whether an action is proposed, locally repaired or actually released; never call an unreleased local repair live. Retest the same safe task on an identified build, with renewed/valid consent for follow-up and a new expected-versus-actual record. Keep unresolved issues visible rather than replacing them with a positive rating.
 
-## 7. Cross-Role Scenarios — Synthetic and Gated
+## 7. Safe Cross-Role Review and Acceptance
 
-| Scenario | Role groups | Proposed isolated sequence | Boundary |
-|---|---|---|---|
-| Battery lifecycle | OEM → Service → BESS → Recycler | Register → record service → evaluate listing → review intake | No real purchase, transport or processing; canonical-ID/authorization gates |
-| Compliance review | Manufacturer → Regulatory reviewer | Draft declaration → independent field/evidence review | Not official approval/submission |
-| Marketplace review | OEM → BESS | Synthetic listing → nonbinding offer review | Payment/settlement blocked |
-| Warranty investigation | OEM → Service | Synthetic condition review → draft service/claim review | No validated safety decision; claim route/privacy gates |
-| Yield/ledger review | Recycler → Regulatory reviewer | Reviewed synthetic yield → draft ledger evidence | No official credits; repeated/negative credit blockers |
-| Rule request | Ordinary role → Admin | Describe threshold need → approved QA admin evaluates change | No ordinary global-rule control; no live on-call test |
+| Synthetic scenario | Proposed reviewers / sequence | Boundary |
+|---|---|---|
+| Public/private label | Public → Fleet owner → OEM | Review minimal public sample and authorized detailed evidence; no official BPAN or private disclosure |
+| Ownership and device revoke | Fleet owner → Operator → Developer | Review owner record, known readings and revoked-loopback response; no live adapter or physical shutdown |
+| Draft recovery reporting | OEM → Recycler | Review known-unit declaration/intake and scoped draft evidence; no official credit/certificate/submission |
+| Threshold request | Operator → Admin | Describe need, then approved QA admin evaluates disposable rule; no ordinary global permission or page |
+| Integration/error semantics | Developer → Fleet owner | Prepared synthetic receipt/replay/error demonstration and explain credential scope; no external production integration |
+| Status and outage | Admin → Other roles | Tabletop disabled/unknown health, manual escalation and reconciliation; no created monitoring resources or push/ack test |
 
-A discussion/prototype walkthrough is not an executed end-to-end workflow. Mark stages unavailable/blocked honestly.
+A discussion/prototype review is not an executed end-to-end workflow. Mark each stage Completed, Blocked or Not attempted only from actual evidence; do not stitch fictional profiles into a purported lifecycle acceptance.
 
-## 8. Acceptance and Launch Boundary
+Role-specific acceptance requirements are in [QA_DOCUMENTATION.md, Section 9](QA_DOCUMENTATION.md#9-role-specific-entry-and-release-criteria). Safe limited research requires scope/consent/fixtures; advertised workflow release requires actual role results, two-account/admin privacy checks, relevant resolved/retested blockers, exact released-build identification and accountable sign-off. Fresh bounded browser/affected container checks passed, but production reload/logout/broad tenant and owner-positive tests remain open. Hosted exact-candidate CI, Render disk/memory/readiness, provider/private-storage/email/payment inventory/reconciliation/restore/phone and hardware/OEM/calibration/official-label gates need separate acceptance; resource-cost approval is not activation or notification authorization.
 
-No recruited participant or composite has approved this product in the supplied evidence. The July average-score, “five of seven personas approve,” endpoint timing and blanket accessibility/security thresholds do not constitute current launch criteria. Real participant preference is useful research input but cannot waive credential, privacy, payment, hardware, safety, numeric/model, compliance, backup or availability blockers.
-
-Owner-approved UAT acceptance must be tied to actual consenting sessions, a specific tested build/environment, agreed workflow scope, expected-vs-actual execution records, completion time and blockers, resolved/retested defects, stated exclusions and the current release gates. Clearly label or disable unverified/scaffolded workflows. Broader launch requires the report/gates and independent engineering/operational/provider/methodology evidence. This document is a recruitment and feedback plan, **not evidence of recruitment, launch readiness, employer endorsement or regulatory certification**.
+No actual reviewer or fictional composite has approved launch in the supplied evidence. Ratings measure limited experience, not physics or regulatory validity. Do not use participant confidence, a small sample, old scanner results or passing local tests to waive security, money, physical safety, backup or provider-outage risks. This guide records **no recruitment completion, user consensus, employer endorsement, certification or launch sign-off**.

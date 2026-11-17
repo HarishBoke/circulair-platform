@@ -101,17 +101,17 @@ export default function Register() {
             Revolution
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-            Create your account to access battery lifecycle management, AI-powered
-            health predictions, and compliance tools across 7 jurisdictions.
+            Create your account to access battery records, heuristic health estimates
+            and draft regulatory workflows. Registration is not pilot or compliance approval.
           </p>
 
           <div className="space-y-3">
             {[
-              "Full BPAN registry with QR codes",
-              "Real-time IoT telemetry monitoring",
-              "AI-powered SOH prediction (< 2% RMSE)",
-              "Multi-currency second-life marketplace",
-              "ISO 27001 / SOC 2 compliance framework",
+              "Local battery identification and QR records; official BPAN enrollment not verified",
+              "Telemetry source paths — physical connection unverified",
+              "Physics-based SOH estimates — accuracy unvalidated",
+              "Listing and indicative pricing — real settlement not accepted",
+              "Regulatory templates — no ISO certification or SOC 2 attestation",
             ].map((item) => (
               <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
@@ -256,9 +256,9 @@ export default function Register() {
               <div className="mt-6 pt-6 border-t border-border/50">
                 <div className="flex items-center justify-center gap-6 text-muted-foreground">
                   {[
-                    { icon: Lock, label: "Encrypted" },
-                    { icon: Globe, label: "Multi-Region" },
-                    { icon: Shield, label: "RBAC" },
+                    { icon: Lock, label: "Email / Password" },
+                    { icon: Globe, label: "Web App" },
+                    { icon: Shield, label: "Pilot Review" },
                   ].map((badge) => (
                     <div key={badge.label} className="flex items-center gap-1.5">
                       <badge.icon className="w-3 h-3 text-primary/60" />

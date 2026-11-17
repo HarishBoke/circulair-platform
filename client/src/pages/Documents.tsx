@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { FileText, Upload, Search, RefreshCw, Download, Lock, Globe, Building2 } from "lucide-react";
+import { FileText, Upload, Search, RefreshCw, Lock, Globe, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -44,14 +43,9 @@ export default function Documents() {
     accessLevel: "organization" as string,
   });
 
-  const { data, isLoading, refetch } = trpc.documents.listAll.useQuery({
+  const { data, isLoading, refetch } = trpc.documents.list.useQuery({
     type: docType !== "all" ? docType : undefined,
     limit: 50,
-  });
-
-  const uploadMutation = trpc.documents.upload.useMutation({
-    onSuccess: () => { toast.success("Document uploaded successfully!"); setShowUploadDialog(false); refetch(); },
-    onError: (e: { message: string }) => toast.error(e.message),
   });
 
   const docs = data ?? [];
@@ -69,13 +63,14 @@ export default function Documents() {
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload Document
+              <Upload className="w-3.5 h-3.5 mr-1.5" /> Document Link Registration
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-card border-border max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-display">Upload Document</DialogTitle>
+              <DialogTitle className="font-display">Document Link Registration — Disabled</DialogTitle>
             </DialogHeader>
+            <p className="text-sm text-muted-foreground">This form does not upload a file. Link registration and downloads are disabled pending verified private storage and server-side document authorization. Visibility labels alone do not protect a URL.</p>
             <div className="space-y-4 mt-2">
               <div>
                 <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Document Name</Label>
@@ -130,21 +125,16 @@ export default function Documents() {
               </div>
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={uploadMutation.isPending}
-                onClick={() => uploadMutation.mutate({
-                  name: uploadForm.name,
-                  type: uploadForm.type as "battery_certificate" | "health_passport" | "compliance_report" | "recycling_manifest" | "hazmat_manifest" | "audit_trail" | "cpcb_form" | "pli_passport" | "material_composition" | "other",
-                  bpan: uploadForm.bpan || undefined,
-                  fileUrl: uploadForm.fileUrl,
-                  accessLevel: uploadForm.accessLevel as "public" | "organization" | "private" | "government",
-                })}
+                disabled
               >
-                {uploadMutation.isPending ? "Uploading..." : "Upload Document"}
+                Registration unavailable
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      <p role="status" className="text-sm text-muted-foreground">Showing your uploaded metadata only. Downloads are unavailable until private storage and server-side authorization are verified; this is not a secure vault certification.</p>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -195,7 +185,7 @@ export default function Documents() {
         <div className="bg-card border border-border rounded-xl p-16 text-center">
           <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-display text-lg font-bold mb-2">No Documents Found</h3>
-          <p className="text-muted-foreground text-sm">Upload battery certificates, health passports, and compliance documents.</p>
+          <p className="text-muted-foreground text-sm">No uploaded metadata found. Registration and downloads are currently unavailable.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -233,13 +223,7 @@ export default function Documents() {
                     <span className="font-mono text-[9px] text-muted-foreground">
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </span>
-                    {doc.fileUrl && (
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" className="h-6 w-6 p-0 border-border">
-                          <Download className="w-3 h-3" />
-                        </Button>
-                      </a>
-                    )}
+                    <span className="font-mono text-[9px] text-muted-foreground">Download unavailable</span>
                   </div>
                 </div>
               </div>

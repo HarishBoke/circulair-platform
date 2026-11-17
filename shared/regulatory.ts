@@ -132,7 +132,7 @@ export interface EuRegulatoryProfile extends BaseRegulatoryProfile {
 
 export interface InRegulatoryProfile extends BaseRegulatoryProfile {
   jurisdiction: "IN";
-  /** 21-character Battery Pack Aadhaar Number */
+  /** Existing project identity/alias, not proof of official allocation. Supplied Draft is 21 characters; legacy 19 reads are local only. See bpanContract. */
   bpan: string | null;
   /** EPR registration number of the producer */
   eprRegistrationNumber: string | null;

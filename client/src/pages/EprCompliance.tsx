@@ -349,7 +349,7 @@ export default function EprCompliance() {
           { label: "Total Records", value: records.length, icon: FileText },
           { label: "Verified Tokens", value: stats?.verified ?? 0, icon: CheckCircle2 },
           { label: "Pending Review", value: stats?.pending ?? 0, icon: Clock },
-          { label: "Total Yield (kg)", value: `${((stats?.totalYieldKg ?? 0) / 1000).toFixed(1)}t`, icon: Coins },
+          { label: "Recorded Yield (t)", value: `${((stats?.totalYieldKg ?? 0) / 1000).toFixed(1)}t`, icon: Coins },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
@@ -366,16 +366,16 @@ export default function EprCompliance() {
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
           <div>
-            <div className="font-display text-sm font-bold text-primary mb-1">Hyperledger Fabric Smart Contracts</div>
+            <div className="font-display text-sm font-bold text-primary mb-1">Legacy records — not regulatory certification</div>
             <p className="text-xs text-foreground/70">
-              All EPR compliance records are anchored to the Hyperledger Fabric blockchain via smart contracts, providing immutable audit trails. EPR credit tokens are automatically issued upon verification of recycling yields against CPCB norms (≥85% yield ratio).
+              Stored statuses and yield ratios are historical application records. Blockchain anchoring, official EPR credit issuance, regulatory submission and compliance certification are not verified or enabled. A yield ratio alone does not establish compliance with any jurisdiction's requirements.
             </p>
             <div className="flex flex-wrap gap-4 mt-3">
               {[
-                { label: "Network", value: "Hyperledger Fabric v2.5" },
-                { label: "Channel", value: "circulair-epr-channel" },
-                { label: "Chaincode", value: "EPRTokenCC v1.2" },
-                { label: "Consensus", value: "PBFT" },
+                { label: "Network", value: "Not verified" },
+                { label: "Official issuance", value: "Unavailable" },
+                { label: "Anchoring", value: "Disabled" },
+                { label: "Regulatory acceptance", value: "Not established" },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="font-mono text-[9px] text-muted-foreground">{item.label}</div>

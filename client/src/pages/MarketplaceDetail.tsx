@@ -5,20 +5,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import {
-  ArrowLeft, Battery, MapPin, Calendar, Zap, Thermometer,
+  ArrowLeft, Battery, MapPin, Calendar, Zap,
   ShieldCheck, ChevronLeft, ChevronRight, User, Tag,
   Package, FileText, AlertTriangle, CheckCircle2, Clock,
-  MessageSquare, DollarSign, ExternalLink, Download
+  ExternalLink, Download
 } from "lucide-react";
-
 const CONDITION_COLORS: Record<string, string> = {
   excellent: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   good: "bg-blue-500/10 text-blue-400 border-blue-500/30",
@@ -46,32 +39,14 @@ export default function MarketplaceDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { user } = useAuth();
-  const listingId = parseInt(id ?? "0");
+  const listingId = Number(id);
 
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [offerOpen, setOfferOpen] = useState(false);
-  const [offerAmount, setOfferAmount] = useState("");
-  const [offerCurrency, setOfferCurrency] = useState("INR");
-  const [offerMessage, setOfferMessage] = useState("");
 
   const { data, isLoading, error } = trpc.marketplace.getById.useQuery(
     { listingId },
-    { enabled: listingId > 0 }
+    { enabled: Number.isSafeInteger(listingId) && listingId > 0 }
   );
-
-  const makeOfferMutation = trpc.marketplace.makeOffer.useMutation({
-    onError: (err) => toast.error(err.message),
-  });
-  const createCheckoutMutation = trpc.marketplace.createCheckout.useMutation({
-    onSuccess: (result) => {
-      toast.success("Redirecting to Stripe checkout...");
-      window.open(result.checkoutUrl, "_blank");
-      setOfferOpen(false);
-      setOfferAmount("");
-      setOfferMessage("");
-    },
-    onError: (err) => toast.error(err.message),
-  });
 
   if (isLoading) {
     return (
@@ -106,35 +81,7 @@ export default function MarketplaceDetail() {
   const currentPhoto = photos[photoIndex];
   const askingPrice = (listing as any).listingCurrencyAmount ?? listing.askingPriceInr;
   const currency = (listing as any).listingCurrency ?? "INR";
-  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? "₹";
-
-  const handleOffer = async () => {
-    if (!user) { toast.error("Please log in to make an offer"); return; }
-    const amount = parseFloat(offerAmount);
-    if (!amount || amount <= 0) { toast.error("Please enter a valid offer amount"); return; }
-    // Step 1: create the offer record
-    const offerResult = await makeOfferMutation.mutateAsync({
-      listingId,
-      offerAmount: amount,
-      currency: offerCurrency,
-      message: offerMessage || undefined,
-    }).catch(() => null);
-    if (!offerResult) return; // error already toasted
-    // Step 2: open Stripe checkout
-    if (offerResult.offerId) {
-      createCheckoutMutation.mutate({
-        listingId,
-        offerId: offerResult.offerId,
-        origin: window.location.origin,
-      });
-    } else {
-      // Offer created but no offerId returned (MySQL insertId quirk) — still show success
-      toast.success("Offer submitted! The seller will be notified.");
-      setOfferOpen(false);
-      setOfferAmount("");
-      setOfferMessage("");
-    }
-  };
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? `${currency} `;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -340,34 +287,11 @@ export default function MarketplaceDetail() {
                 {LISTING_TYPE_LABELS[listing.listingType] ?? listing.listingType}
               </div>
 
-              {isActive && !isOwner && (
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    if (!user) { toast.error("Please log in to make an offer"); return; }
-                    setOfferOpen(true);
-                  }}
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" /> Make an Offer
-                </Button>
-              )}
-
-              {isActive && !isOwner && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    if (!user) { toast.error("Please log in to purchase"); return; }
-                    // Pre-fill offer amount with asking price and open the offer/checkout dialog
-                    setOfferAmount(String(askingPrice ?? ""));
-                    setOfferOpen(true);
-                  }}
-                  disabled={makeOfferMutation.isPending || createCheckoutMutation.isPending}
-                >
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Buy at Asking Price
-                </Button>
-              )}
+              <div role="status" className="rounded-lg border border-amber-500/30 p-3 text-sm">
+                Payments, offers and seller acceptance are unavailable. Browsing is read-only;
+                prices and listing status are not evidence of verified settlement, payout or battery safety.
+              </div>
+              {isActive && !isOwner && <Button className="w-full" disabled>Purchase unavailable</Button>}
 
               {isOwner && (
                 <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground text-center">
@@ -438,18 +362,7 @@ export default function MarketplaceDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
-                  {(battery?.manufacturerId ?? "S").charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{battery?.manufacturerId ?? "Verified Seller"}</div>
-                  <div className="text-xs text-muted-foreground">Verified Platform Member</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-emerald-400">
-                <CheckCircle2 className="h-3 w-3" /> Identity Verified
-              </div>
+              <p className="text-sm text-muted-foreground">Seller identity and authority to sell have not been independently verified.</p>
             </CardContent>
           </Card>
 
@@ -459,7 +372,8 @@ export default function MarketplaceDetail() {
               <div className="flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  All transactions are facilitated through the Circul-AI-r platform. Battery condition is self-reported by the seller. Request an independent inspection before completing high-value transactions.
+                  Transactions are unavailable. Battery condition is seller-reported, not safety certification.
+                  A qualified independent inspection and an approved handling plan are required before any physical handover.
                 </p>
               </div>
             </CardContent>
@@ -467,76 +381,6 @@ export default function MarketplaceDetail() {
         </div>
       </div>
 
-      {/* Make Offer Dialog */}
-      <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" /> Make an Offer
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="rounded-lg bg-muted/30 p-3 text-sm space-y-1">
-              <div className="font-medium">{listing.bpan}</div>
-              <div className="text-muted-foreground">
-                Asking: {askingPrice ? `${currencySymbol}${Number(askingPrice).toLocaleString()}` : "Price on request"}
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="offer-amount">Your Offer Amount</Label>
-                <Input
-                  id="offer-amount"
-                  type="number"
-                  min="1"
-                  placeholder="Enter amount"
-                  value={offerAmount}
-                  onChange={(e) => setOfferAmount(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Currency</Label>
-                <Select value={offerCurrency} onValueChange={setOfferCurrency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CURRENCIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="offer-message">Message to Seller (optional)</Label>
-              <Textarea
-                id="offer-message"
-                placeholder="Introduce yourself, explain your use case, or ask questions about the battery…"
-                rows={3}
-                value={offerMessage}
-                onChange={(e) => setOfferMessage(e.target.value)}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              By submitting an offer, you agree to the platform's transaction terms. The seller will be notified and can accept, counter, or decline.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOfferOpen(false)}>Cancel</Button>
-            <Button
-              onClick={handleOffer}
-              disabled={makeOfferMutation.isPending || createCheckoutMutation.isPending}
-            >
-              {makeOfferMutation.isPending
-                ? "Creating offer…"
-                : createCheckoutMutation.isPending
-                ? "Opening checkout…"
-                : "Submit Offer & Pay"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

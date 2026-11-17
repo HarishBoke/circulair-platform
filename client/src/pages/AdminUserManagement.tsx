@@ -211,7 +211,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
             <Input
               value={org}
               onChange={(e) => setOrg(e.target.value)}
-              placeholder="e.g. Tata Motors, CPCB…"
+              placeholder="e.g. Example Battery Organisation"
               className="h-9 bg-background border-border text-sm text-foreground placeholder:text-muted-foreground/60 rounded-lg"
             />
           </div>
@@ -264,7 +264,7 @@ function EditDialog({ user, onClose }: { user: EditUser | null; onClose: () => v
 
 // ─── Audit log tab ────────────────────────────────────────────────────────────
 function AuditLog() {
-  const { data, isLoading } = trpc.admin.auditLog.useQuery({ limit: 100 });
+  const { data, isLoading, error } = trpc.admin.auditLog.useQuery({ limit: 100 });
 
   if (isLoading) {
     return (
@@ -275,6 +275,9 @@ function AuditLog() {
       </div>
     );
   }
+
+  if (error) return <p role="alert" className="p-6 text-sm text-destructive">Audit records unavailable: {error.message}</p>;
+  if (!data) return <p className="p-6 text-sm text-muted-foreground">Audit records unknown; no response data returned.</p>;
 
   if (!data?.length) {
     return (
@@ -491,8 +494,8 @@ export default function AdminUserManagement() {
     [debouncedSearch, roleFilter, accessFilter, page],
   );
 
-  const { data, isLoading, refetch } = trpc.admin.listUsers.useQuery(queryInput);
-  const { data: stats } = trpc.admin.roleStats.useQuery();
+  const { data, isLoading, error, refetch } = trpc.admin.listUsers.useQuery(queryInput);
+  const { data: stats, error: statsError } = trpc.admin.roleStats.useQuery();
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
   // Access guard — rendered after all hooks to satisfy Rules of Hooks
@@ -534,7 +537,7 @@ export default function AdminUserManagement() {
                 {(stats.byRole?.admin ?? 0) !== 1 ? "s" : ""}
               </>
             ) : (
-              "Loading…"
+              statsError ? "User counts unavailable" : "User counts unknown"
             )}
           </p>
         </div>
@@ -668,7 +671,9 @@ export default function AdminUserManagement() {
             )}
 
             {/* Empty state */}
-            {!isLoading && !data?.items.length && (
+            {error && <p role="alert" className="px-5 py-4 text-sm text-destructive">User records unavailable: {error.message}</p>}
+            {!isLoading && !error && !data && <p className="px-5 py-4 text-sm text-muted-foreground">User records unknown; no response data returned.</p>}
+            {!isLoading && !error && data && !data.items.length && (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-muted-foreground/60">
                 <p className="text-sm">No users found.</p>
                 {hasFilters && (

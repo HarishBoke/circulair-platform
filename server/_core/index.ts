@@ -17,6 +17,7 @@ import { createSeoRouter } from "../seoRoutes";
 import { handleStripeWebhook } from "../stripe";
 import { openapiSpec as trpcOpenapiSpec } from "../openapi";
 import { handleHealth } from "../health";
+import { createLocalPilotRestRouter } from "../localPilotRest";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -61,6 +62,9 @@ async function startServer() {
     }
   });
 
+  // Device-Bearer pilot parsing must precede the 50MB parser and legacy API-key gateway.
+  // Disabled by default; no startup migration or hardware/provider operation.
+  app.use("/api/v1/pilot", createLocalPilotRestRouter());
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

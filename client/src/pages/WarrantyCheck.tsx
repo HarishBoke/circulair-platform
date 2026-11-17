@@ -292,11 +292,7 @@ export default function WarrantyCheck() {
                           </Button>
                         </Link>
                         {warranty.isInWarranty && (
-                          <Link href={`/warranty/claim/${warranty.id}`}>
-                            <Button size="sm" className="bg-primary text-primary-foreground text-xs">
-                              <Shield className="w-3 h-3 mr-1" /> File Claim
-                            </Button>
-                          </Link>
+                          <p className="text-xs text-muted-foreground">Online claim submission is unavailable; contact the warranty issuer through an independently verified channel.</p>
                         )}
                       </div>
                     </div>

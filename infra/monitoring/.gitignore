@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+worker/dist/
+.env
+.env.*
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.pem
+*.key
+*token*
+*secret*

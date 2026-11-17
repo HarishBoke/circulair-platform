@@ -1,0 +1,26 @@
+[
+  {
+    "name": "caddy",
+    "tag": "v2.11.9",
+    "asset": "caddy_2.11.9_linux_amd64.tar.gz",
+    "sha256": "sha256:5b8cb7faf8726a2028ad96a66e54e6e81e8f361bc6175e5d22bbd997cc5177fb",
+    "source": "https://github.com/caddyserver/caddy/releases/download/v2.11.9/caddy_2.11.9_linux_amd64.tar.gz",
+    "verification": "official release asset digest/checksum matched"
+  },
+  {
+    "name": "alertmanager",
+    "tag": "v0.35.0",
+    "asset": "alertmanager-0.35.0.linux-amd64.tar.gz",
+    "sha256": "sha256:6c7752a903c40c8a749e0b29df9240437e4fbb8228068d0af8807377db32addd",
+    "source": "https://github.com/prometheus/alertmanager/releases/download/v0.35.0/alertmanager-0.35.0.linux-amd64.tar.gz",
+    "verification": "official release asset digest/checksum matched"
+  },
+  {
+    "name": "ntfy",
+    "tag": "v2.38.1",
+    "asset": "ntfy_2.38.1_linux_amd64.tar.gz",
+    "sha256": "sha256:9727d45e5da86c3f338f0f329044485bddde76f3fbbbc3f9e695c14776f09c32",
+    "source": "https://github.com/binwiederhier/ntfy/releases/download/v2.38.1/ntfy_2.38.1_linux_amd64.tar.gz",
+    "verification": "official release asset digest/checksum matched"
+  }
+]

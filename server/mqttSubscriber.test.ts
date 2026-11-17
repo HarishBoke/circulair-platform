@@ -64,7 +64,7 @@ describe("MQTT Subscriber — Configuration", () => {
     delete process.env.MQTT_BROKER_URL;
 
     const { startMqttSubscriber, getMqttStatus } = await import("./mqttSubscriber");
-    startMqttSubscriber({ brokerUrl: "" });
+    startMqttSubscriber({ brokerUrl: "" }, { role: "admin" });
 
     const status = getMqttStatus();
     expect(status.connected).toBe(false);
@@ -169,13 +169,13 @@ describe("MQTT Subscriber — Stop/Start Lifecycle", () => {
 
   it("startMqttSubscriber with empty brokerUrl does not throw", async () => {
     const { startMqttSubscriber } = await import("./mqttSubscriber");
-    expect(() => startMqttSubscriber({ brokerUrl: "" })).not.toThrow();
+    expect(() => startMqttSubscriber({ brokerUrl: "" }, { role: "admin" })).not.toThrow();
   });
 
-  it("startMqttSubscriber with valid URL does not throw", async () => {
+  it("startMqttSubscriber rejects plaintext broker URL", async () => {
     const { startMqttSubscriber } = await import("./mqttSubscriber");
     // Should not throw even if mqtt.connect is mocked
-    expect(() => startMqttSubscriber({ brokerUrl: "mqtt://test.broker.com:1883" })).not.toThrow();
+    expect(() => startMqttSubscriber({ brokerUrl: "mqtt://test.broker.com:1883" }, { role: "admin" })).toThrow("Broker requires");
   });
 
   it("getMqttStatus returns consistent shape after stop", async () => {
@@ -226,140 +226,68 @@ describe("MQTT Subscriber — Topic Pattern", () => {
   });
 });
 
-// Exercise the actual private handler through the mocked broker's message callback.
-// No broker, database, sockets, or PagerDuty delivery is started by these tests.
-describe("MQTT Subscriber — Provenance", () => {
-  const bpan = "A".repeat(19); // Existing subscriber validation; identity rules are out of scope.
+// Operational ingestion is intentionally closed: synthetic-label preservation
+// now means refusal to pollute history/alerts rather than writing marked fiction.
+describe("MQTT Subscriber — Closed provenance and identity boundary", () => {
   let subscriber: typeof import("./mqttSubscriber");
   let db: typeof import("./db");
-  let socket: typeof import("./telemetrySocket");
-
   beforeEach(async () => {
-    subscriber = await import("./mqttSubscriber");
-    db = await import("./db");
-    socket = await import("./telemetrySocket");
-    subscriber.stopTelemetryStream();
-    subscriber.stopMqttSubscriber();
+    subscriber = await import("./mqttSubscriber"); db = await import("./db");
+    subscriber.stopTelemetryStream({ role: "admin" }); subscriber.stopMqttSubscriber({ role: "admin" });
     vi.clearAllMocks();
-    mqttMock.handlers.clear();
-    vi.mocked(db.getBatteryByBpan).mockResolvedValue({ id: 42, chemistry: "NMC" } as any);
-    vi.mocked(db.evaluateAlertRules).mockReturnValue([
-      { id: 7, metric: "temperature", severity: "critical", name: "Thermal rule", operator: "gt", threshold: "51" } as any,
-    ]);
-    subscriber.startMqttSubscriber({
-      brokerUrl: "mqtt://localhost:1883", clientId: "mock-provenance", topicPrefix: "local/telemetry",
-      username: "", password: "", caCert: "",
-    });
-    mqttMock.handlers.get("connect")!();
   });
-
-  afterEach(() => {
-    subscriber.stopTelemetryStream();
-    subscriber.stopMqttSubscriber();
-    vi.useRealTimers();
+  it.each(["demo", "test", "simulator", "simulated", "flow_tester", "mqtt_demo", "BMS_SIMULATOR_V2", "integration_test", "stream", "mqtt", "measured", undefined, "", 123, { source: "demo" }])("does not persist or page claimed source %j", async source => {
+    const bpan = "A".repeat(21);
+    await subscriber.handleMessage(`circulair/telemetry/${bpan}/DEV-mock`, Buffer.from(JSON.stringify({ bpan, deviceId: "DEV-mock", recordedAt: new Date().toISOString(), source, tMax: 65, sohEstimate: 60 })));
+    expect(db.getBatteryByBpan).not.toHaveBeenCalled(); expect(db.insertTelemetry).not.toHaveBeenCalled();
+    expect(db.createAlert).not.toHaveBeenCalled(); expect(db.updateBatteryStatus).not.toHaveBeenCalled();
+    expect(db.updateDeviceLastSeenByBpan).not.toHaveBeenCalled();
   });
-
-  async function receive(payload: Record<string, unknown>) {
-    mqttMock.handlers.get("message")!(
-      `local/telemetry/${bpan}`,
-      Buffer.from(JSON.stringify({ bpan, tMax: 65, sohEstimate: 60, ...payload })),
-    );
-    await vi.waitFor(() => expect(db.updateBatteryStatus).toHaveBeenCalledTimes(1));
-    expect(db.insertTelemetry).toHaveBeenCalledTimes(1);
-    expect(db.createAlert).toHaveBeenCalledTimes(2);
-    return {
-      telemetry: vi.mocked(db.insertTelemetry).mock.calls[0]![0],
-      reading: vi.mocked(socket.broadcastTelemetryReading).mock.calls[0]![0],
-      alerts: vi.mocked(db.createAlert).mock.calls.map(([alert]) => {
-        expect(alert.severity).toBeDefined();
-        return { ...alert, severity: alert.severity!, metadata: alert.metadata };
-      }),
-    };
-  }
-
-  it.each(["demo", "test", "simulator", "simulated", "flow_tester", "mqtt_demo", "BMS_SIMULATOR_V2", "integration_test"])(
-    "preserves explicit %s through persistence, dashboard classification, and every alert",
-    async source => {
-      const result = await receive({ source });
-      expect(result.telemetry.source).toBe(source);
-      expect(result.reading.source).toBe("simulated");
-      for (const alert of result.alerts) {
-        expect(alert.metadata).toMatchObject({ source });
-        expect(shouldPageAlert(alert)).toBe(false);
-      }
-      expect(result.alerts[0]).toMatchObject({ severity: "critical", type: "thermal_anomaly" });
-      expect(result.alerts[1]).toMatchObject({ type: "eol_detected" });
-    },
-  );
-
-  it.each(["demo", "simulated"])("preserves explicit boolean %s without relying on a source label", async flag => {
-    const result = await receive({ source: "mqtt", [flag]: true });
-    expect(result.telemetry.source).toBe("simulated");
-    expect(result.reading.source).toBe("simulated");
-    for (const alert of result.alerts) {
-      expect(alert.metadata).toMatchObject({ source: "simulated", [flag]: true });
-      expect(shouldPageAlert(alert)).toBe(false);
-    }
+  it.each(["demo", "simulated"])("does not persist claimed boolean %s", async flag => {
+    await subscriber.handleMessage("anything", Buffer.from(JSON.stringify({ bpan: "A".repeat(21), source: "mqtt", [flag]: true, tMax: 65 })));
+    expect(db.insertTelemetry).not.toHaveBeenCalled(); expect(db.createAlert).not.toHaveBeenCalled();
   });
-
-  it.each([undefined, "mqtt", "bms_v2", "api", "", 123, { source: "demo" }])(
-    "retains normal MQTT eligibility for an absent/unrecognized source %j",
-    async source => {
-      const result = await receive({ source, demo: false, simulated: "true" });
-      expect(result.telemetry.source).toBe("mqtt");
-      expect(result.reading.source).toBe("mqtt");
-      expect(result.alerts[0].metadata).toMatchObject({ source: "mqtt" });
-      expect(shouldPageAlert(result.alerts[0])).toBe(true);
-      expect(shouldPageAlert(result.alerts[1])).toBe(false); // Existing warning severity.
-    },
-  );
-
-  it("classifies the existing synthetic stream label as simulated", async () => {
-    const result = await receive({ source: "stream" });
-    expect(result.telemetry.source).toBe("simulated");
-    expect(result.reading.source).toBe("simulated");
-    expect(result.alerts[0].metadata).toMatchObject({ source: "simulated" });
-    expect(shouldPageAlert(result.alerts[0])).toBe(false);
+  it("rejects mismatched topic identity before any database access", async () => {
+    await subscriber.handleMessage("circulair/telemetry/OTHER/DEV-mock", Buffer.from(JSON.stringify({ bpan: "A".repeat(21), deviceId: "DEV-mock", recordedAt: new Date().toISOString(), source: "measured", vPack: 0 })));
+    expect(subscriber.getMqttStatus().errors.at(-1)).toBe("topic_device_identity_mismatch"); expect(db.getBatteryByBpan).not.toHaveBeenCalled();
   });
-
-  it("retains test provenance after a connectivity publisher message loops back", async () => {
-    await subscriber.publishTestMessage(bpan);
-    const [topic, body] = mqttMock.client.publish.mock.calls[0]!;
-    expect(topic).toBe(`local/telemetry/${bpan}`);
-    const published = JSON.parse(body);
-    expect(published.source).toBe("test");
-    const result = await receive({ ...published, tMax: 65, sohEstimate: 60 });
-    expect(result.telemetry.source).toBe("test");
-    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
+  it.each([Buffer.from("{"), Buffer.alloc(16385)])("rejects malformed/oversized input without writes", async raw => {
+    await subscriber.handleMessage("anything", raw); expect(db.insertTelemetry).not.toHaveBeenCalled();
   });
+});
 
-  it("forces non-live flow-tester provenance even if custom payload includes a live label", async () => {
-    await subscriber.publishTelemetryMessage(bpan, {
-      bpan, vPack: 350, current: -40, tMax: 65, tMin: 25, tAvg: 40, soc: 50,
-      sohEstimate: 60, cycleCount: 200, internalResistance: 20, source: "mqtt",
-    } as any);
-    const [topic, body] = mqttMock.client.publish.mock.calls[0]!;
-    expect(topic).toBe(`local/telemetry/${bpan}`);
-    const published = JSON.parse(body);
-    expect(published.source).toBe("flow_tester");
-    const result = await receive(published);
-    expect(result.telemetry.source).toBe("flow_tester");
-    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
+describe("MQTT Subscriber — Admin/configuration boundary", () => {
+  afterEach(async () => { (await import("./mqttSubscriber")).stopMqttSubscriber({ role: "admin" }); vi.unstubAllEnvs(); });
+  it("does not connect at startup without admin integration authorization", async () => {
+    const mqtt = await import("mqtt"); vi.mocked(mqtt.default.connect).mockClear();
+    (await import("./mqttSubscriber")).startMqttSubscriber(); expect(mqtt.default.connect).not.toHaveBeenCalled();
   });
-
-  it("marks every generated stream scenario as simulated and keeps a thermal loopback non-pageable", async () => {
-    vi.useFakeTimers();
-    subscriber.startTelemetryStream([bpan], 1000);
-    vi.advanceTimersByTime(6000);
-    subscriber.stopTelemetryStream();
-    vi.useRealTimers();
-    const published = mqttMock.client.publish.mock.calls.map(([, body]) => JSON.parse(body));
-    expect(published).toHaveLength(6);
-    expect(published.every(payload => payload.source === "simulated")).toBe(true);
-    const thermal = published.find(payload => payload.tMax > 51);
-    expect(thermal).toBeDefined();
-    const result = await receive({ ...thermal!, sohEstimate: 60 });
-    expect(result.telemetry.source).toBe("simulated");
-    expect(result.alerts.every(alert => !shouldPageAlert(alert))).toBe(true);
+  it("denies login-only broker overrides", async () => {
+    expect(() => (awaitSubscriber.startMqttSubscriber({ brokerUrl: "mqtts://evil.example.invalid" }))).toThrow("admin");
+  });
+  let awaitSubscriber: typeof import("./mqttSubscriber");
+  beforeEach(async () => { awaitSubscriber = await import("./mqttSubscriber"); });
+  it("rejects changed destinations without sending configured credentials", async () => {
+    vi.stubEnv("MQTT_BROKER_URL", "mqtts://approved.example.invalid:8883");
+    vi.stubEnv("MQTT_PASSWORD", "mock-secret");
+    const mqtt = await import("mqtt"); vi.mocked(mqtt.default.connect).mockClear();
+    expect(() => awaitSubscriber.startMqttSubscriber({ brokerUrl: "mqtts://evil.example.invalid" }, { role: "admin" })).toThrow("not approved"); expect(mqtt.default.connect).not.toHaveBeenCalled();
+  });
+  it.each(["mqtt://approved.example.invalid", "mqtts://user:mock-secret@approved.example.invalid", "mqtts://approved.example.invalid/?token=mock-secret"])("rejects unsafe secret-bearing/plaintext URL %s", url => {
+    vi.stubEnv("MQTT_BROKER_URL", url); expect(() => awaitSubscriber.startMqttSubscriber({ brokerUrl: url }, { role: "admin" })).toThrow();
+  });
+  it("subscribes to approved TLS BPAN/device pattern and disposes stopped callbacks", async () => {
+    vi.stubEnv("MQTT_BROKER_URL", "mqtts://approved.example.invalid:8883");
+    awaitSubscriber.startMqttSubscriber({ topicPrefix: "local/telemetry" }, { role: "admin" });
+    mqttMock.handlers.get("connect")!(); expect(mqttMock.client.subscribe).toHaveBeenCalledWith("local/telemetry/+/+", { qos: 1 }, expect.any(Function));
+    awaitSubscriber.stopMqttSubscriber({ role: "admin" });
+    mqttMock.handlers.get("connect")!(); expect(awaitSubscriber.getMqttStatus().connected).toBe(false);
+  });
+  it("denies non-admin disconnect and mismatched synthetic publish", async () => {
+    vi.stubEnv("MQTT_BROKER_URL", "mqtts://approved.example.invalid:8883");
+    awaitSubscriber.startMqttSubscriber(undefined, { role: "admin" }); mqttMock.handlers.get("connect")!();
+    expect(() => awaitSubscriber.stopMqttSubscriber()).toThrow("admin");
+    await expect(awaitSubscriber.publishTelemetryMessage("A".repeat(21), { bpan: "B".repeat(21) } as any, { role: "admin" })).rejects.toThrow("identity mismatch");
+    await expect(awaitSubscriber.publishTestMessage("A".repeat(21))).rejects.toThrow("admin");
   });
 });

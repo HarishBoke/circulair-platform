@@ -17,6 +17,8 @@
  * - IR growth: Prada et al. (2013), J. Electrochem. Soc.
  */
 
+import { cycleFadePercentagePoints, cyclesToSohMarker } from "./numericalUnits";
+
 // ─── Chemistry-specific degradation parameters ────────────────────────────────
 
 interface ChemistryParams {
@@ -24,7 +26,7 @@ interface ChemistryParams {
   calendarFadeRate: number;
   /** Arrhenius activation energy coefficient (dimensionless) */
   arrheniusCoeff: number;
-  /** Capacity fade per full equivalent cycle (%) */
+  /** Percentage POINTS per full-equivalent cycle, NOT fractional loss */
   cycleFadePerCycle: number;
   /** Peukert exponent (1.0 = ideal, >1 = more degradation at high rate) */
   peukertN: number;
@@ -91,8 +93,8 @@ const CHEMISTRY_PARAMS: Record<string, ChemistryParams> = {
     irGrowthPerCycle: 0.003,
     baseIrPerKwh: 3.0,
   },
-  // Solid-State Battery — emerging chemistry with superior cycle life and thermal stability
-  // Parameters based on Toyota/QuantumScape published data (2023-2024)
+  // Emerging chemistry demo coefficients; no manufacturer calibration, cycle-life
+  // reconciliation or thermal/safety validation is established.
   SOLID_STATE: {
     calendarFadeRate: 0.8,    // Very low calendar fade (ceramic electrolyte stability)
     arrheniusCoeff: 0.03,     // Excellent thermal stability (no liquid electrolyte)
@@ -113,7 +115,9 @@ export interface SohModelInput {
   capacityKwh: number;
   mfgYear: number;
   mfgMonth: number;
-  /** BMS-reported SOH (if available, used to calibrate model) */
+  /** Fixed evaluation date for deterministic estimates; default current clock. */
+  evaluationDate?: Date;
+  /** BMS-reported SOH; blending is uncalibrated, NOT accuracy validation. */
   bmsReportedSoh?: number;
   /** Cycle count from telemetry */
   cycleCount?: number;
@@ -132,7 +136,7 @@ export interface SohModelOutput {
   rulCycles: number;
   /** Model confidence (0–100%) — higher when more telemetry is available */
   confidence: number;
-  /** Root mean square error estimate (fraction, target < 0.02) */
+  /** Legacy heuristic error score, NOT measured RMSE or validated accuracy. */
   rmse: number;
   /** Triage recommendation */
   triagePath: "direct_reuse" | "module_repurposing" | "material_recycling";
@@ -150,9 +154,8 @@ export interface SohModelOutput {
 /**
  * Compute calendar age in fractional years from manufacture date to today.
  */
-function calendarAgeYears(mfgYear: number, mfgMonth: number): number {
-  const now = new Date();
-  const mfgDate = new Date(mfgYear, mfgMonth - 1, 1);
+function calendarAgeYears(mfgYear: number, mfgMonth: number, now = new Date()): number {
+  const mfgDate = new Date(Date.UTC(mfgYear, mfgMonth - 1, 1));
   const msPerYear = 365.25 * 24 * 3600 * 1000;
   return Math.max(0, (now.getTime() - mfgDate.getTime()) / msPerYear);
 }
@@ -204,14 +207,14 @@ export function predictSohPhysics(input: SohModelInput): SohModelOutput {
   const params = CHEMISTRY_PARAMS[input.chemistry?.toUpperCase()] ?? DEFAULT_PARAMS;
 
   // 1. Calendar aging
-  const ageYears = calendarAgeYears(input.mfgYear, input.mfgMonth);
+  const ageYears = calendarAgeYears(input.mfgYear, input.mfgMonth, input.evaluationDate);
   const tempFactor = arrheniusFactor(input.tMax, params.arrheniusCoeff);
   const calendarFade = params.calendarFadeRate * ageYears * tempFactor;
 
   // 2. Cycle aging
   const cycles = input.cycleCount ?? 0;
   const cRateFactor = peukertFactor(input.avgCRate, params.peukertN);
-  const cycleFade = params.cycleFadePerCycle * cycles * cRateFactor * 100;
+  const cycleFade = cycleFadePercentagePoints(params.cycleFadePerCycle, cycles, cRateFactor);
 
   // 3. Internal resistance correction
   const irPenalty = irCorrection(input.irPack, input.capacityKwh, params);
@@ -224,18 +227,17 @@ export function predictSohPhysics(input: SohModelInput): SohModelOutput {
   //    Weight: 60% BMS (direct measurement) + 40% physics model
   let predictedSoh = modelSoh;
   let bmsCorrectionApplied = false;
-  if (input.bmsReportedSoh !== undefined && input.bmsReportedSoh > 0) {
+  if (input.bmsReportedSoh !== undefined && Number.isFinite(input.bmsReportedSoh) && input.bmsReportedSoh >= 0 && input.bmsReportedSoh <= 100) {
     predictedSoh = 0.6 * input.bmsReportedSoh + 0.4 * modelSoh;
     bmsCorrectionApplied = true;
   }
   predictedSoh = Math.max(0, Math.min(100, predictedSoh));
 
   // 6. Remaining useful life (cycles to 80% SOH threshold)
-  const sohRemaining = Math.max(0, predictedSoh - 80);
-  const fadePer100Cycles = params.cycleFadePerCycle * 100 * cRateFactor * 100;
-  const rulCycles = fadePer100Cycles > 0
-    ? Math.round((sohRemaining / fadePer100Cycles) * 100)
-    : params.nominalCycleLife;
+  // Same percentage-point units as cycle fade. This is a cycle-only estimate,
+  // excluding future calendar/IR losses, not certified useful/safe hardware life.
+  const fadePerCycle = cycleFadePercentagePoints(params.cycleFadePerCycle, 1, cRateFactor);
+  const rulCycles = cyclesToSohMarker(predictedSoh, fadePerCycle) ?? 0;
 
   // 7. Confidence: increases with available data
   let confidence = 50; // base confidence with no telemetry

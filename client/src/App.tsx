@@ -70,6 +70,7 @@ import McpServer from "./pages/McpServer";
 import HealthPortal from "./pages/HealthPortal";
 import UserProfile from "./pages/UserProfile";
 import DeveloperHub from "./pages/DeveloperHub";
+import LocalBatteryPilot from "./pages/LocalBatteryPilot";
 
 function Router() {
   return (
@@ -102,6 +103,7 @@ function Router() {
       <Route path="/data-integration" component={DataIntegration} />
       <Route path="/mqtt-flow-tester" component={MqttFlowTester} />
       <Route path="/device-provisioning" component={() => <PlatformLayout><DeviceProvisioning /></PlatformLayout>} />
+      <Route path="/local-battery-pilot" component={() => <PlatformLayout><LocalBatteryPilot /></PlatformLayout>} />
       <Route path="/demo" component={() => <PlatformLayout><DemoMode /></PlatformLayout>} />
       <Route path="/gateway-docs" component={() => <PlatformLayout><GatewayDocs /></PlatformLayout>} />
       <Route path="/admin/users" component={() => <PlatformLayout><AdminUserManagement /></PlatformLayout>} />

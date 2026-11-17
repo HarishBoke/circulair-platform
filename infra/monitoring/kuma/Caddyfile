@@ -1,0 +1,40 @@
+{
+	auto_https off
+	admin off
+	persist_config off
+	log default {
+		output discard
+	}
+}
+
+:{$PORT} {
+	# These are liveness/readiness, not the application UI or notification routes.
+	@live {
+		method GET HEAD
+		path /livez
+	}
+	handle @live {
+		reverse_proxy http://127.0.0.1:3002
+	}
+	@ready {
+		method GET HEAD
+		path /healthz
+	}
+	handle @ready {
+		reverse_proxy http://127.0.0.1:3002
+	}
+	handle {
+		route {
+			basic_auth {
+				operator {$KUMA_UI_PASSWORD_HASH}
+			}
+			reverse_proxy http://127.0.0.1:3001 {
+				header_up -Authorization
+				header_up -Proxy-Authorization
+			}
+		}
+	}
+	handle_errors {
+		respond "request rejected" {err.status_code}
+	}
+}

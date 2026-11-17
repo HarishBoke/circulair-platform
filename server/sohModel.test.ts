@@ -127,15 +127,32 @@ describe("predictSohPhysics — NMC battery", () => {
     });
     expect(high.triagePath).toBe("direct_reuse");
 
-    // Force a low SOH via many cycles
-    const low = predictSohPhysics({
+    // Correct percentage-point cycle fade: 2,000 cycles × .0025 = 5 points,
+    // not the old 500-point unit error. Independent fixed-date fixture:
+    // age = 3,653 / 365.25 years; calendar = 25.003422313483913 points;
+    // raw SOH = 69.99657768651609; .6×40 + .4×raw = 51.998631074606436.
+    // This is an uncalibrated economic-route scenario, not safe reuse approval.
+    const intermediate = predictSohPhysics({
       chemistry: "NMC",
       capacityKwh: 10,
-      mfgYear: new Date().getFullYear() - 10,
+      mfgYear: 2016,
       mfgMonth: 1,
+      evaluationDate: new Date("2026-01-01T00:00:00.000Z"),
       cycleCount: 2000,
       bmsReportedSoh: 40,
     });
+    expect(intermediate.breakdown.cycleFade).toBe(5);
+    expect(intermediate.predictedSoh).toBe(52);
+    expect(intermediate.triagePath).toBe("module_repurposing");
+
+    // Retain the meaningful low-SOH recycling assertion. BMS 20 with the
+    // same raw model = 39.998631074606436, independently rounded to 40.
+    const low = predictSohPhysics({
+      chemistry: "NMC", capacityKwh: 10, mfgYear: 2016, mfgMonth: 1,
+      evaluationDate: new Date("2026-01-01T00:00:00.000Z"),
+      cycleCount: 2000, bmsReportedSoh: 20,
+    });
+    expect(low.predictedSoh).toBe(40);
     expect(low.triagePath).toBe("material_recycling");
   });
 

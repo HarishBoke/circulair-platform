@@ -1,7 +1,12 @@
 import { useState, useMemo } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { trpc } from "@/lib/trpc";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import {
+  BPAN_LOCAL_PILOT_LABEL, BPAN_REGISTRATION_BLOCKED_REASON, BPAN_DRAFT_FORMAT,
+  BPAN_DRAFT_ALPHABET_CONFLICT,
+  bpanPilotRegistrationSchema, createLocalBpanPreview, draftChemistryOptions,
+  draftCountryOptions, draftExtinguisherOptions, encodeDraftParameter,
+} from "@shared/bpanContract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,32 +18,11 @@ import {
 } from "lucide-react";
 
 /* ─── Option tables ────────────────────────────────────────────────────────── */
-const CAPACITY_OPTIONS = [
-  { code: "A1", label: "1.5 kWh" }, { code: "A2", label: "2.0 kWh" }, { code: "A3", label: "2.5 kWh" },
-  { code: "A4", label: "3.0 kWh" }, { code: "A5", label: "3.5 kWh" }, { code: "A6", label: "30.0 kWh" },
-  { code: "B1", label: "5.0 kWh" }, { code: "B2", label: "7.5 kWh" }, { code: "B3", label: "10.0 kWh" },
-  { code: "B4", label: "15.0 kWh" }, { code: "B5", label: "20.0 kWh" }, { code: "B6", label: "25.0 kWh" },
-  { code: "C1", label: "40.0 kWh" }, { code: "C2", label: "50.0 kWh" }, { code: "C3", label: "60.0 kWh" },
-  { code: "C4", label: "75.0 kWh" }, { code: "C5", label: "100.0 kWh" },
-];
-const CHEMISTRY_OPTIONS = [
-  { code: "A", label: "Lead Acid" }, { code: "B", label: "LFP" }, { code: "C", label: "LCO" },
-  { code: "D", label: "LMO" }, { code: "F", label: "NMC" }, { code: "G", label: "NCA" },
-];
-const VOLTAGE_OPTIONS = [
-  { code: "KK", label: "307V" }, { code: "KL", label: "400V" }, { code: "KM", label: "450V" },
-  { code: "KN", label: "500V" }, { code: "KO", label: "600V" }, { code: "KP", label: "700V" },
-  { code: "KQ", label: "800V" }, { code: "LA", label: "48V" }, { code: "LB", label: "60V" },
-  { code: "LC", label: "72V" }, { code: "LD", label: "96V" }, { code: "LE", label: "120V" },
-];
-const ORIGIN_OPTIONS = [
-  { code: "IN", label: "India" }, { code: "CN", label: "China" }, { code: "KR", label: "South Korea" },
-  { code: "JP", label: "Japan" }, { code: "US", label: "United States" }, { code: "DE", label: "Germany" },
-];
-const EXTINGUISHER_OPTIONS = [
-  { code: "A", label: "Class A" }, { code: "B", label: "Class B" }, { code: "C", label: "Class C" },
-  { code: "D", label: "Class D" }, { code: "E", label: "Class E" },
-];
+const CAPACITY_OPTIONS = [1, 2, 3, 5, 10, 20, 30, 40, 60, 100].map(value => ({ code: encodeDraftParameter(value), label: `${value} kWh (draft table)` }));
+const CHEMISTRY_OPTIONS = [...draftChemistryOptions];
+const VOLTAGE_OPTIONS = [48, 60, 72, 96, 120, 307, 400, 600, 800].map(value => ({ code: encodeDraftParameter(value), label: `${value} V (draft table)` }));
+const ORIGIN_OPTIONS = draftCountryOptions;
+const EXTINGUISHER_OPTIONS = [...draftExtinguisherOptions];
 
 const STEPS = [
   { id: 1, title: "Manufacturer", icon: Building2, desc: "Identity & origin" },
@@ -101,65 +85,51 @@ function SelectField({ label, value, onChange, options, hint }: {
 
 /* ─── Main Component ───────────────────────────────────────────────────────── */
 export default function BpanRegister() {
-  usePageTitle("Register Battery");
-  const [, navigate] = useLocation();
+  usePageTitle("Local Battery Pilot Preview");
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    countryCode: "IN",
+    countryCode: "MY",
     manufacturerId: "",
-    capacityCode: "C3",
+    capacityCode: encodeDraftParameter(30),
     chemistryCode: "F",
-    voltageCode: "KO",
-    cellOriginCode: "IN",
+    voltageCode: encodeDraftParameter(307),
+    cellOriginCode: "KL",
     extinguisherClass: "D",
     mfgYear: new Date().getFullYear(),
     mfgMonth: new Date().getMonth() + 1,
     mfgDay: new Date().getDate(),
-    factoryCode: "A",
+    factoryCode: "1",
     serialNumber: "0001",
-    recyclabilityPct: 95,
-    lithiumPct: 6.5,
-    cobaltPct: 0,
-    nickelPct: 0,
-    manganesePct: 0,
-    carbonFootprintKgCo2: 85,
-    vehicleId: "",
+    recyclabilityPct: undefined as number | undefined,
+    lithiumPct: undefined as number | undefined,
+    cobaltPct: undefined as number | undefined,
+    nickelPct: undefined as number | undefined,
+    manganesePct: undefined as number | undefined,
+    carbonFootprintKgCo2: undefined as number | undefined,
   });
   const [generatedBpan, setGeneratedBpan] = useState<string | null>(null);
 
-  const mutation = trpc.bpan.generate.useMutation({
-    onSuccess: (data) => {
-      setGeneratedBpan(data.bpan);
-      toast.success(`Battery registered! BPAN: ${data.bpan}`);
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const set = (key: string, value: string | number) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: string, value: string | number | undefined) => setForm((f) => ({ ...f, [key]: value }));
 
   const previewBpan = useMemo(() => {
-    const MONTH_CODES = "ABCDEFGHIJKL";
-    const DAY_CODES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567";
-    const yearCode = String(form.mfgYear).slice(-1);
-    const monthCode = MONTH_CODES[form.mfgMonth - 1] ?? "A";
-    const dayCode = DAY_CODES[form.mfgDay - 1] ?? "A";
-    return `${form.countryCode}${form.manufacturerId.padEnd(3, "_")}${form.capacityCode}${form.chemistryCode}${form.voltageCode}${form.cellOriginCode}${form.extinguisherClass}${yearCode}${monthCode}${dayCode}${form.factoryCode}${form.serialNumber}`;
+    const parsed = bpanPilotRegistrationSchema.safeParse(form);
+    return parsed.success ? createLocalBpanPreview(parsed.data).bpan : "Complete valid pilot fields";
   }, [form]);
 
   const canAdvance = () => {
-    if (step === 1) return form.countryCode.length === 2 && form.manufacturerId.length === 3;
+    if (step === 1) return draftCountryOptions.some(option => option.code === form.countryCode) && /^[A-HJ-NP-Z0-9]{3}$/.test(form.manufacturerId);
     if (step === 2) return form.capacityCode && form.chemistryCode && form.voltageCode;
-    if (step === 3) return form.mfgYear >= 2020 && form.mfgMonth >= 1 && form.mfgDay >= 1 && form.serialNumber.length === 4;
-    return true;
+    return bpanPilotRegistrationSchema.safeParse(form).success;
   };
 
   const handleSubmit = () => {
-    if (form.manufacturerId.length !== 3) {
-      toast.error("Manufacturer ID must be exactly 3 characters");
-      setStep(1);
+    const parsed = bpanPilotRegistrationSchema.safeParse(form);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Invalid pilot metadata");
       return;
     }
-    mutation.mutate(form);
+    setGeneratedBpan(createLocalBpanPreview(parsed.data).bpan);
+    toast.success("Offline preview created. No battery or customer record was registered.");
   };
 
   /* ─── Success Screen ───────────────────────────────────────────────────── */
@@ -170,21 +140,20 @@ export default function BpanRegister() {
           <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-5">
             <CheckCircle2 className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="font-display text-2xl font-bold mb-2">Battery Registered!</h2>
-          <p className="text-muted-foreground text-sm mb-6">Your battery has been assigned a Battery Pack Aadhaar Number</p>
+          <h2 className="font-display text-2xl font-bold mb-2">Local Pilot Preview Only</h2>
+          <p className="text-muted-foreground text-sm mb-6">{BPAN_LOCAL_PILOT_LABEL}. This preview is not saved, allocated, or evidence of battery registration.</p>
           <div className="bg-secondary/50 rounded-xl p-4 mb-6">
-            <div className="font-mono text-[10px] text-muted-foreground mb-2 uppercase tracking-widest">BPAN</div>
+            <div className="font-mono text-[10px] text-muted-foreground mb-2 uppercase tracking-widest">Draft-style preview</div>
             <div className="font-mono text-xl font-bold text-primary tracking-widest">{generatedBpan}</div>
-            <div className="font-mono text-[9px] text-muted-foreground mt-1">19-character Battery Pack Aadhaar Number</div>
+            <div className="font-mono text-[9px] text-muted-foreground mt-1">{BPAN_DRAFT_FORMAT} · 21 characters · no official assignment</div>
           </div>
+          <p className="text-xs text-muted-foreground mb-6">{BPAN_DRAFT_ALPHABET_CONFLICT}</p>
 
           {/* Next steps */}
           <div className="text-left bg-secondary/30 rounded-xl p-4 mb-6 space-y-3">
             <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Recommended Next Steps</div>
             {[
-              { label: "View battery detail page", href: `/batteries/${generatedBpan}`, desc: "See full lifecycle view, telemetry, and health passport" },
-              { label: "Connect an IoT device", href: "/device-provisioning", desc: "Register a gateway or BMS to start streaming telemetry" },
-              { label: "Register warranty", href: "/warranty/register", desc: "Set up warranty coverage for this battery" },
+              { label: "Return to existing local assets", href: "/batteries", desc: "Existing identities are retained; this preview is not a battery record" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group">
@@ -202,18 +171,13 @@ export default function BpanRegister() {
             <Button
               variant="outline"
               className="flex-1 border-border text-xs"
-              onClick={() => { navigator.clipboard.writeText(generatedBpan); toast.success("Copied!"); }}
+              onClick={() => { navigator.clipboard.writeText(`${BPAN_LOCAL_PILOT_LABEL}\n${BPAN_DRAFT_FORMAT}\n${BPAN_DRAFT_ALPHABET_CONFLICT}\n${generatedBpan}`).then(() => toast.success("Labelled preview copied"), () => toast.error("Clipboard unavailable")); }}
             >
-              <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy BPAN
+              <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy Labelled Preview
             </Button>
-            <Link href={`/batteries/${generatedBpan}`}>
-              <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs">
-                <QrCode className="w-3.5 h-3.5 mr-1.5" /> View Battery
-              </Button>
-            </Link>
           </div>
           <Button variant="ghost" size="sm" className="mt-4 text-muted-foreground text-xs" onClick={() => { setGeneratedBpan(null); setStep(1); }}>
-            Register Another Battery
+            Preview Another Local Sample
           </Button>
         </div>
       </div>
@@ -229,16 +193,20 @@ export default function BpanRegister() {
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><ArrowLeft className="w-4 h-4" /></Button>
         </Link>
         <div>
-          <h1 className="font-display text-2xl font-bold">Register Battery</h1>
+          <h1 className="font-display text-2xl font-bold">Local Battery Pilot Preview</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Step {step} of 4 - {STEPS[step - 1].title}</p>
         </div>
+      </div>
+      <div role="note" className="bg-chart-4/10 border border-chart-4/30 rounded-xl p-4 mb-6 text-sm">
+        {BPAN_LOCAL_PILOT_LABEL}. {BPAN_REGISTRATION_BLOCKED_REASON} The supplied guideline is Draft and specifies 21 characters; legacy 19-character assets remain unchanged. Default values are examples, not measured pack specifications. Manufacturer serials must be recorded separately in the pilot worksheet.
+        <p className="mt-2">{BPAN_DRAFT_ALPHABET_CONFLICT}</p>
       </div>
 
       {/* BPAN Preview */}
       <div className="bg-card border border-primary/20 rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Live BPAN Preview</div>
+            <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Offline Draft-Style Preview · Not Allocated</div>
             <div className="font-mono text-lg font-bold text-primary tracking-widest">{previewBpan}</div>
           </div>
           <Battery className="w-8 h-8 text-primary/20" />
@@ -246,15 +214,15 @@ export default function BpanRegister() {
         <div className="flex gap-4 mt-2">
           <div className="text-center">
             <div className="font-mono text-[8px] text-muted-foreground/60">BMI</div>
-            <div className={`font-mono text-[10px] ${step === 1 ? "text-primary" : "text-chart-2"}`}>{previewBpan.slice(0, 5)}</div>
+            <div className={`font-mono text-[10px] ${step === 1 ? "text-primary" : "text-chart-2"}`}>{previewBpan.length === 21 ? previewBpan.slice(0, 5) : "—"}</div>
           </div>
           <div className="text-center">
             <div className="font-mono text-[8px] text-muted-foreground/60">BDS</div>
-            <div className={`font-mono text-[10px] ${step === 2 ? "text-primary" : "text-chart-3"}`}>{previewBpan.slice(5, 12)}</div>
+            <div className={`font-mono text-[10px] ${step === 2 ? "text-primary" : "text-chart-3"}`}>{previewBpan.length === 21 ? previewBpan.slice(5, 13) : "—"}</div>
           </div>
           <div className="text-center">
             <div className="font-mono text-[8px] text-muted-foreground/60">BI</div>
-            <div className={`font-mono text-[10px] ${step === 3 ? "text-primary" : "text-chart-4"}`}>{previewBpan.slice(12, 21)}</div>
+            <div className={`font-mono text-[10px] ${step === 3 ? "text-primary" : "text-chart-4"}`}>{previewBpan.length === 21 ? previewBpan.slice(13, 21) : "—"}</div>
           </div>
         </div>
       </div>
@@ -277,9 +245,9 @@ export default function BpanRegister() {
                 onChange={(e) => set("countryCode", e.target.value.toUpperCase().slice(0, 2))}
                 maxLength={2}
                 className="bg-secondary/30 border-border font-mono text-sm h-9"
-                placeholder="IN"
+                placeholder="MY"
               />
-              <div className="text-[9px] text-muted-foreground/50 mt-1">ISO 3166-1 alpha-2 code (e.g., IN, CN, US, DE)</div>
+              <div className="text-[9px] text-muted-foreground/50 mt-1">Draft Table 16 pilot subset, not ISO alpha-2; allocation unverified</div>
             </div>
             <div>
               <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Manufacturer ID (3 chars)</Label>
@@ -288,9 +256,9 @@ export default function BpanRegister() {
                 onChange={(e) => set("manufacturerId", e.target.value.toUpperCase().slice(0, 3))}
                 maxLength={3}
                 className="bg-secondary/30 border-border font-mono text-sm h-9"
-                placeholder="MH1"
+                placeholder="008 (draft example only)"
               />
-              <div className="text-[9px] text-muted-foreground/50 mt-1">Unique 3-character manufacturer identifier</div>
+              <div className="text-[9px] text-muted-foreground/50 mt-1">Preview metadata only; entering a code does not allocate a manufacturer ID</div>
             </div>
           </div>
         </div>
@@ -302,7 +270,7 @@ export default function BpanRegister() {
           <h3 className="font-display text-sm font-bold flex items-center gap-2">
             <FlaskConical className="w-4 h-4 text-primary" /> Battery Design Specifications (BDS)
           </h3>
-          <p className="text-muted-foreground text-xs">Technical specifications that define the battery's chemistry, capacity, voltage, cell origin, and fire safety class.</p>
+          <p className="text-muted-foreground text-xs">Draft metadata only. Extinguisher codes are not emergency instructions; follow a qualified site safety plan and manufacturer documentation.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <SelectField label="Capacity" value={form.capacityCode} onChange={(v) => set("capacityCode", v)} options={CAPACITY_OPTIONS} hint="Nominal energy capacity in kWh" />
             <SelectField label="Chemistry" value={form.chemistryCode} onChange={(v) => set("chemistryCode", v)} options={CHEMISTRY_OPTIONS} hint="Cell chemistry type" />
@@ -324,9 +292,9 @@ export default function BpanRegister() {
             <div>
               <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Mfg Year</Label>
               <Input
-                type="number" min={2020} max={2035}
+                type="number" min={2025} max={2057}
                 value={form.mfgYear}
-                onChange={(e) => set("mfgYear", parseInt(e.target.value) || 2025)}
+                onChange={(e) => set("mfgYear", Number(e.target.value))}
                 className="bg-secondary/30 border-border font-mono text-sm h-9"
               />
             </div>
@@ -335,7 +303,7 @@ export default function BpanRegister() {
               <Input
                 type="number" min={1} max={12}
                 value={form.mfgMonth}
-                onChange={(e) => set("mfgMonth", parseInt(e.target.value) || 1)}
+                onChange={(e) => set("mfgMonth", Number(e.target.value))}
                 className="bg-secondary/30 border-border font-mono text-sm h-9"
               />
             </div>
@@ -344,7 +312,7 @@ export default function BpanRegister() {
               <Input
                 type="number" min={1} max={31}
                 value={form.mfgDay}
-                onChange={(e) => set("mfgDay", parseInt(e.target.value) || 1)}
+                onChange={(e) => set("mfgDay", Number(e.target.value))}
                 className="bg-secondary/30 border-border font-mono text-sm h-9"
               />
             </div>
@@ -368,16 +336,6 @@ export default function BpanRegister() {
               />
               <div className="text-[9px] text-muted-foreground/50 mt-1">Unique within this factory + date combination</div>
             </div>
-            <div className="col-span-2">
-              <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">Vehicle ID (optional)</Label>
-              <Input
-                value={form.vehicleId}
-                onChange={(e) => set("vehicleId", e.target.value)}
-                className="bg-secondary/30 border-border font-mono text-sm h-9"
-                placeholder="MH01AB1234"
-              />
-              <div className="text-[9px] text-muted-foreground/50 mt-1">Registration number if battery is installed in a vehicle</div>
-            </div>
           </div>
         </div>
       )}
@@ -388,22 +346,22 @@ export default function BpanRegister() {
           <h3 className="font-display text-sm font-bold flex items-center gap-2">
             <Leaf className="w-4 h-4 text-primary" /> Material Composition & Sustainability
           </h3>
-          <p className="text-muted-foreground text-xs">EU Battery Regulation requires disclosure of critical raw material percentages and carbon footprint data.</p>
+          <p className="text-muted-foreground text-xs">Optional evidence-backed pilot metadata. Blank means unknown; explicit zero is preserved. No compliance assessment is performed.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { key: "recyclabilityPct", label: "Recyclability %", hint: "Target: ≥ 70% by 2030" },
-              { key: "lithiumPct", label: "Lithium %", hint: "Typical: 5-7% for NMC" },
-              { key: "cobaltPct", label: "Cobalt %", hint: "0% for LFP/LMO" },
-              { key: "nickelPct", label: "Nickel %", hint: "0% for LFP" },
-              { key: "manganesePct", label: "Manganese %", hint: "Higher in LMO/NMC" },
-              { key: "carbonFootprintKgCo2", label: "Carbon Footprint (kg CO₂)", hint: "Per kWh of capacity" },
+              { key: "recyclabilityPct", label: "Recyclability %", hint: "0–100; evidence required" },
+              { key: "lithiumPct", label: "Lithium %", hint: "0–100; evidence required" },
+              { key: "cobaltPct", label: "Cobalt %", hint: "0–100; evidence required" },
+              { key: "nickelPct", label: "Nickel %", hint: "0–100; evidence required" },
+              { key: "manganesePct", label: "Manganese %", hint: "0–100; evidence required" },
+              { key: "carbonFootprintKgCo2", label: "Total footprint (kg CO₂e)", hint: "Pack total, not per kWh; source required" },
             ].map((field) => (
               <div key={field.key}>
                 <Label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 block">{field.label}</Label>
                 <Input
-                  type="number" step="0.1"
-                  value={(form as any)[field.key]}
-                  onChange={(e) => set(field.key, parseFloat(e.target.value) || 0)}
+                  type="number" step="0.1" min={0} max={field.key === "carbonFootprintKgCo2" ? undefined : 100}
+                  value={form[field.key as keyof typeof form] ?? ""}
+                  onChange={(e) => set(field.key, e.target.value === "" ? undefined : Number(e.target.value))}
                   className="bg-secondary/30 border-border font-mono text-sm h-9"
                 />
                 <div className="text-[9px] text-muted-foreground/50 mt-1">{field.hint}</div>
@@ -435,10 +393,10 @@ export default function BpanRegister() {
           ) : (
             <Button
               className="bg-primary text-primary-foreground hover:bg-primary/90 px-8"
-              disabled={mutation.isPending || !canAdvance()}
+              disabled={!canAdvance()}
               onClick={handleSubmit}
             >
-              {mutation.isPending ? "Registering..." : "Generate BPAN & Register"}
+              Create Offline Preview — No Registration
             </Button>
           )}
         </div>

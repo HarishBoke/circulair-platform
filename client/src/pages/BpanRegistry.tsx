@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Battery, Plus, Search, QrCode, ChevronRight, RefreshCw, Leaf, Download } from "lucide-react";
 import { downloadCsv, type CsvColumn } from "@/lib/csvExport";
 import { CLASS_COLORS, type PerformanceClass } from "@shared/carbonClass";
+import { BPAN_LOCAL_PILOT_LABEL, bpanFormatLabel } from "@shared/bpanContract";
 
 const STATUS_STYLES: Record<string, string> = {
   operational: "bg-primary/10 text-primary border-primary/20",
@@ -63,9 +64,9 @@ export default function BpanRegistry() {
     <div className="p-6 space-y-5 animate-fade-up">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">BPAN Registry</h1>
+          <h1 className="font-display text-2xl font-bold">Local Battery Asset Registry</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Battery Pack Aadhaar Number registry · <span className="text-primary font-mono">{total.toLocaleString()}</span> batteries
+            Project records, not an official BPAN registry · <span className="text-primary font-mono">{total.toLocaleString()}</span> batteries
           </p>
         </div>
         <div className="flex gap-2">
@@ -79,7 +80,7 @@ export default function BpanRegistry() {
             disabled={batteries.length === 0}
             onClick={() => {
               const cols: CsvColumn<typeof batteries[0]>[] = [
-                { key: "bpan", header: "BPAN" },
+                { key: "bpan", header: "Project-local identifier (official allocation unverified)" },
                 { key: "chemistry", header: "Chemistry" },
                 { key: "capacityKwh", header: "Capacity (kWh)" },
                 { key: "currentSoh", header: "SOH (%)" },
@@ -95,10 +96,13 @@ export default function BpanRegistry() {
           </Button>
           <Link href="/batteries/register">
             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Register Battery
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Local Pilot Preview
             </Button>
           </Link>
         </div>
+      </div>
+      <div role="note" className="border border-chart-4/30 bg-chart-4/10 rounded-xl p-4 text-xs">
+        {BPAN_LOCAL_PILOT_LABEL}. Existing 19- and 21-character project identities are preserved exactly. No official issuer allocation, physical connection, or compliance acceptance is established by this list. New registration is gated; previewing does not save a record.
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -170,7 +174,7 @@ export default function BpanRegistry() {
                     <Battery className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-muted-foreground text-sm">No batteries found.</p>
                     <Link href="/batteries/register">
-                      <Button size="sm" className="mt-4 bg-primary text-primary-foreground">Register First Battery</Button>
+                      <Button size="sm" className="mt-4 bg-primary text-primary-foreground">Preview Local Pilot Metadata</Button>
                     </Link>
                   </td>
                 </tr>
@@ -185,6 +189,7 @@ export default function BpanRegistry() {
                           <QrCode className="w-3.5 h-3.5 text-muted-foreground/40" />
                           <span className="font-mono text-xs text-primary">{b.bpan}</span>
                         </div>
+                        <div className="text-[9px] text-muted-foreground mt-1">{bpanFormatLabel(b.bpan)}</div>
                       </td>
                       <td className="px-4 py-3"><span className="font-mono text-xs font-bold text-chart-2">{b.chemistry}</span></td>
                       <td className="px-4 py-3"><span className="font-mono text-xs">{b.capacityKwh} kWh</span></td>

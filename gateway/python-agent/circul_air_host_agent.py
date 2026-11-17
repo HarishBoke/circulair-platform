@@ -26,6 +26,7 @@ import csv
 import ipaddress
 import json
 import logging
+import math
 import os
 import re
 import signal
@@ -40,15 +41,17 @@ import requests
 from pymodbus.client import ModbusTcpClient
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
-HOST_TYPE        = os.getenv("HOST_TYPE",       "modbus_tcp")
+HOST_TYPE        = os.getenv("HOST_TYPE",       "")
 
 # Platform MQTT credentials — from Device Provisioning page
-MQTT_BROKER      = os.getenv("MQTT_BROKER",    "sd1218f1.ala.asia-southeast1.emqxsl.com")
+MQTT_BROKER      = os.getenv("MQTT_BROKER",    "")
 MQTT_PORT        = int(os.getenv("MQTT_PORT",  "8883"))
-MQTT_USERNAME    = os.getenv("MQTT_USERNAME",  "YOUR_DEVICE_MQTT_USERNAME")
-MQTT_PASSWORD    = os.getenv("MQTT_PASSWORD",  "YOUR_DEVICE_MQTT_PASSWORD")
-MQTT_TOPIC       = os.getenv("MQTT_TOPIC",     "CAI_/YOUR_BPAN/telemetry")
-DEVICE_BPAN      = os.getenv("DEVICE_BPAN",   "YOUR_BATTERY_BPAN")
+MQTT_USERNAME    = os.getenv("MQTT_USERNAME",  "")
+MQTT_PASSWORD    = os.getenv("MQTT_PASSWORD",  "")
+MQTT_TOPIC       = os.getenv("MQTT_TOPIC",     "")
+DEVICE_BPAN      = os.getenv("DEVICE_BPAN",   "")
+DEVICE_ID        = os.getenv("DEVICE_ID",     "")
+PILOT_APPROVED   = os.getenv("PILOT_APPROVED", "false") == "true"
 CHEMISTRY        = os.getenv("CHEMISTRY",      "LFP")
 PUBLISH_INTERVAL = int(os.getenv("PUBLISH_INTERVAL", "60"))
 
@@ -85,29 +88,10 @@ def buffer_reading(payload: dict):
         log.warning(f"Buffer write failed: {e}")
 
 def replay_buffer(client: mqtt.Client) -> int:
-    if not os.path.exists(BUFFER_FILE):
-        return 0
-    replayed = 0
-    try:
-        with open(BUFFER_FILE, "r") as f:
-            lines = f.readlines()
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            result = client.publish(MQTT_TOPIC, line, qos=1)
-            if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                replayed += 1
-            else:
-                break
-        if replayed == len(lines):
-            os.remove(BUFFER_FILE)
-        else:
-            with open(BUFFER_FILE, "w") as f:
-                f.writelines(lines[replayed:])
-    except Exception as e:
-        log.warning(f"Buffer replay failed: {e}")
-    return replayed
+    # Queue acknowledgement is not durable ingest. Replay awaits timestamp,
+    # idempotency and revocation-aware device binding; preserve existing buffer.
+    log.warning("Buffered replay disabled pending verified ingestion receipt")
+    return 0
 
 # ─── HOST SYSTEM READERS ──────────────────────────────────────────────────────
 
@@ -295,17 +279,25 @@ def read_rest_api() -> Optional[dict]:
         resp.raise_for_status()
         data = resp.json()
 
-        # Adjust these field names to match your API's response structure
+        if not isinstance(data, dict):
+            raise ValueError("Object required")
+        def metric(primary, alias):
+            value = data.get(primary, data.get(alias))
+            if value is None:
+                return None
+            if isinstance(value, bool):
+                raise ValueError("Numeric reading required")
+            return float(value)
         return _build_payload(
-            v_pack    = float(data.get("battery_voltage",  data.get("vPack",  0))),
-            i_pack    = float(data.get("battery_current",  data.get("iPack",  0))),
-            soc       = float(data.get("state_of_charge",  data.get("soc",    0))),
-            soh       = float(data.get("state_of_health",  data.get("soh",  100))),
-            t_max     = float(data.get("temperature_max",  data.get("tMax",  25))),
-            t_min     = float(data.get("temperature_min",  data.get("tMin",  25))),
-            cycles    = int(data.get("cycle_count",        data.get("cycles",  0))),
-            v_cell_min= float(data.get("cell_voltage_min", data.get("vCellMin", 0))),
-            v_cell_max= float(data.get("cell_voltage_max", data.get("vCellMax", 0))),
+            v_pack=metric("battery_voltage", "vPack"),
+            i_pack=metric("battery_current", "iPack"),
+            soc=metric("state_of_charge", "soc"),
+            soh=metric("state_of_health", "soh"),
+            t_max=metric("temperature_max", "tMax"),
+            t_min=metric("temperature_min", "tMin"),
+            cycles=metric("cycle_count", "cycles"),
+            v_cell_min=metric("cell_voltage_min", "vCellMin"),
+            v_cell_max=metric("cell_voltage_max", "vCellMax"),
         )
     except Exception:
         # Exceptions may contain URLs, credentials, or upstream response bodies.
@@ -325,40 +317,52 @@ def read_csv_file() -> Optional[dict]:
             return None
         row = rows[-1]  # Latest row
 
+        def metric(primary, alias):
+            value = row.get(primary, row.get(alias))
+            return None if value is None or value == "" else float(value)
         return _build_payload(
-            v_pack = float(row.get("voltage",     row.get("vPack",  0))),
-            i_pack = float(row.get("current",     row.get("iPack",  0))),
-            soc    = float(row.get("soc",         row.get("SOC",    0))),
-            soh    = float(row.get("soh",         row.get("SOH",  100))),
-            t_max  = float(row.get("temperature", row.get("tMax",  25))),
-            t_min  = float(row.get("temperature", row.get("tMin",  25))),
-            cycles = int(float(row.get("cycles",  row.get("cycleCount", 0)))),
+            v_pack=metric("voltage", "vPack"), i_pack=metric("current", "iPack"),
+            soc=metric("soc", "SOC"), soh=metric("soh", "SOH"),
+            t_max=metric("temperature", "tMax"),
+            cycles=metric("cycles", "cycleCount"),
         )
-    except Exception as e:
-        log.error(f"CSV file read error: {e}")
+    except Exception:
+        log.error("CSV read rejected; verify identity, units, values and provenance")
         return None
 
 
 # ─── PAYLOAD BUILDER ──────────────────────────────────────────────────────────
-def _build_payload(v_pack=0, i_pack=0, soc=0, soh=100, t_max=25, t_min=25,
-                   cycles=0, v_cell_min=0, v_cell_max=0) -> dict:
-    t_avg = (t_max + t_min) / 2.0
-    return {
-        "bpan":           DEVICE_BPAN,
-        "ts":             int(datetime.now(timezone.utc).timestamp() * 1000),
-        "vPack":          round(v_pack, 2),
-        "iPack":          round(i_pack, 2),
-        "soc":            round(soc, 1),
-        "sohEstimate":    round(soh, 1),
-        "tMax":           round(t_max, 1),
-        "tMin":           round(t_min, 1),
-        "tAvg":           round(t_avg, 1),
-        "vCellMin":       round(v_cell_min, 3),
-        "vCellMax":       round(v_cell_max, 3),
-        "cycleCount":     cycles,
-        "thermalAnomaly": t_max > 51.0,
-        "chemistry":      CHEMISTRY,
-    }
+def _build_payload(v_pack=None, i_pack=None, soc=None, soh=None, t_max=None, t_min=None,
+                   cycles=None, v_cell_min=None, v_cell_max=None) -> dict:
+    # Storage representability is not a chemistry-specific safety envelope.
+    # SOH/SOC and inferred averages are unsupported until provenance storage exists.
+    if not re.fullmatch(r"(?:[A-Z0-9]{19}|[A-Z0-9]{21})", DEVICE_BPAN) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", DEVICE_ID):
+        raise ValueError("Verified identity required")
+    if soc is not None or soh is not None:
+        raise ValueError("Unsupported estimate/provenance fields")
+    payload = {"bpan": DEVICE_BPAN, "deviceId": DEVICE_ID, "source": "measured",
+               "recordedAt": datetime.now(timezone.utc).isoformat()}
+    values = {"vPack": (v_pack, 0, 999999.99, 2),
+              "iPack": (i_pack, -999999.99, 999999.99, 2),
+              "tMax": (t_max, -273.15, 9999.99, 2),
+              "vMin": (v_cell_min, 0, 9999.999, 3),
+              "vMax": (v_cell_max, 0, 9999.999, 3),
+              "cycleCount": (cycles, 0, 2147483647, 0)}
+    for key, (value, minimum, maximum, digits) in values.items():
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not minimum <= value <= maximum:
+            raise ValueError("Invalid measured metric")
+        if key == "cycleCount" and value != int(value):
+            raise ValueError("Integer cycles required")
+        payload[key] = int(value) if key == "cycleCount" else round(value, digits)
+    if t_min is not None and (not math.isfinite(t_min) or t_min < -273.15 or t_max is None or t_min > t_max):
+        raise ValueError("Invalid temperature range")
+    if v_cell_min is not None and v_cell_max is not None and v_cell_min > v_cell_max:
+        raise ValueError("Invalid cell range")
+    if len(payload) == 4:
+        raise ValueError("Measured reading required")
+    return payload
 
 def _s16(v: int) -> int:
     return v if v < 32768 else v - 65536
@@ -389,6 +393,8 @@ def on_disconnect(client, userdata, rc, properties=None, reason=None):
     log.warning("MQTT disconnected. Reconnecting...")
 
 def build_mqtt_client() -> mqtt.Client:
+    if not PILOT_APPROVED or not MQTT_BROKER or not MQTT_USERNAME or not MQTT_PASSWORD or not MQTT_TOPIC.endswith(f"/{DEVICE_BPAN}/{DEVICE_ID}"):
+        raise ValueError("Approved provisioned TLS device configuration required")
     c = mqtt.Client(client_id=f"circul-air-host-{DEVICE_BPAN}", protocol=mqtt.MQTTv5)
     c.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
     c.tls_set()
@@ -402,6 +408,12 @@ def build_mqtt_client() -> mqtt.Client:
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
+    log.error("Operational agent disabled pending verified profile, provisioning and durable ingestion receipt")
+    return
+    # Legacy register maps/local broker assumptions are not verified hardware profiles.
+    if not PILOT_APPROVED or HOST_TYPE not in {"rest_api", "csv_file"}:
+        log.error("Operational pilot disabled; require approved read-only profile and provisioning")
+        return
     reader = READERS.get(HOST_TYPE)
     if not reader:
         log.error(f"Unknown HOST_TYPE '{HOST_TYPE}'. Choose from: {list(READERS.keys())}")
@@ -434,8 +446,7 @@ def main():
                 replay_buffer(mqtt_client)
                 result = mqtt_client.publish(MQTT_TOPIC, payload, qos=1)
                 if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                    log.info(f"[#{total}] Published: SOC={telemetry['soc']}% "
-                             f"SOH={telemetry['sohEstimate']}% T={telemetry['tMax']}°C")
+                    log.info("Broker queue acknowledged; persistence is not confirmed")
                 else:
                     buffer_reading(telemetry)
             else:

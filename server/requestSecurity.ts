@@ -28,5 +28,11 @@ export function isTrustedMutationOrigin(req: Request): boolean {
   if (!origin) return false;
   const requestOrigin = httpOrigin(`${req.protocol}://${req.get('host')}`);
   const explicitlyAllowed = (process.env.ALLOWED_APP_ORIGINS || '').split(',').map(s => httpOrigin(s.trim())).filter(Boolean);
-  return origin === requestOrigin || origin === getApplicationOrigin() || explicitlyAllowed.includes(origin);
+  try {
+    return origin === requestOrigin || origin === getApplicationOrigin() || explicitlyAllowed.includes(origin);
+  } catch {
+    // Misconfiguration must reject the mutation, not turn a hostile Origin into HTTP 500.
+    // Preserve the existing same-origin short circuit and production HTTPS requirement.
+    return false;
+  }
 }

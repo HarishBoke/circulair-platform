@@ -5,108 +5,66 @@ import { useStructuredData } from "@/hooks/useStructuredData";
 import { Button } from "@/components/ui/button";
 import CirculairLogo from "@/components/CirculairLogo";
 import { Link } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   Battery, Brain, Shield, ShoppingCart, BarChart3, ArrowRight,
-  CheckCircle2, Truck, Activity, Users,
+  CircleHelp, Truck, Activity, Users,
   ChevronRight, Layers, Lock, Leaf, Award, ArrowUpRight,
   Factory, Recycle, Server, Landmark, Play,
   Sparkles, TrendingUp, Database, Wifi, FileCheck, Sun, Moon,
   Mail, Send, CheckCircle, Menu, X
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
-/* ─── ANIMATED COUNTER ─────────────────────────────────────────────────────── */
-function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2000 }: {
-  end: number; suffix?: string; prefix?: string; duration?: number;
-}) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // If the element is already visible in the viewport on mount, trigger immediately
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
-        setVisible(true);
-        return;
-      }
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.1 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-    let start = 0;
-    const step = end / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= end) { setCount(end); clearInterval(timer); }
-      else setCount(Math.floor(start));
-    }, 16);
-    return () => clearInterval(timer);
-  }, [visible, end, duration]);
-
-  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
-}
-
-/* ─── DATA ─────────────────────────────────────────────────────────────────── */
+/* ─── PUBLIC CAPABILITY STATES ────────────────────────────────────────────── */
 const PLATFORM_STATS = [
-  { value: 7, suffix: "+", label: "Jurisdictions", sublabel: "EU, India, China, US, UK, Thailand, Indonesia" },
-  { value: 10, suffix: "", label: "Currencies", sublabel: "USD, EUR, INR, CNY, GBP, JPY & more" },
-  { value: 21, suffix: "-char", label: "BPAN Standard", sublabel: "MoRTH Battery Pack Aadhaar Number" },
-  { value: 5, suffix: "", label: "Languages", sublabel: "EN, DE, FR, ZH, HI" },
+  { value: "Pilot", label: "Battery identity", sublabel: "Official BPAN enrollment not verified" },
+  { value: "Estimate", label: "Health model", sublabel: "Physics-based; accuracy not validated" },
+  { value: "Draft", label: "Regulatory records", sublabel: "No certification or government submission" },
+  { value: "Unknown", label: "Availability", sublabel: "No independently measured uptime" },
 ];
 
 const LIFECYCLE_STEPS = [
-  { icon: Factory, label: "Manufacture", step: "01", desc: "Cell-to-pack registration" },
-  { icon: Battery, label: "Deploy", step: "02", desc: "Field installation tracking" },
-  { icon: Activity, label: "Monitor", step: "03", desc: "Real-time IoT telemetry" },
-  { icon: Brain, label: "Predict", step: "04", desc: "AI health forecasting" },
-  { icon: ShoppingCart, label: "Remarket", step: "05", desc: "Second-life marketplace" },
-  { icon: Recycle, label: "Recycle", step: "06", desc: "Material recovery" },
+  { icon: Factory, label: "Manufacture", step: "01", desc: "Registry records" },
+  { icon: Battery, label: "Deploy", step: "02", desc: "Installation records" },
+  { icon: Activity, label: "Monitor", step: "03", desc: "Telemetry pilot" },
+  { icon: Brain, label: "Predict", step: "04", desc: "Heuristic estimates" },
+  { icon: ShoppingCart, label: "Remarket", step: "05", desc: "Listing workflow" },
+  { icon: Recycle, label: "Recycle", step: "06", desc: "Recovery records" },
 ];
 
 const CAPABILITIES = [
   {
     icon: Database, title: "Battery Identity & Registry",
-    desc: "Generate and manage 19-character Battery Pack Aadhaar Numbers (BPAN) with QR codes, NFC tags, and full lifecycle tracking from manufacturing through recycling.",
+    desc: "Local battery identification and QR records; official BPAN enrollment not verified. Canonical mapping, physical label attachment, NFC hardware and lifecycle evidence require pilot acceptance.",
     tag: "BPAN Registry"
   },
   {
-    icon: Wifi, title: "Real-Time IoT Telemetry",
-    desc: "High-frequency MQTT ingestion processing voltage, current, temperature, SOC, and cycle data with sub-second latency. Automatic thermal anomaly detection.",
+    icon: Wifi, title: "Telemetry Connection Pilot",
+    desc: "MQTT, API and WebSocket source paths exist. Real battery ingest, units, device authorization, broker ACLs and end-to-end latency require verification; telemetry is not a safety interlock.",
     tag: "MQTT + WebSocket"
   },
   {
-    icon: Brain, title: "AI-Powered SOH Prediction",
-    desc: "CNN-LSTM deep learning models achieving <2% RMSE for State of Health estimation and Remaining Useful Life prediction. Intelligent triage routing.",
-    tag: "Machine Learning"
+    icon: Brain, title: "Battery Health Estimates",
+    desc: "A deterministic physics-based model provides SOH and remaining-life estimates. No validated accuracy or neural-model training is established. Triage suggestions require qualified human review.",
+    tag: "Heuristic Model"
   },
   {
     icon: TrendingUp, title: "Second-Life Marketplace",
-    desc: "Dynamic spot pricing engine with multi-currency support across 10 currencies. Smart matching connects BESS developers with certified second-life inventory.",
+    desc: "Listing, offer and indicative pricing workflows exist. Inventory certification, automated matching, settlement, refunds and payouts are not accepted for real transactions.",
     tag: "Multi-Currency"
   },
   {
-    icon: Shield, title: "Regulatory Compliance Engine",
-    desc: "Pluggable jurisdiction adapters for EU Battery Passport, India BWMR/EPR, China MIIT, and more. Automated CPCB Form BW-3 generation and carbon footprint declarations.",
-    tag: "7 Jurisdictions"
+    icon: Shield, title: "Regulatory Record Templates",
+    desc: "Jurisdiction metadata, declaration forms and report templates support preparation. Government adapters, legal conformity, obligation calculations and regulator acceptance remain unverified.",
+    tag: "Review Required"
   },
   {
     icon: BarChart3, title: "Analytics & Reporting",
-    desc: "Real-time KPI dashboards with role-specific views for OEMs, recyclers, BESS developers, and government regulators. CSV export, PDF reports, and compliance audit trails.",
+    desc: "Dashboard and export source paths support record review. Metric accuracy, tenant scoping, private storage, PDF runtime and audit coverage require separate acceptance.",
     tag: "Role-Based"
   },
 ];
@@ -114,28 +72,28 @@ const CAPABILITIES = [
 const STAKEHOLDERS = [
   {
     icon: Factory, role: "OEM / Manufacturer",
-    desc: "Register batteries at production, generate BPANs, track warranty obligations, and prove domestic value addition for PLI scheme compliance.",
-    features: ["BPAN Generation", "Production QR Codes", "Warranty Tracking", "PLI DVA Proof"],
+    desc: "Record specifications and warranty information for review. Identity validation and eligibility evidence must be checked; records do not prove incentive-scheme compliance.",
+    features: ["BPAN Generation", "Production QR Codes", "Warranty Tracking", "DVA Records"],
     iconBg: "bg-emerald-500/10 border-emerald-500/20",
     iconColor: "text-emerald-400"
   },
   {
     icon: Recycle, role: "Recycler",
-    desc: "Manage end-of-life intake, verify black mass yields against theoretical targets, earn EPR credit tokens, and generate CPCB compliance reports.",
-    features: ["EOL Intake", "Yield Verification", "EPR Tokens", "CPCB Form BW-3"],
+    desc: "Record intake and declared recovery yields. Internal EPR records and draft reports are not independently verified credits or proof that legal obligations are met.",
+    features: ["EOL Intake", "Declared Yields", "Internal EPR Records", "Draft CPCB Report"],
     iconBg: "bg-amber-500/10 border-amber-500/20",
     iconColor: "text-amber-400"
   },
   {
     icon: Server, role: "BESS Developer",
-    desc: "Source certified second-life batteries through the marketplace, evaluate health passports, and procure inventory with AI-powered matching.",
-    features: ["Marketplace Access", "Health Passports", "Smart Matching", "Spot Pricing"],
+    desc: "Review listings, declared battery data and indicative pricing. Qualification, human procurement approval and transaction safeguards are required; automated matching is not implemented.",
+    features: ["Marketplace Access", "Health Passports", "Manual Review", "Spot Pricing"],
     iconBg: "bg-blue-500/10 border-blue-500/20",
     iconColor: "text-blue-400"
   },
   {
     icon: Landmark, role: "Government / Regulator",
-    desc: "Monitor EPR compliance across producers, verify recycling yields, access immutable audit trails, and review platform-wide sustainability metrics.",
+    desc: "Review authorized declared records and selected audit entries. Legal compliance, independent yield assurance, immutable storage and complete sustainability metrics are not established.",
     features: ["EPR Monitoring", "Audit Trails", "Compliance Reports", "Sustainability KPIs"],
     iconBg: "bg-purple-500/10 border-purple-500/20",
     iconColor: "text-purple-400"
@@ -145,12 +103,12 @@ const STAKEHOLDERS = [
 const EMPTY_CONTACT_FORM = { name: "", email: "", company: "", role: "", message: "" };
 
 const COMPLIANCE_FRAMEWORKS = [
-  { name: "EU Battery Regulation", region: "European Union", code: "EU 2023/1542", status: "Full Compliance" },
-  { name: "Battery Waste Management Rules", region: "India", code: "BWMR 2022", status: "Full Compliance" },
-  { name: "MoRTH BPAN Guidelines", region: "India", code: "Sept 2025", status: "Full Compliance" },
-  { name: "Extended Producer Responsibility", region: "India", code: "EPR Mandate", status: "Full Compliance" },
-  { name: "MIIT Battery Traceability", region: "China", code: "GB/T 34014", status: "Adapter Ready" },
-  { name: "Carbon Footprint Declaration", region: "EU", code: "Art. 7 EU BR", status: "Full Compliance" },
+  { name: "EU Battery Regulation", region: "European Union", code: "Reference only", status: "Review required" },
+  { name: "Battery Waste Management Rules", region: "India", code: "Reference only", status: "Review required" },
+  { name: "BPAN identity requirements", region: "Pilot scope", code: "Canonical mapping gate", status: "Pilot validation" },
+  { name: "Extended Producer Responsibility", region: "India", code: "Internal records", status: "Not certified" },
+  { name: "Battery traceability requirements", region: "China", code: "Metadata only", status: "Adapter unavailable" },
+  { name: "Carbon Footprint Declaration", region: "EU", code: "Estimate / declaration", status: "Review required" },
 ];
 
 /* ─── COMPONENT ────────────────────────────────────────────────────────────── */
@@ -163,33 +121,28 @@ export default function Home() {
       "name": "Circul-AI-r",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
-      "url": "https://www.circulair.energy",
-      "description": "End-to-end battery lifecycle intelligence platform — traceability, AI-driven SOH prediction, EPR compliance across 7 jurisdictions, and a second-life marketplace.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
+      "url": "https://circulair.energy",
+      "description": "Battery circular-economy software with registry, heuristic health estimates, listing workflows and draft regulatory records. Real battery and provider acceptance is pending.",
       "featureList": [
-        "Battery Passport (BPAN) generation and tracking",
-        "AI-powered State of Health (SOH) prediction",
-        "Real-time IoT telemetry monitoring",
-        "EPR compliance across EU, India, China, US, UK, Thailand, Indonesia",
+        "Local battery identification and QR records — official BPAN enrollment not verified",
+        "Physics-based State of Health (SOH) estimates — unvalidated accuracy",
+        "Telemetry source paths — hardware acceptance pending",
+        "Jurisdiction metadata and draft EPR records — not certification",
         "Second-life battery marketplace",
-        "Yield verification and recycler workflows",
-        "Logistics and chain-of-custody tracking"
+        "Declared yield and recycler record workflows",
+        "Logistics records — no verified carrier dispatch"
       ]
     },
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
       "name": "Circul-AI-r — Battery Circular Economy Platform",
-      "url": "https://www.circulair.energy/",
-      "description": "End-to-end battery lifecycle intelligence: traceability, AI health prediction, EPR compliance across 7 jurisdictions, and a second-life marketplace.",
+      "url": "https://circulair.energy/",
+      "description": "Battery circular-economy software for bounded pilots: registry records, heuristic health estimates, listing workflows and draft regulatory records.",
       "breadcrumb": {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.circulair.energy/" }
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://circulair.energy/" }
         ]
       }
     }
@@ -203,25 +156,6 @@ export default function Home() {
   // Contact form state
   const [contactForm, setContactForm] = useState(EMPTY_CONTACT_FORM);
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const contactMutation = trpc.contact.submit.useMutation({
-    onSuccess: () => {
-      setContactSubmitted(true);
-      setContactForm(EMPTY_CONTACT_FORM);
-      setContactErrors({});
-      toast.success("Message sent!", {
-        description: "Thanks for reaching out — we'll be in touch shortly.",
-        duration: 5000,
-      });
-    },
-    onError: (err) => {
-      setContactErrors({ submit: err.message });
-      toast.error("Failed to send message", {
-        description: err.message || "Please try again or email us directly.",
-        duration: 6000,
-      });
-    },
-  });
 
   function validateContact() {
     const errs: Record<string, string> = {};
@@ -235,14 +169,16 @@ export default function Home() {
   function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validateContact()) return;
-    contactMutation.mutate(contactForm);
+    setContactErrors({ submit: "Sending is disabled until delivery and privacy controls are verified. Nothing has been sent or saved." });
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="bg-grid" />
-      <div className="bg-glow1" />
-      <div className="bg-glow2" />
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ contain: "paint" }} aria-hidden="true">
+        <div className="bg-grid" />
+        <div className="bg-glow1" />
+        <div className="bg-glow2" />
+      </div>
 
       {/* ─── HEADER ─────────────────────────────────────────────────────────── */}
       {/* position:fixed is used instead of sticky because any ancestor with
@@ -323,7 +259,7 @@ export default function Home() {
         <div className="flex items-center gap-2 lg:gap-3">
           <div className="hidden sm:flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-blink" />
-            <span className="text-[10px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>LIVE</span>
+            <span className="text-[10px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>PILOT</span>
           </div>
           <button
             onClick={(e) => toggleTheme?.(e)}
@@ -370,7 +306,7 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-8">
               <div className="w-0.5 h-5 bg-primary rounded-full" />
               <span className="text-[11px] font-medium text-muted-foreground tracking-[0.18em] uppercase" style={{ fontFamily: "var(--font-mono)" }}>
-                Multinational Battery Lifecycle Platform
+                Battery Circular Economy Pilot Platform
               </span>
             </div>
 
@@ -389,10 +325,10 @@ export default function Home() {
             </h1>
 
             <p className="text-muted-foreground text-lg leading-relaxed max-w-xl mb-10" style={{ fontFamily: "var(--font-body)" }}>
-              End-to-end traceability from cell manufacturing to material recovery.
-              AI-driven health prediction, real-time IoT telemetry, regulatory
-              compliance across 7 jurisdictions, and a second-life marketplace -
-              all in one unified platform.
+              Registry, telemetry connection paths, physics-based health estimates,
+              listing workflows and draft regulatory records in one platform.
+              Real battery connectivity, safety, payments and legal conformity
+              require separate pilot acceptance.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
@@ -415,13 +351,13 @@ export default function Home() {
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Lock className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <span className="font-medium">Enterprise-grade security</span>
+                <span className="font-medium">Native email/password sign-in</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Leaf className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <span className="font-medium">Carbon footprint tracking</span>
+                <span className="font-medium">Carbon estimates — review required</span>
               </div>
             </div>
           </div>
@@ -462,12 +398,10 @@ export default function Home() {
 
                 <div className="mt-6 pt-5 border-t border-border/40">
                   <div className="flex items-center justify-between text-[12px] mb-2.5">
-                    <span className="text-muted-foreground font-medium">Full lifecycle coverage</span>
-                    <span className="text-primary font-bold" style={{ fontFamily: "var(--font-mono)" }}>100%</span>
+                    <span className="text-muted-foreground font-medium">Workflow scope — not acceptance</span>
+                    <span className="text-amber-400 font-bold" style={{ fontFamily: "var(--font-mono)" }}>Pilot</span>
                   </div>
-                  <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary via-primary/80 to-chart-2 rounded-full" style={{ width: "100%" }} />
-                  </div>
+                  <p className="text-[11px] text-muted-foreground">Hardware, safety and regulatory gates remain open.</p>
                 </div>
               </div>
             </div>
@@ -481,8 +415,8 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-10">
             {PLATFORM_STATS.map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-4xl lg:text-5xl font-extrabold text-primary mb-2 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                  <AnimatedCounter end={stat.value} suffix={stat.suffix} />
+                <div className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-primary mb-2 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                  {stat.value}
                 </div>
                 <div className="text-sm font-semibold text-foreground/90 mb-1" style={{ fontFamily: "var(--font-display)" }}>{stat.label}</div>
                 <div className="text-[11px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>{stat.sublabel}</div>
@@ -500,11 +434,11 @@ export default function Home() {
             <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Platform Capabilities</span>
           </div>
           <h2 className="text-3xl lg:text-[2.5rem] font-extrabold mb-5 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-            Complete Battery Lifecycle Management
+            Battery Lifecycle Workflows for Review
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base leading-relaxed">
-            Six integrated modules covering identity, real-time monitoring, AI analytics,
-            marketplace operations, regulatory compliance, and enterprise reporting.
+            Source workflows cover identity, telemetry, heuristic analytics, listings,
+            regulatory records and reporting. Implemented code is not end-to-end acceptance.
           </p>
         </div>
 
@@ -531,14 +465,14 @@ export default function Home() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-primary/8 border border-primary/15 rounded-full px-4 py-2 mb-5">
               <Users className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Role-Based Access</span>
+              <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Role-Oriented Workflows</span>
             </div>
             <h2 className="text-3xl lg:text-[2.5rem] font-extrabold mb-5 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              Built for Every Stakeholder
+              Designed for Battery Value-Chain Roles
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-base leading-relaxed">
-              Purpose-built dashboards and workflows for each participant in the battery
-              value chain, with role-based access control and jurisdiction-aware data governance.
+              Role-oriented dashboards support value-chain workflows. Resource authorization,
+              tenant boundaries and jurisdiction-specific governance need separate verification.
             </p>
           </div>
 
@@ -581,11 +515,11 @@ export default function Home() {
             <span className="text-[11px] font-semibold text-primary tracking-wider uppercase" style={{ fontFamily: "var(--font-mono)" }}>Regulatory Compliance</span>
           </div>
           <h2 className="text-3xl lg:text-[2.5rem] font-extrabold mb-5 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-            Multinational Regulatory Coverage
+            Regulatory Preparation — Not Certification
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base leading-relaxed">
-            Pluggable jurisdiction adapters ensure compliance with battery regulations
-            across the EU, India, China, and beyond. One platform, multiple regulatory frameworks.
+            Metadata, forms and report templates help organize declared evidence.
+            They do not ensure legal compliance, government submission or regulatory approval.
           </p>
         </div>
 
@@ -605,8 +539,8 @@ export default function Home() {
               <div className="hidden sm:block text-[13px] text-muted-foreground">{fw.region}</div>
               <div className="hidden md:block text-[11px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>{fw.code}</div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className={`w-4 h-4 ${fw.status === "Full Compliance" ? "text-primary" : "text-amber-400"}`} />
-                <span className={`text-[11px] font-semibold ${fw.status === "Full Compliance" ? "text-primary" : "text-amber-400"}`} style={{ fontFamily: "var(--font-mono)" }}>
+                <CircleHelp className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                <span className="text-[11px] font-semibold text-amber-400" style={{ fontFamily: "var(--font-mono)" }}>
                   {fw.status}
                 </span>
               </div>
@@ -635,8 +569,8 @@ export default function Home() {
                     <span className="text-primary">Battery Value Chain?</span>
                   </h2>
                   <p className="text-muted-foreground text-base leading-relaxed mb-8">
-                    Join the platform that is defining the standard for battery circular economy.
-                    From cell manufacturing to material recovery — every stage, every stakeholder, one platform.
+                    Begin with a bounded battery connection pilot and evidence review.
+                    Software estimates are not battery safety advice or a compliance certificate.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
@@ -644,7 +578,7 @@ export default function Home() {
                       className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-12 text-[15px] rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
                       onClick={() => window.location.href = "/login"}
                     >
-                      Start Free <ArrowRight className="w-4 h-4 ml-2" />
+                      Sign In for Pilot <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                     <Link href="/wiki">
                       <Button size="lg" variant="outline" className="border-border/60 hover:border-primary/40 hover:bg-primary/5 px-8 h-12 text-[15px] rounded-xl">
@@ -654,9 +588,9 @@ export default function Home() {
                   </div>
                   <div className="mt-8 flex flex-col gap-2.5">
                     {[
-                      "No credit card required to start",
-                      "EU Battery Regulation compliant from day one",
-                      "MQTT + REST API included",
+                      "Bounded pilot acceptance required",
+                      "Regulatory records require qualified review",
+                      "Real hardware and provider integrations remain unverified",
                     ].map((point) => (
                       <div key={point} className="flex items-center gap-2.5 text-[13px] text-muted-foreground">
                         <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
@@ -668,20 +602,6 @@ export default function Home() {
 
                 {/* Right: contact form */}
                 <div className="bg-background/60 border border-border/50 rounded-2xl p-7 backdrop-blur-sm">
-                  {contactSubmitted ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center gap-4">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CheckCircle className="w-7 h-7 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-bold">Message Received!</h3>
-                      <p className="text-muted-foreground text-sm max-w-xs">
-                        Thank you for reaching out. Our team will get back to you within 1 business day.
-                      </p>
-                      <Button variant="outline" size="sm" className="mt-2" onClick={() => { setContactSubmitted(false); setContactForm({ name: "", email: "", company: "", role: "", message: "" }); }}>
-                        Send another message
-                      </Button>
-                    </div>
-                  ) : (
                     <form onSubmit={handleContactSubmit} className="space-y-4">
                       <div className="flex items-center gap-2.5 mb-5">
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -689,7 +609,7 @@ export default function Home() {
                         </div>
                         <div>
                           <h3 className="text-base font-bold">Get in Touch</h3>
-                          <p className="text-[12px] text-muted-foreground">We typically respond within 1 business day</p>
+                          <p className="text-[12px] text-muted-foreground">Local draft only — sending is disabled; nothing is stored</p>
                         </div>
                       </div>
 
@@ -762,16 +682,12 @@ export default function Home() {
                       <Button
                         type="submit"
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold h-10 rounded-xl"
-                        disabled={contactMutation.isPending}
+                        disabled
+                        title="Contact delivery and privacy controls are not yet verified"
                       >
-                        {contactMutation.isPending ? (
-                          <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Sending…</span>
-                        ) : (
-                          <span className="flex items-center gap-2"><Send className="w-4 h-4" />Send Message</span>
-                        )}
+                        <span className="flex items-center gap-2"><Send className="w-4 h-4" />Sending unavailable</span>
                       </Button>
                     </form>
-                  )}
                 </div>
 
               </div>
@@ -792,7 +708,7 @@ export default function Home() {
                 </span>
               </div>
               <p className="text-[13px] text-muted-foreground leading-relaxed max-w-xs">
-                The operating system for battery circular economy. End-to-end traceability, AI intelligence, and regulatory compliance.
+                Battery circular-economy software for registry, heuristic estimates and draft regulatory records. Pilot acceptance remains required.
               </p>
             </div>
 
@@ -821,8 +737,8 @@ export default function Home() {
             <div>
               <h4 className="text-[12px] font-bold text-foreground/70 uppercase tracking-wider mb-4" style={{ fontFamily: "var(--font-mono)" }}>Compliance</h4>
               <div className="space-y-2.5">
-                <span className="block text-[13px] text-muted-foreground">ISO 27001 Ready</span>
-                <span className="block text-[13px] text-muted-foreground">SOC 2 Type II Ready</span>
+                <span className="block text-[13px] text-muted-foreground">ISO 27001 — not certified</span>
+                <span className="block text-[13px] text-muted-foreground">SOC 2 — no attestation</span>
                 <span className="block text-[13px] text-muted-foreground">EU Battery Regulation</span>
                 <span className="block text-[13px] text-muted-foreground">India BWMR 2022</span>
               </div>

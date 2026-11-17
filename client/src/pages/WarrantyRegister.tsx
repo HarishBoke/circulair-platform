@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isBpanReadIdentifier, BPAN_LOCAL_PILOT_LABEL } from "@shared/bpanContract";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
@@ -28,7 +29,7 @@ export default function WarrantyRegister() {
     modelNumber: "",
     warrantyType: "standard",
     coverageType: "full_replacement",
-    warrantyTermMonths: 24,
+    warrantyTermMonths: "24",
     purchaseDate: new Date().toISOString().split("T")[0],
     warrantyStartDate: "",
     customerName: "",
@@ -50,7 +51,7 @@ export default function WarrantyRegister() {
   // Lookup battery by BPAN
   const batteryQuery = trpc.bpan.get.useQuery(
     { bpan: form.bpan },
-    { enabled: form.bpan.length === 19 }
+    { enabled: isBpanReadIdentifier(form.bpan) }
   );
 
   const mutation = trpc.warranty.register.useMutation({
@@ -71,14 +72,20 @@ export default function WarrantyRegister() {
       toast.error("Please enter a valid BPAN first");
       return;
     }
+    const term = Number(form.warrantyTermMonths);
+    const amount = form.purchaseAmount === "" ? undefined : Number(form.purchaseAmount);
+    if (!Number.isInteger(term) || term < 1 || term > 120 || (amount !== undefined && (!Number.isFinite(amount) || amount < 0))) {
+      toast.error("Enter a valid 1–120 month term and nonnegative purchase amount");
+      return;
+    }
     mutation.mutate({
       batteryId: batteryQuery.data.battery.id,
-      bpan: form.bpan,
+      bpan: batteryQuery.data.battery.bpan,
       serialNumber: form.serialNumber || undefined,
       modelNumber: form.modelNumber || undefined,
       warrantyType: form.warrantyType as any,
       coverageType: form.coverageType as any,
-      warrantyTermMonths: form.warrantyTermMonths,
+      warrantyTermMonths: term,
       purchaseDate: form.purchaseDate,
       warrantyStartDate: form.warrantyStartDate || undefined,
       customerName: form.customerName,
@@ -91,14 +98,14 @@ export default function WarrantyRegister() {
       dealerPhone: form.dealerPhone || undefined,
       dealerEmail: form.dealerEmail || undefined,
       invoiceNumber: form.invoiceNumber || undefined,
-      purchaseAmount: form.purchaseAmount ? Number(form.purchaseAmount) : undefined,
+      purchaseAmount: amount,
       purchaseCurrency: form.purchaseCurrency,
       manufacturer: form.manufacturer || undefined,
       notes: form.notes || undefined,
     });
   };
 
-  const set = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
+  const set = (key: keyof typeof form, val: string) => setForm(prev => ({ ...prev, [key]: val }));
 
   if (registeredWarranty) {
     return (
@@ -109,7 +116,7 @@ export default function WarrantyRegister() {
           </div>
           <h2 className="font-display text-2xl font-bold mb-2">Warranty Registered!</h2>
           <p className="text-muted-foreground text-sm mb-6">
-            Battery {registeredWarranty.bpan} is now covered under warranty
+            Warranty record saved for {registeredWarranty.bpan}. Coverage remains subject to dates, terms, and issuer review.
           </p>
           <div className="bg-secondary/50 rounded-xl p-4 mb-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -159,9 +166,11 @@ export default function WarrantyRegister() {
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <Shield className="w-6 h-6 text-emerald-400" /> Register Warranty
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Register warranty at point of sale with customer details</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Register a private warranty record for an owned battery; issuer acceptance is not certified</p>
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground mb-4">{BPAN_LOCAL_PILOT_LABEL}</p>
 
       {/* Step Indicator */}
       <div className="flex items-center gap-2 mb-8">
@@ -203,14 +212,14 @@ export default function WarrantyRegister() {
                   <Input
                     value={form.bpan}
                     onChange={(e) => set("bpan", e.target.value.toUpperCase().slice(0, 21))}
-                    maxLength={19}
+                    maxLength={21}
                     className="bg-secondary/30 border-border font-mono text-sm h-10"
-                    placeholder="Enter 19-character BPAN"
+                    placeholder="Enter exact existing 19- or 21-character identifier"
                   />
-                  {form.bpan.length === 19 && batteryQuery.isLoading && (
+                  {isBpanReadIdentifier(form.bpan) && batteryQuery.isLoading && (
                     <p className="text-xs text-muted-foreground mt-1">Looking up battery...</p>
                   )}
-                  {form.bpan.length === 19 && batteryQuery.data && (
+                  {isBpanReadIdentifier(form.bpan) && batteryQuery.data && (
                     <div className="mt-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
                       <p className="text-xs text-emerald-400 font-medium">Battery found!</p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -218,7 +227,7 @@ export default function WarrantyRegister() {
                       </p>
                     </div>
                   )}
-                  {form.bpan.length === 19 && batteryQuery.error && (
+                  {isBpanReadIdentifier(form.bpan) && batteryQuery.error && (
                     <p className="text-xs text-destructive mt-1">Battery not found. Register it first.</p>
                   )}
                 </div>
@@ -238,7 +247,7 @@ export default function WarrantyRegister() {
             </div>
             <div className="flex justify-end">
               <Button type="button" onClick={() => {
-                if (form.bpan.length !== 19) { toast.error("Enter a valid 19-character BPAN"); return; }
+                if (!isBpanReadIdentifier(form.bpan)) { toast.error("Enter an exact existing 19- or 21-character identifier"); return; }
                 if (!batteryQuery.data) { toast.error("Battery not found for this BPAN"); return; }
                 setStep(2);
               }} className="bg-primary text-primary-foreground">
@@ -286,7 +295,7 @@ export default function WarrantyRegister() {
               <div className="mt-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                 <p className="text-xs text-amber-400 font-medium">Why collect contact details?</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Phone, WhatsApp, and email enable multi-channel warranty verification. Battery providers can verify warranty status via any of these channels — reducing call center load by 60%.
+                  Contact details support owner/admin-scoped lookup only; knowing a contact value does not verify ownership. Collect only necessary details with consent.
                 </p>
               </div>
             </div>

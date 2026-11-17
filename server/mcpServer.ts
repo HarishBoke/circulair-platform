@@ -80,9 +80,12 @@ async function mcpAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const key = authHeader.substring(7);
-  const apiKey = await validateApiKey(key);
+  if (!/^cai_[A-Za-z0-9_-]{32}$/.test(key)) return res.status(401).json({ error: "unauthorized" });
+  let apiKey;
+  try { apiKey = await validateApiKey(key); }
+  catch { return res.status(503).json({ error: "authentication_unavailable" }); }
 
-  if (!apiKey) {
+  if (!apiKey || !Number.isSafeInteger(apiKey.userId) || apiKey.userId <= 0 || apiKey.status !== "active" || (apiKey.expiresAt && new Date(apiKey.expiresAt).getTime() <= Date.now())) {
     await writeSecurityEvent({
       eventType: "permission_denied",
       severity: "medium",
@@ -372,7 +375,7 @@ function handleToolsList() {
   return {
     tools: mcpTools.map(t => ({
       name: t.name,
-      description: t.description,
+      description: "UNAVAILABLE — requires verified resource-owner context. " + t.description,
       inputSchema: t.inputSchema,
     })),
   };
@@ -380,6 +383,9 @@ function handleToolsList() {
 
 /** Call a specific tool (MCP tools/call) */
 async function handleToolsCall(toolName: string, args: any) {
+  if (mcpTools.some(tool => tool.name === toolName)) {
+    return { isError: true, content: [{ type: "text", text: "Private data and action tools are unavailable until verified resource-owner context and execution authority are propagated." }] };
+  }
   const tool = mcpTools.find(t => t.name === toolName);
   if (!tool) {
     return {
@@ -396,7 +402,7 @@ async function handleToolsCall(toolName: string, args: any) {
   } catch (err: any) {
     return {
       isError: true,
-      content: [{ type: "text", text: `Error executing '${toolName}': ${err.message}` }],
+      content: [{ type: "text", text: "Tool request could not be completed" }],
     };
   }
 }
@@ -408,31 +414,31 @@ function handleResourcesList() {
       {
         uri: "circulair://batteries",
         name: "Battery Registry",
-        description: "All registered batteries with BPAN, status, and lifecycle data",
+        description: "UNAVAILABLE — requires verified owner context for private battery data",
         mimeType: "application/json",
       },
       {
         uri: "circulair://warranties",
         name: "Warranty Records",
-        description: "All warranty registrations with status and customer data",
+        description: "UNAVAILABLE — requires verified owner context for private warranty data",
         mimeType: "application/json",
       },
       {
         uri: "circulair://marketplace",
         name: "Marketplace Listings",
-        description: "Second-life battery marketplace listings",
+        description: "UNAVAILABLE — publication and artifact privacy are unverified",
         mimeType: "application/json",
       },
       {
         uri: "circulair://compliance/epr",
         name: "EPR Compliance",
-        description: "Extended Producer Responsibility compliance tokens",
+        description: "UNAVAILABLE — requires verified owner context for EPR records",
         mimeType: "application/json",
       },
       {
         uri: "circulair://analytics/kpis",
         name: "Platform KPIs",
-        description: "Platform-wide key performance indicators",
+        description: "UNAVAILABLE — requires verified administrator authority",
         mimeType: "application/json",
       },
     ],
@@ -441,6 +447,9 @@ function handleResourcesList() {
 
 /** Read a specific resource (MCP resources/read) */
 async function handleResourcesRead(uri: string) {
+  if (["circulair://batteries", "circulair://warranties", "circulair://marketplace", "circulair://compliance/epr", "circulair://analytics/kpis"].includes(uri)) {
+    return { error: "Private data resources are unavailable until verified resource-owner context is propagated." };
+  }
   const resourceHandlers: Record<string, () => Promise<any>> = {
     "circulair://batteries": () => listBatteries({ limit: 100, offset: 0 }),
     "circulair://warranties": () => listWarrantyRecords({ limit: 100 }),
@@ -492,6 +501,9 @@ function handlePromptsList() {
 
 /** Get a specific prompt (MCP prompts/get) */
 async function handlePromptsGet(name: string, args: Record<string, string>) {
+  if (["battery_health_report", "fleet_overview", "warranty_analysis", "compliance_summary"].includes(name)) {
+    return { error: "Prompts containing private data are unavailable until verified resource-owner context is propagated." };
+  }
   const promptHandlers: Record<string, (args: Record<string, string>) => Promise<any>> = {
     battery_health_report: async (a) => {
       const battery = await getBatteryByBpan(a.bpan);
@@ -639,7 +651,7 @@ export function createMcpRouter(): Router {
             actorType: "agent",
             action: `mcp.tools.call.${toolName}`,
             module: "mcp",
-            inputSummary: params?.arguments,
+            inputSummary: { omitted: "private_arguments_not_logged" },
             status: result.isError ? "error" : "success",
           });
           // Log API usage for rate limiting tracking
@@ -683,7 +695,7 @@ export function createMcpRouter(): Router {
 
       res.json({ jsonrpc: "2.0", id, result });
     } catch (err: any) {
-      res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: err.message } });
+      res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: "MCP request could not be completed" } });
     }
   });
 

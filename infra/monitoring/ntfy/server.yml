@@ -1,0 +1,20 @@
+# Render edge owns TLS. Entrypoint supplies the real HTTPS base URL and HTTP port.
+cache-file: /var/lib/ntfy/cache.db
+cache-duration: 24h
+auth-file: /var/lib/ntfy/auth.db
+auth-default-access: deny-all
+behind-proxy: true
+enable-login: true
+enable-signup: false
+enable-reservations: false
+web-root: disable
+log-level: warn
+# No attachments, SMTP, Firebase, web push, or iOS upstream relay.
+attachment-cache-dir: ""
+upstream-base-url: ""
+upstream-access-token: ""
+firebase-key-file: ""
+web-push-public-key: ""
+web-push-private-key: ""
+smtp-sender-addr: ""
+smtp-server-listen: ""

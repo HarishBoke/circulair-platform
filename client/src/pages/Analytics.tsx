@@ -5,24 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, Battery, ShoppingCart, Shield, Activity } from "lucide-react";
 import NaturalLanguageSearch from "@/components/NaturalLanguageSearch";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-
-const UPTIME_DATA = [
-  { day: "Mon", uptime: 99.99 }, { day: "Tue", uptime: 99.97 },
-  { day: "Wed", uptime: 100 }, { day: "Thu", uptime: 99.98 },
-  { day: "Fri", uptime: 99.99 }, { day: "Sat", uptime: 100 },
-  { day: "Sun", uptime: 99.99 },
-];
 
 export default function Analytics() {
   usePageTitle("Analytics");
 
-  const { data: kpis, isLoading, refetch } = trpc.analytics.kpis.useQuery();
-  const { data: monthlyActivity } = trpc.analytics.monthlyActivity.useQuery();
-  const { data: sohDistribution } = trpc.analytics.sohDistribution.useQuery();
-  const { data: chemistryDistribution } = trpc.analytics.chemistryDistribution.useQuery();
+  const { data: kpis, isLoading, error: kpiError, refetch } = trpc.analytics.kpis.useQuery();
+  const { data: monthlyActivity, isLoading: monthlyLoading, error: monthlyError } = trpc.analytics.monthlyActivity.useQuery();
+  const { data: sohDistribution, isLoading: sohLoading, error: sohError } = trpc.analytics.sohDistribution.useQuery();
+  const { data: chemistryDistribution, isLoading: chemistryLoading, error: chemistryError } = trpc.analytics.chemistryDistribution.useQuery();
+
+  if (kpiError || monthlyError || sohError || chemistryError) return (
+    <div className="p-6 space-y-3"><h1 className="font-display text-2xl font-bold">Analytics & KPIs</h1>
+      <p role="alert">Analytics data is unavailable. Administrator permission and a successful database query are required; unavailable data is not shown as zero.</p></div>
+  );
+  if (isLoading || monthlyLoading || sohLoading || chemistryLoading) return <div className="p-6">Loading database-backed analytics…</div>;
 
   const batteryStats = kpis?.batteryStats;
   const marketStats = kpis?.marketStats;
@@ -52,8 +51,8 @@ export default function Analytics() {
         {[
           { label: "Total Batteries", value: batteryStats?.total ?? 0, icon: Battery, sub: "Registered in BPAN registry" },
           { label: "Marketplace Volume", value: `₹${((marketStats?.totalValueInr ?? 0) / 100000).toFixed(1)}L`, icon: ShoppingCart, sub: `${marketStats?.totalTransactions ?? 0} transactions` },
-          { label: "EPR Tokens Issued", value: eprStats?.verified ?? 0, icon: Shield, sub: "Blockchain verified" },
-          { label: "System Uptime", value: "99.99%", icon: Activity, sub: "7-day average" },
+          { label: "Legacy EPR Records", value: eprStats?.verified ?? 0, icon: Shield, sub: "Stored statuses; not regulatory certification" },
+          { label: "System Uptime", value: "Unavailable", icon: Activity, sub: "No measured monitor history is integrated" },
         ].map((kpi) => (
           <div key={kpi.label} className="bg-card border border-border rounded-xl p-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
@@ -164,27 +163,13 @@ export default function Analytics() {
         <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div>
-              <h3 className="font-display text-sm font-bold">System Uptime (7 days)</h3>
-              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Target: 99.99%</p>
+              <h3 className="font-display text-sm font-bold">System Uptime History</h3>
+              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Requires measured monitoring history</p>
             </div>
-            <Badge variant="outline" className="font-mono text-[9px] bg-primary/10 text-primary border-primary/20">99.99% avg</Badge>
+            <Badge variant="outline" className="font-mono text-[9px] border-border">Unavailable</Badge>
           </div>
           <div className="p-5">
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={UPTIME_DATA}>
-                <defs>
-                  <linearGradient id="uptimeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00c8a0" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00c8a0" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,200,160,0.08)" />
-                <XAxis dataKey="day" tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[99.9, 100.01]} tick={{ fill: "#7fa99a", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "#0a1628", border: "1px solid rgba(0,200,160,0.2)", borderRadius: "8px", fontFamily: "DM Mono", fontSize: "11px" }} />
-                <Area type="monotone" dataKey="uptime" stroke="#00c8a0" strokeWidth={2} fill="url(#uptimeGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <p className="min-h-40 flex items-center text-sm text-muted-foreground">No verified uptime series is connected. The separately approved Render monitoring stack must be deployed, configured, and accumulate real probe history before an availability chart can be shown.</p>
           </div>
         </div>
       </div>
@@ -196,10 +181,10 @@ export default function Analytics() {
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "CO₂ Avoided", value: "1,240 tCO₂", sub: "vs. virgin material production", color: "text-primary" },
-            { label: "Batteries Diverted", value: `${batteryStats?.total ?? 0}`, sub: "from landfill", color: "text-chart-2" },
-            { label: "Materials Recovered", value: `${((eprStats?.totalYieldKg ?? 0) / 1000).toFixed(1)}t`, sub: "Black mass & metals", color: "text-chart-3" },
-            { label: "Warranty Claims Reduced", value: "34%", sub: "AI-driven predictive maintenance", color: "text-chart-4" },
+            { label: "CO₂ Avoided", value: "Unavailable", sub: "No validated baseline or measured comparison", color: "text-primary" },
+            { label: "Registered Batteries", value: `${batteryStats?.total ?? 0}`, sub: "Registration is not proof of landfill diversion", color: "text-chart-2" },
+            { label: "Recorded Yield", value: `${((eprStats?.totalYieldKg ?? 0) / 1000).toFixed(1)}t`, sub: "Legacy recorded values; not verified recovery", color: "text-chart-3" },
+            { label: "Warranty Claims Reduced", value: "Unavailable", sub: "No measured comparative study", color: "text-chart-4" },
           ].map((kpi) => (
             <div key={kpi.label} className="bg-secondary/30 rounded-xl p-4">
               <div className="font-mono text-[9px] text-muted-foreground mb-2">{kpi.label}</div>

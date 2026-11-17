@@ -33,7 +33,7 @@ export default function Logistics() {
 
   const { data, isLoading, refetch } = trpc.logistics.list.useQuery({ limit: 20, offset: 0 });
   const createMutation = trpc.logistics.requestPickup.useMutation({
-    onSuccess: () => { toast.success("Pickup requested! SLA: 24–48 hours."); setShowCreateDialog(false); refetch(); },
+    onSuccess: () => { toast.success("Request recorded; carrier acceptance and pickup time are not confirmed."); setShowCreateDialog(false); refetch(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -43,8 +43,8 @@ export default function Logistics() {
   const getSlaStatus = (requestedAt: Date, status: string) => {
     if (status === "delivered") return { label: "Delivered", ok: true };
     const hours = (Date.now() - new Date(requestedAt).getTime()) / 3600000;
-    if (hours > 48) return { label: `${hours.toFixed(0)}h (SLA BREACH)`, ok: false };
-    if (hours > 24) return { label: `${hours.toFixed(0)}h (Warning)`, ok: false };
+    if (hours > 48) return { label: `${hours.toFixed(0)}h (review age)`, ok: false };
+    if (hours > 24) return { label: `${hours.toFixed(0)}h (review age)`, ok: false };
     return { label: `${hours.toFixed(0)}h`, ok: true };
   };
 
@@ -53,7 +53,7 @@ export default function Logistics() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Reverse Logistics</h1>
-          <p className="text-muted-foreground text-sm mt-1">Hazmat dispatch · GPS chain-of-custody · 24/48h SLA monitoring</p>
+          <p className="text-muted-foreground text-sm mt-1">Historical logistics records. Dispatch, GPS tracking, hazardous-goods qualification and delivery times are not verified; automatic dispatch is disabled.</p>
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>

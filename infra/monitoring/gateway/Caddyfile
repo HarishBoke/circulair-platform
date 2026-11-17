@@ -1,0 +1,60 @@
+{
+	auto_https off
+	admin off
+	persist_config off
+	log default {
+		output discard
+	}
+}
+
+:{$PORT} {
+	# No access log. Render terminates external HTTPS; this socket is HTTP only.
+	@health {
+		method GET HEAD
+		path /healthz
+	}
+	handle @health {
+		respond "ok" 200
+	}
+	@publish {
+		method POST
+		path /api/v2/alerts
+	}
+	@unframed {
+		not header Content-Length *
+	}
+	handle @publish {
+		route {
+			# The application adapter emits a fixed-length JSON body. Reject chunked framing.
+			respond @unframed "content length required" 411
+			request_body {
+				max_size 2048
+			}
+			basic_auth {
+				publisher {$ALERT_PUBLISHER_PASSWORD_HASH}
+			}
+			reverse_proxy http://{$ALERTMANAGER_PRIVATE_HOST}:9093 {
+				# Framed body is capped before this handler; buffer only the approved 2KB.
+				request_buffers 2048
+				# Never relay the publisher's Basic credentials to the private upstream.
+				header_up -Authorization
+				header_up -Proxy-Authorization
+				header_up -Cookie
+				header_up -X-Forwarded-User
+				# Fix the upstream path and strip the untrusted query string.
+				rewrite /api/v2/alerts?
+				transport http {
+					dial_timeout 3s
+					response_header_timeout 6s
+				}
+			}
+		}
+	}
+	# No UI, status API, silences, reload, arbitrary methods, or arbitrary upstream.
+	handle {
+		respond "not found" 404
+	}
+	handle_errors {
+		respond "request rejected" {err.status_code}
+	}
+}

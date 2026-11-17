@@ -1,0 +1,12 @@
+# SAFE OFF CONFIGURATION: not a live-production receiver or a durable outbox.
+# Do not activate publishers/outbox while this configuration is installed.
+global:
+  resolve_timeout: 5m
+route:
+  receiver: notifications-disabled
+  group_by: [alertname, incident_id, environment, application]
+  group_wait: 30s
+  group_interval: 1m
+  repeat_interval: 4h
+receivers:
+  - name: notifications-disabled

@@ -15,7 +15,7 @@ import {
 
 // ─── ENDPOINT CATALOGUE ──────────────────────────────────────────────────────
 
-const BASE_URL = "https://circulair.energy/api/v1";
+const BASE_URL = "https://approved-host.example.invalid/api/v1";
 
 interface Param { name: string; type: string; required: boolean; description: string; example: string; }
 interface Endpoint {
@@ -37,31 +37,19 @@ const ENDPOINTS: Endpoint[] = [
     id: "soh_predict",
     method: "POST",
     path: "/soh/predict",
-    summary: "Predict State of Health",
-    description: "Run an AI-powered SOH prediction for a registered battery. Returns current SOH percentage, remaining useful life estimate, degradation breakdown, and maintenance recommendations.",
+    summary: "Review SOH Estimate",
+    description: "Historical estimate contract example, not a verified enabled endpoint. Current SOH outputs are uncalibrated deterministic heuristics; confidence metadata is not measured accuracy or approval for safety, second-life or recycling.",
     scope: "predict:soh",
     category: "AI & SOH",
     body: [
-      { name: "bpan", type: "string", required: true, description: "Battery Pack Alphanumeric Number", example: "IND-A3F-2024A01-00001" },
+      { name: "bpan", type: "string", required: true, description: "Local battery identifier (not official enrollment)", example: "IND-A3F-2024A01-00001" },
       { name: "chemistry", type: "string", required: false, description: "Battery chemistry override (NMC, LFP, NCA, LTO)", example: "NMC" },
       { name: "cycleCount", type: "integer", required: false, description: "Override cycle count for prediction", example: "450" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "soh": 87.4,
-  "rulDays": 412,
-  "healthStatus": "healthy",
-  "degradationBreakdown": {
-    "calendarAging": 3.2,
-    "cyclicAging": 7.1,
-    "temperatureStress": 2.3
-  },
-  "recommendations": [
-    "Reduce peak charge rate to 0.5C to extend life",
-    "Schedule capacity test within 60 days"
-  ],
-  "confidence": 0.94,
-  "generatedAt": "2026-04-22T08:00:00Z"
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   {
@@ -69,7 +57,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/soh/{bpan}/history",
     summary: "Get SOH History",
-    description: "Retrieve historical SOH measurements for a battery, ordered by timestamp descending. Useful for trend analysis and degradation rate calculation.",
+    description: "Historical SOH record example. Estimates must not be described as measured capacity; verify provenance, timestamps and the enabled owner-scoped contract.",
     scope: "predict:soh",
     category: "AI & SOH",
     params: [
@@ -77,12 +65,9 @@ const ENDPOINTS: Endpoint[] = [
       { name: "limit", type: "integer", required: false, description: "Max records to return (default 50, max 500)", example: "100" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "history": [
-    { "soh": 87.4, "measuredAt": "2026-04-22T08:00:00Z", "cycleCount": 450 },
-    { "soh": 88.1, "measuredAt": "2026-03-15T10:00:00Z", "cycleCount": 420 }
-  ],
-  "total": 24
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   // BPAN
@@ -91,22 +76,16 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/bpan/validate/{bpan}",
     summary: "Validate BPAN",
-    description: "Validate a Battery Pack Alphanumeric Number and return its registration details, chemistry, capacity, manufacturer, and current lifecycle status.",
+    description: "Historical local identifier lookup example. A registration or format match is not official BPAN enrollment, government acceptance or verified physical condition.",
     scope: "read:bpan",
     category: "Battery Registry",
     params: [
       { name: "bpan", type: "string", required: true, description: "Battery BPAN to validate", example: "IND-A3F-2024A01-00001" },
     ],
     responseExample: `{
-  "valid": true,
-  "bpan": "IND-A3F-2024A01-00001",
-  "chemistry": "NMC",
-  "nominalCapacityKwh": 75.0,
-  "manufacturer": "Tata AutoComp",
-  "countryOfOrigin": "IN",
-  "registeredAt": "2024-01-15T00:00:00Z",
-  "lifecycleStatus": "in_use",
-  "currentSoh": 87.4
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   {
@@ -124,18 +103,9 @@ const ENDPOINTS: Endpoint[] = [
       { name: "status", type: "string", required: false, description: "Filter by lifecycle status", example: "in_use" },
     ],
     responseExample: `{
-  "items": [
-    {
-      "bpan": "IND-A3F-2024A01-00001",
-      "chemistry": "NMC",
-      "nominalCapacityKwh": 75.0,
-      "currentSoh": 87.4,
-      "lifecycleStatus": "in_use"
-    }
-  ],
-  "total": 142,
-  "limit": 20,
-  "offset": 0
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   // Telemetry
@@ -151,14 +121,9 @@ const ENDPOINTS: Endpoint[] = [
       { name: "bpan", type: "string", required: true, description: "Battery BPAN identifier", example: "IND-A3F-2024A01-00001" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "voltage": 398.2,
-  "current": -12.4,
-  "temperature": 28.5,
-  "soc": 74.3,
-  "cycleCount": 450,
-  "timestamp": "2026-04-22T08:00:00Z",
-  "source": "mqtt"
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   {
@@ -166,15 +131,17 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/telemetry/{bpan}/stream",
     summary: "Stream Telemetry (SSE)",
-    description: "Subscribe to a real-time Server-Sent Events stream for a battery's telemetry. The connection stays open and pushes new readings as they arrive from the IoT gateway.",
+    description: "Historical streaming contract example. A stream URL does not prove an implemented, authorized stream or a working physical gateway; confirm the current enabled interface.",
     scope: "read:telemetry",
     category: "Telemetry",
     params: [
       { name: "bpan", type: "string", required: true, description: "Battery BPAN identifier", example: "IND-A3F-2024A01-00001" },
     ],
-    responseExample: `data: {"voltage":398.2,"current":-12.4,"temperature":28.5,"soc":74.3,"timestamp":"2026-04-22T08:00:01Z"}
-
-data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp":"2026-04-22T08:00:06Z"}`,
+    responseExample: `{
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
+}`,
   },
   // Carbon
   {
@@ -182,7 +149,7 @@ data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp"
     method: "POST",
     path: "/carbon/calculate",
     summary: "Calculate Carbon Footprint",
-    description: "Calculate the lifecycle carbon footprint for a battery based on its chemistry, capacity, manufacturing region, and usage profile. Returns CO₂e in kg with breakdown by lifecycle stage.",
+    description: "Historical lifecycle emissions estimate example. Inputs, units, factors and boundary need qualified review; no approved carbon declaration or regulatory methodology conformity is established.",
     scope: "read:carbon",
     category: "Carbon & Compliance",
     body: [
@@ -190,15 +157,9 @@ data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp"
       { name: "gridRegion", type: "string", required: false, description: "Grid region for use-phase calculation (IN, EU, US)", example: "IN" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "totalCo2eKg": 4820.5,
-  "breakdown": {
-    "manufacturing": 3200.0,
-    "usePhase": 1420.5,
-    "endOfLife": 200.0
-  },
-  "gridRegion": "IN",
-  "calculatedAt": "2026-04-22T08:00:00Z"
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   // Digital Twin
@@ -207,7 +168,7 @@ data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp"
     method: "POST",
     path: "/digital-twin/generate",
     summary: "Generate Digital Twin Forecast",
-    description: "Run a physics-informed Arrhenius + Wöhler simulation to generate a multi-scenario SOH trajectory forecast for a battery over a configurable horizon.",
+    description: "Historical physics simulation example. Numerical forecasts are uncalibrated and assumption-dependent, not validated service-life guarantees.",
     scope: "read:digital-twin",
     category: "Digital Twin",
     body: [
@@ -215,18 +176,9 @@ data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp"
       { name: "forecastHorizonDays", type: "integer", required: false, description: "Forecast horizon in days (default 365)", example: "365" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "currentSoh": 87.4,
-  "healthStatus": "healthy",
-  "rulDaysNominal": 412,
-  "scenarios": {
-    "nominal": [
-      { "day": 30, "predictedSoh": 86.8 },
-      { "day": 60, "predictedSoh": 86.2 }
-    ],
-    "conservative": [...],
-    "aggressive": [...]
-  }
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
   // Triage
@@ -235,19 +187,16 @@ data: {"voltage":398.1,"current":-12.3,"temperature":28.6,"soc":74.2,"timestamp"
     method: "POST",
     path: "/triage/evaluate",
     summary: "Evaluate Triage Route",
-    description: "Run an AI triage evaluation for a battery to determine the optimal end-of-life route: reuse, repurpose, recycle, or dispose. Returns route recommendation with confidence score and reasoning.",
+    description: "Historical candidate-label example only. No optimal route, autonomous approval, carrier dispatch, safety determination or second-life/recycling qualification is established.",
     scope: "read:telemetry",
-    category: "Autonomous Triage",
+    category: "Triage Review",
     body: [
       { name: "bpan", type: "string", required: true, description: "Battery BPAN identifier", example: "IND-A3F-2024A01-00001" },
     ],
     responseExample: `{
-  "bpan": "IND-A3F-2024A01-00001",
-  "recommendedPath": "repurpose",
-  "confidence": 0.87,
-  "reasoning": "SOH of 65% is below EV threshold but suitable for stationary storage. Cycle count within repurposing range.",
-  "alternativeRoutes": ["recycle"],
-  "evaluatedAt": "2026-04-22T08:00:00Z"
+  "documentationOnly": true,
+  "availability": "unverified",
+  "note": "No request was made. Confirm the enabled contract with the owner; unavailable paths may return HTTP 503."
 }`,
   },
 ];
@@ -268,7 +217,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   "Telemetry": Activity,
   "Carbon & Compliance": ShieldCheck,
   "Digital Twin": Zap,
-  "Autonomous Triage": Bot,
+  "Triage Review": Bot,
   "Marketplace": ShoppingCart,
 };
 
@@ -349,47 +298,9 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
   const [activeTab, setActiveTab] = useState("curl");
   const [apiKey, setApiKey] = useState("");
   const [tryParams, setTryParams] = useState<Record<string, string>>({});
-  const [tryResult, setTryResult] = useState<{ status: number; body: string } | null>(null);
-  const [trying, setTrying] = useState(false);
   const apiKeyId = useId();
 
   const allParams = [...(ep.params || []), ...(ep.body || [])];
-
-  const handleTry = async () => {
-    if (!apiKey.trim()) {
-      toast.error("API key required", { description: "Enter your API key in the field above to try this endpoint." });
-      return;
-    }
-    setTrying(true);
-    setTryResult(null);
-    try {
-      const pathWithParams = ep.path.replace(/\{(\w+)\}/g, (_, k) => tryParams[k] || `:${k}`);
-      const queryParams = (ep.params || [])
-        .filter((p) => !ep.path.includes(`{${p.name}}`))
-        .filter((p) => tryParams[p.name])
-        .map((p) => `${p.name}=${encodeURIComponent(tryParams[p.name])}`)
-        .join("&");
-      const url = `/api/proxy/v1${pathWithParams}${queryParams ? `?${queryParams}` : ""}`;
-      const bodyParams = ep.body || [];
-      const bodyObj = Object.fromEntries(bodyParams.map((p) => [p.name, tryParams[p.name] || p.example]));
-      const res = await fetch(url, {
-        method: ep.method,
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        ...(ep.method !== "GET" ? { body: JSON.stringify(bodyObj) } : {}),
-      });
-      const text = await res.text();
-      let pretty = text;
-      try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { /* not JSON */ }
-      setTryResult({ status: res.status, body: pretty });
-    } catch (err: any) {
-      setTryResult({ status: 0, body: `Network error: ${err.message}` });
-    } finally {
-      setTrying(false);
-    }
-  };
 
   const curlCode = generateCurl(ep, apiKey, tryParams);
   const jsCode = generateJS(ep, apiKey, tryParams);
@@ -459,7 +370,7 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
           {/* API Key for Try-It */}
           <div className="space-y-1.5">
             <Label htmlFor={apiKeyId} className="text-xs text-muted-foreground">
-              API Key (for Try It)
+              API Key placeholder (reference snippets only)
             </Label>
             <Input
               id={apiKeyId}
@@ -515,43 +426,10 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
             ))}
           </Tabs>
 
-          {/* Try It button */}
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              onClick={handleTry}
-              disabled={trying}
-              className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
-              aria-busy={trying}
-            >
-              {trying ? (
-                <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" aria-hidden="true" />Sending…</>
-              ) : (
-                <><Play className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />Try It</>
-              )}
-            </Button>
-            {tryResult && (
-              <div className="flex items-center gap-1.5">
-                {tryResult.status >= 200 && tryResult.status < 300 ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-red-400" aria-hidden="true" />
-                )}
-                <span className={`text-xs font-mono ${tryResult.status >= 200 && tryResult.status < 300 ? "text-emerald-400" : "text-red-400"}`}>
-                  {tryResult.status || "Error"}
-                </span>
-              </div>
-            )}
+          <div className="space-y-2">
+            <Button size="sm" disabled={true}>Requests unavailable</Button>
+            <p className="text-xs text-muted-foreground">No request is sent. These historical examples are reference-only and use a non-routable placeholder host.</p>
           </div>
-
-          {/* Try It response */}
-          {tryResult && (
-            <div aria-live="polite" aria-atomic="true">
-              <pre className="text-xs font-mono bg-background/80 p-4 rounded-lg overflow-x-auto text-foreground max-h-64">
-                {tryResult.body}
-              </pre>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -586,7 +464,7 @@ export default function ApiReference() {
             <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">v1.0</Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            REST API for the Circul-AI-r Battery Intelligence Platform
+            Historical API catalogue for development review — availability unverified
             {" · "}<span className="font-mono text-xs text-emerald-400/80">{BASE_URL}</span>
           </p>
         </div>
@@ -636,6 +514,7 @@ export default function ApiReference() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 space-y-5">
+          <p role="note" className="text-sm text-amber-300">Static examples are not the current API contract or execution receipts. Confirm authentication, endpoint scopes and ownership with the enabled source. Legacy hardware ingestion is blocked with HTTP 503; payments and private document publishing are disabled. Execution and training are gated unavailable. The new local pilot is in development and not deployed; no new route is advertised as ready.</p>
           {/* Auth + Rate limit info bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Card className="border-border/50 bg-card/50">
@@ -645,7 +524,7 @@ export default function ApiReference() {
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Authentication</span>
                 </div>
                 <code className="text-xs font-mono text-foreground">Authorization: Bearer cai_…</code>
-                <p className="text-[11px] text-muted-foreground mt-1">Issue keys in <a href="/developer-portal" className="text-emerald-400 underline underline-offset-2">Developer Portal</a></p>
+                <p className="text-[11px] text-muted-foreground mt-1">Review enabled key contracts in <a href="/developer-portal" className="text-emerald-400 underline underline-offset-2">Developer Portal</a></p>
               </CardContent>
             </Card>
             <Card className="border-amber-500/20 bg-amber-500/5">
@@ -654,8 +533,8 @@ export default function ApiReference() {
                   <Zap className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                   <span className="text-[11px] font-semibold text-amber-400/80 uppercase tracking-wide">Rate Limits</span>
                 </div>
-                <p className="text-xs text-amber-300/90">100 req/min per key · HTTP 429 on breach</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Increase in Developer Portal</p>
+                <p className="text-xs text-amber-300/90">Configured limits vary by endpoint and key</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">In-process limits are not an availability or security guarantee</p>
               </CardContent>
             </Card>
           </div>
@@ -754,10 +633,10 @@ export default function ApiReference() {
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">
-                      tRPC API — Full Platform
-                      <Badge className="ml-2 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">130+ endpoints</Badge>
+                      tRPC API — Source Interfaces
+                      <Badge className="ml-2 text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Contract review required</Badge>
                     </p>
-                    <p className="text-xs text-muted-foreground">Session cookie auth — all platform features across 37 routers</p>
+                    <p className="text-xs text-muted-foreground">Session authentication; scope/ownership and feature gates apply</p>
                   </div>
                   <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 shrink-0" onClick={() => window.open("/api/trpc/docs", "_blank")}>
                     Open Swagger UI
@@ -778,7 +657,7 @@ export default function ApiReference() {
                   tRPC API openapi.json
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Import into Postman, Insomnia, or use to generate client SDKs</p>
+              <p className="text-xs text-muted-foreground mt-2">Documentation links are not verified downloads or deployment evidence; review enabled contracts before generating clients</p>
             </CardContent>
           </Card>
         </div>

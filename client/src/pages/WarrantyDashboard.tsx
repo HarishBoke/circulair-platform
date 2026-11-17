@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { trpc } from "@/lib/trpc";
+import { encodeWarrantyCsv } from "@shared/warrantyCsv";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +51,11 @@ export default function WarrantyDashboard() {
       r.warrantyEndDate ? new Date(r.warrantyEndDate).toLocaleDateString() : "",
       r.totalClaims ?? 0,
     ]);
-    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const csv = encodeWarrantyCsv([headers, ...rows]);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "warranty_records.csv"; a.click();
+    a.href = url; a.download = "warranty_current_page.csv"; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -82,6 +83,7 @@ export default function WarrantyDashboard() {
       </div>
 
       {/* Stats Cards */}
+      {statsQuery.error && <p role="alert" className="text-sm text-destructive mb-3">Warranty totals unavailable: {statsQuery.error.message}</p>}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
           { label: "Total", value: statsQuery.data?.total ?? 0, icon: BarChart3, color: "text-primary" },
@@ -96,7 +98,7 @@ export default function WarrantyDashboard() {
               <Icon className={`w-3.5 h-3.5 ${color}`} />
               <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{label}</span>
             </div>
-            <div className={`text-xl font-bold ${color}`}>{value}</div>
+            <div className={`text-xl font-bold ${color}`}>{statsQuery.error || statsQuery.isLoading ? "—" : value}</div>
           </div>
         ))}
       </div>
@@ -123,8 +125,8 @@ export default function WarrantyDashboard() {
             <SelectItem value="pending_activation">Pending</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" className="h-9 text-xs" onClick={handleExport}>
-          <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+        <Button variant="outline" size="sm" className="h-9 text-xs" onClick={handleExport} disabled={!!listQuery.error || !listQuery.data?.records.length}>
+          <Download className="w-3.5 h-3.5 mr-1" /> Export Current Page CSV
         </Button>
       </div>
 
@@ -135,6 +137,8 @@ export default function WarrantyDashboard() {
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
             <p className="text-xs text-muted-foreground">Loading warranties...</p>
           </div>
+        ) : listQuery.error ? (
+          <div role="alert" className="p-8 text-center text-destructive">Warranty records unavailable: {listQuery.error.message}</div>
         ) : !listQuery.data?.records.length ? (
           <div className="p-12 text-center">
             <Shield className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />

@@ -2,8 +2,8 @@ import { eq, desc, and, like, or, sql, gte, lte, count, sum, isNotNull } from "d
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { resolvePostgresConnectionUrl } from "../shared/databaseEnv.cjs";
-import { pagerDutyConfig, shouldPageAlert, makePagerDutyEvent } from "./pagerDuty";
-import { pagerDutyOutbox } from "../drizzle/pagerDutySchema";
+import { createOpenSourceAlertingAdapter } from "./openSourceAlerting";
+import { enqueueIncidentForAlert, incidentGate, type LiveCriticalContext } from "./incidentOutbox";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -78,6 +78,13 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+// Additive fail-closed adapter for injected ownership helpers. No new connection/configuration path.
+export async function requireOwnershipDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db;
 }
 
 // Utility to force reconnection (useful for health checks or recovery)
@@ -169,6 +176,17 @@ export async function getBatteryByBpan(bpan: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(batteries).where(eq(batteries.bpan, bpan)).limit(1);
+  return result[0];
+}
+
+/** Scope lookup before returning private battery data; no implicit registeredById access. */
+export async function getOwnedBatteryByBpan(bpan: string, actorId: number, isAdmin = false) {
+  if (!Number.isSafeInteger(actorId) || actorId <= 0) throw new Error("Invalid actor");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const predicate = isAdmin ? eq(batteries.bpan, bpan)
+    : and(eq(batteries.bpan, bpan), eq(batteries.ownerId, actorId));
+  const result = await db.select().from(batteries).where(predicate).limit(1);
   return result[0];
 }
 
@@ -271,9 +289,9 @@ export async function getSohPredictionHistory(bpan: string, limit = 20) {
 export async function createListing(data: InsertMarketplaceListing) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(marketplaceListings).values(data);
-  const result = await db.select().from(marketplaceListings).where(eq(marketplaceListings.bpan, data.bpan)).orderBy(desc(marketplaceListings.createdAt)).limit(1);
-  return result[0];
+  const [listing] = await db.insert(marketplaceListings).values(data).returning();
+  if (!listing) throw new Error("Listing insert returned no row");
+  return listing;
 }
 
 export async function listMarketplace(filters?: { listingType?: string; chemistry?: string; minSoh?: number; maxPrice?: number; limit?: number; offset?: number }) {
@@ -315,12 +333,13 @@ export async function createShipment(data: InsertLogistics) {
   return result[0];
 }
 
-export async function listShipments(filters?: { status?: string; limit?: number; offset?: number }) {
+export async function listShipments(filters?: { status?: string; requestedById: number; limit?: number; offset?: number }) {
+  if (!filters || !Number.isInteger(filters.requestedById) || filters.requestedById <= 0) throw new Error("Shipment owner scope required");
   const db = await getDb();
-  if (!db) return { items: [], total: 0 };
-  const limit = filters?.limit ?? 20;
-  const offset = filters?.offset ?? 0;
-  const conditions = [];
+  if (!db) throw new Error("Database not available");
+  const limit = Math.min(Math.max(filters.limit ?? 20, 1), 100);
+  const offset = Math.max(filters.offset ?? 0, 0);
+  const conditions = [eq(logistics.requestedById, filters.requestedById)];
   if (filters?.status) conditions.push(eq(logistics.status, filters.status as any));
   const query = conditions.length > 0 ? and(...conditions) : undefined;
   const [items, totalResult] = await Promise.all([
@@ -368,25 +387,19 @@ export async function getEprStats() {
 }
 
 // ─── ALERTS HELPERS ───────────────────────────────────────────────────────────
-export async function createAlert(data: InsertAlert) {
+// Context is a server-owned acquisition assertion, NOT authentication by TypeScript.
+// No existing caller supplies it: login-JWT input, BMS_REPORTED pilot records and
+// synthetic/replayed observations cannot establish verified live acquisition.
+export async function createAlert(data: InsertAlert, trustedLiveContext?: LiveCriticalContext) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const config = pagerDutyConfig();
-  if (!config.enabled || !shouldPageAlert({ ...data, severity: data.severity ?? "info", metadata: data.metadata ?? null })) {
-    return (await db.insert(alerts).values(data).returning())[0];
-  }
-  const alert = await db.transaction(async tx => {
+  const adapter = createOpenSourceAlertingAdapter();
+  const gate = incidentGate();
+  return db.transaction(async tx => {
     const [inserted] = await tx.insert(alerts).values(data).returning();
-    const event = makePagerDutyEvent(inserted, config);
-    await tx.insert(pagerDutyOutbox).values({ alertId: inserted.id, dedupKey: event.dedup_key,
-      routingFingerprint: config.routingFingerprint, event });
+    await enqueueIncidentForAlert(tx, inserted, trustedLiveContext, adapter, gate);
     return inserted;
   });
-  // Best-effort immediate delivery; the durable outbox and a Render Cron job recover interrupted attempts.
-  void import("./pagerDutyOutbox").then(m => m.processPagerDutyOutbox(1)).catch(() => {
-    console.error(JSON.stringify({ event: "pagerduty.immediate_drain_failed", code: "outbox_processing_error" }));
-  });
-  return alert;
 }
 
 export async function listAlerts(userId?: number, limit = 50) {
@@ -422,8 +435,8 @@ export async function getUnreadAlertCount(userId?: number) {
 export async function createDocument(data: InsertDocument) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(documents).values(data);
-  const result = await db.select().from(documents).where(eq(documents.fileKey, data.fileKey ?? "")).limit(1);
+  const result = await db.insert(documents).values(data).returning();
+  if (!result[0]) throw new Error("Document insert returned no row");
   return result[0];
 }
 
@@ -760,15 +773,16 @@ export async function updateIotDevice(id: number, data: Partial<InsertIotDevice>
 export async function updateDeviceLastSeen(deviceId: string) {
   const db = await getDb();
   if (!db) return;
-  await db.update(iotDevices).set({ lastSeen: new Date(), status: "active" as const }).where(eq(iotDevices.deviceId, deviceId));
+  // Timestamp only; administrative activation/revocation is never a heartbeat.
+  await db.update(iotDevices).set({ lastSeen: new Date() }).where(and(
+    eq(iotDevices.deviceId, deviceId), eq(iotDevices.status, "active")
+  ));
 }
-
-export async function updateDeviceLastSeenByBpan(bpan: string) {
-  const db = await getDb();
-  if (!db) return;
-  await db.update(iotDevices).set({ lastSeen: new Date(), status: "active" as const }).where(eq(iotDevices.bpan, bpan));
+export async function updateDeviceLastSeenByBpan(_bpan: string) {
+  // BPAN alone does not identify the authenticated device. Legacy mass-heartbeat
+  // is deliberately disabled and cannot activate/revive any device.
+  return;
 }
-
 export async function deleteIotDevice(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -814,10 +828,23 @@ export async function getListingPhotos(listingId: number) {
     .orderBy(listingPhotos.sortOrder);
 }
 
-export async function deleteListingPhoto(photoId: number) {
+export async function deleteListingPhoto(photoId: number, listingId: number, sellerId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(listingPhotos).where(eq(listingPhotos.id, photoId));
+  return db.transaction(async (tx) => {
+    const [owned] = await tx.select({ id: marketplaceListings.id }).from(marketplaceListings)
+      .where(and(eq(marketplaceListings.id, listingId), eq(marketplaceListings.sellerId, sellerId), eq(marketplaceListings.status, "active")))
+      .for("update");
+    if (!owned) return false;
+    const deleted = await tx.delete(listingPhotos)
+      .where(and(eq(listingPhotos.id, photoId), eq(listingPhotos.listingId, listingId))).returning({ id: listingPhotos.id });
+    if (deleted.length !== 1) return false;
+    const remaining = await tx.select({ url: listingPhotos.url }).from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId)).orderBy(listingPhotos.sortOrder, listingPhotos.id);
+    await tx.update(marketplaceListings).set({ photoCount: remaining.length, primaryPhotoUrl: remaining[0]?.url ?? null })
+      .where(and(eq(marketplaceListings.id, listingId), eq(marketplaceListings.sellerId, sellerId)));
+    return true;
+  });
 }
 
 export async function getListingById(listingId: number) {
@@ -849,17 +876,20 @@ export async function updateListing(listingId: number, data: Partial<InsertMarke
   await db.update(marketplaceListings).set(data as any).where(eq(marketplaceListings.id, listingId));
 }
 
-export async function withdrawListing(listingId: number) {
+export async function withdrawListing(listingId: number, sellerId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(marketplaceListings).set({ status: "withdrawn" } as any).where(eq(marketplaceListings.id, listingId));
+  const rows = await db.update(marketplaceListings).set({ status: "withdrawn" })
+    .where(and(eq(marketplaceListings.id, listingId), eq(marketplaceListings.sellerId, sellerId), eq(marketplaceListings.status, "active")))
+    .returning({ id: marketplaceListings.id });
+  return rows.length === 1;
 }
 
 export async function listUserBatteries(userId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(batteries)
-    .where(or(eq(batteries.registeredById, userId), eq(batteries.ownerId, userId)))
+    .where(eq(batteries.ownerId, userId))
     .orderBy(desc(batteries.createdAt));
 }
 

@@ -1,0 +1,147 @@
+# Separate NEW monitoring Blueprint. Never apply it as an update to existing production.
+# Approved baseline: $53.75/month compute + 3 x 1GB disks, excluding existing costs/tax/overages.
+# This is a gated release artifact, NOT authorization to create/deploy it.
+services:
+  - name: circulair-uptime
+    type: web
+    runtime: docker
+    repo: https://github.com/HarishBoke/circulair-platform
+    region: oregon
+    plan: 1c-2g
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    dockerfilePath: infra/monitoring/kuma/Dockerfile
+    dockerContext: infra/monitoring
+    # First-run liveness only. /healthz remains 503 until native admin + operator approval.
+    healthCheckPath: /livez
+    maxShutdownDelaySeconds: 30
+    disk:
+      name: circulair-uptime-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: KUMA_UI_PASSWORD_HASH
+        sync: false
+      - key: KUMA_BOOTSTRAP_WINDOW_APPROVED
+        value: 'false'
+      - key: KUMA_BOOTSTRAP_COMPLETE
+        value: 'false'
+
+  - name: circulair-notify
+    type: web
+    runtime: docker
+    repo: https://github.com/HarishBoke/circulair-platform
+    region: oregon
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    dockerfilePath: infra/monitoring/ntfy/Dockerfile
+    dockerContext: infra/monitoring
+    healthCheckPath: /v1/health
+    maxShutdownDelaySeconds: 30
+    disk:
+      name: circulair-notify-data
+      mountPath: /var/lib/ntfy
+      sizeGB: 1
+    envVars:
+      - key: NTFY_ADMIN_PASSWORD_HASH
+        sync: false
+      - key: NTFY_BOOTSTRAP_APPROVED
+        value: 'false'
+      - key: NTFY_UPSTREAM_ENABLED
+        value: 'false'
+
+  - name: circulair-alertmanager
+    type: pserv
+    runtime: docker
+    repo: https://github.com/HarishBoke/circulair-platform
+    region: oregon
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    dockerfilePath: infra/monitoring/alertmanager/Dockerfile
+    dockerContext: infra/monitoring
+    maxShutdownDelaySeconds: 30
+    disk:
+      name: circulair-alertmanager-data
+      mountPath: /alertmanager
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: '9093'
+      - key: ALERT_NOTIFICATIONS_ENABLED
+        value: 'false'
+      - key: INCIDENT_OUTBOX_ENABLED
+        value: 'false'
+
+  - name: circulair-alert-gateway
+    type: web
+    runtime: docker
+    repo: https://github.com/HarishBoke/circulair-platform
+    region: oregon
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    dockerfilePath: infra/monitoring/gateway/Dockerfile
+    dockerContext: infra/monitoring
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: ALERT_PUBLISHER_PASSWORD_HASH
+        sync: false
+      - key: ALERTMANAGER_PRIVATE_HOST
+        fromService:
+          name: circulair-alertmanager
+          type: pserv
+          property: host
+
+  - name: circulair-incident-worker
+    type: worker
+    runtime: node
+    repo: https://github.com/HarishBoke/circulair-platform
+    region: oregon
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    # Native standalone entrypoint, not the application's web server.
+    # BLOCKED until compiler review + separately approved schema/notification activation.
+    buildCommand: sh infra/monitoring/worker/build.sh
+    startCommand: sh infra/monitoring/worker/entrypoint.sh
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_VERSION
+        value: '24.14.1'
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: INCIDENT_RENDER_WORKER_APPROVED
+        value: 'true'
+      - key: INCIDENT_WORKER_BUILD_REVIEWED
+        value: 'false'
+      - key: INCIDENT_WORKER_RELEASE_REVIEWED
+        value: 'false'
+      - key: INCIDENT_OUTBOX_ENABLED
+        value: 'false'
+      - key: OPEN_SOURCE_ALERTING_ENABLED
+        value: 'false'
+      - key: ALERT_NOTIFICATIONS_ENABLED
+        value: 'false'
+      - key: ALERTMANAGER_USERNAME
+        value: publisher
+      - key: ALERTMANAGER_PASSWORD
+        sync: false
+      - key: ALERTMANAGER_ORIGIN
+        sync: false
+      - key: ALERTMANAGER_ALLOWED_ORIGINS
+        sync: false
+      - key: ALERTING_APPLICATION_ORIGIN
+        sync: false
+      - key: ALERTING_ENVIRONMENT
+        value: production
+      - key: INCIDENT_ACTIVATION_AT
+        sync: false
+      - key: INCIDENT_ACTIVATION_APPROVAL_REF
+        sync: false
+      - key: INCIDENT_REFRESH_SECONDS
+        value: '60'

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
-  ArrowLeft, Upload, X, Camera, CheckCircle2, Battery, Tag,
+  ArrowLeft, X, Camera, CheckCircle2, Battery, Tag,
   MapPin, FileText, ImagePlus, ChevronRight, Loader2, AlertTriangle,
 } from "lucide-react";
 import { CURRENCIES } from "@shared/currencies";
@@ -41,7 +41,7 @@ type PhotoPreview = {
 };
 
 export default function MarketplaceCreate() {
-  usePageTitle("List Battery for Sale");
+  usePageTitle("Prepare Battery Listing");
   const [, navigate] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,59 +60,10 @@ export default function MarketplaceCreate() {
   const [conditionNotes, setConditionNotes] = useState("");
   const [location, setLocation] = useState("");
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
-  const [createdListingId, setCreatedListingId] = useState<number | null>(null);
 
   // Data queries
-  const { data: myBatteries, isLoading: batteriesLoading } = trpc.marketplace.myBatteries.useQuery();
+  const { data: myBatteries, isLoading: batteriesLoading, error: batteriesError } = trpc.marketplace.myBatteries.useQuery();
   const selectedBattery = myBatteries?.find((b) => b.id === selectedBatteryId);
-
-  // Mutations
-  const createMutation = trpc.marketplace.createListing.useMutation({
-    onSuccess: async (data) => {
-      const listingId = data.listing?.id;
-      if (listingId && photos.length > 0) {
-        setCreatedListingId(listingId);
-        // Upload photos sequentially
-        for (let i = 0; i < photos.length; i++) {
-          const photo = photos[i];
-          setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, uploading: true } : p));
-          try {
-            const base64 = await fileToBase64(photo.file);
-            await uploadPhotoMutation.mutateAsync({
-              listingId,
-              base64Data: base64,
-              mimeType: photo.file.type,
-              caption: photo.caption,
-              sortOrder: i,
-              fileSizeBytes: photo.file.size,
-            });
-            setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, uploading: false, uploaded: true } : p));
-          } catch {
-            setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, uploading: false, error: "Upload failed" } : p));
-          }
-        }
-      }
-      // Update condition and location
-      if (listingId && (conditionGrade || conditionNotes || location)) {
-        try {
-          await updateMutation.mutateAsync({
-            listingId,
-            conditionGrade: conditionGrade || undefined,
-            conditionNotes: conditionNotes || undefined,
-            location: location || undefined,
-          });
-        } catch { /* supplementary */ }
-      }
-      toast.success("Battery listed successfully!");
-      setStep(5); // Success step
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to create listing");
-    },
-  });
-
-  const uploadPhotoMutation = trpc.marketplace.uploadPhoto.useMutation();
-  const updateMutation = trpc.marketplace.update.useMutation();
 
   // File handling
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,22 +94,6 @@ export default function MarketplaceCreate() {
     });
   }, []);
 
-  const handleSubmit = () => {
-    if (!selectedBatteryId || !selectedBpan) {
-      toast.error("Please select a battery");
-      return;
-    }
-    createMutation.mutate({
-      bpan: selectedBpan,
-      batteryId: selectedBatteryId,
-      listingType: listingType as any,
-      askingPrice: askingPrice > 0 ? askingPrice : undefined,
-      currency,
-      description: description || undefined,
-      targetMarkets: ["IN"],
-    });
-  };
-
   const canProceed = (s: number) => {
     if (s === 1) return selectedBatteryId !== null;
     if (s === 2) return listingType !== "";
@@ -177,6 +112,11 @@ export default function MarketplaceCreate() {
         </Button>
       </div>
 
+      <div role="status" className="max-w-3xl mx-auto rounded-lg border border-amber-500/30 p-4 text-sm">
+        Publication, photo upload and all marketplace transactions are unavailable pending ownership,
+        privacy and payment evidence. This form is local preparation only: nothing is saved or uploaded,
+        and leaving this page discards your selections. Do not include personal information in photos.
+      </div>
       <div className="max-w-3xl mx-auto">
         {/* Progress Steps */}
         {step <= totalSteps && (
@@ -208,12 +148,14 @@ export default function MarketplaceCreate() {
         {step === 1 && (
           <div className="bg-card border border-border rounded-xl p-6">
             <h2 className="font-display text-xl font-bold mb-1">Select Battery</h2>
-            <p className="text-sm text-muted-foreground mb-6">Choose a battery from your registered inventory to list on the marketplace.</p>
+            <p className="text-sm text-muted-foreground mb-6">Choose a battery record to prepare details locally. Inventory visibility is not proof of current authority to sell.</p>
 
             {batteriesLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-secondary/30 rounded-lg animate-pulse" />)}
               </div>
+            ) : batteriesError ? (
+              <div role="alert">Unable to load battery inventory. Ownership cannot be confirmed.</div>
             ) : !myBatteries || myBatteries.length === 0 ? (
               <div className="text-center py-12">
                 <Battery className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
@@ -315,14 +257,14 @@ export default function MarketplaceCreate() {
                   <Input
                     type="number"
                     value={askingPrice || ""}
-                    onChange={(e) => setAskingPrice(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setAskingPrice(Number(e.target.value))}
                     className="bg-secondary/30 border-border font-mono text-sm h-10 flex-1"
                     placeholder={`Amount in ${currency}`}
                   />
                 </div>
                 {selectedCurrencyMeta && (
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Price in {selectedCurrencyMeta.name}. A spot price will be auto-calculated based on SOH and capacity.
+                    Price in {selectedCurrencyMeta.name}. This is a proposed asking price only, not an approved valuation.
                   </p>
                 )}
               </div>
@@ -477,7 +419,7 @@ export default function MarketplaceCreate() {
         {step === 4 && (
           <div className="bg-card border border-border rounded-xl p-6">
             <h2 className="font-display text-xl font-bold mb-1">Review Listing</h2>
-            <p className="text-sm text-muted-foreground mb-6">Confirm the details before publishing your listing.</p>
+            <p className="text-sm text-muted-foreground mb-6">Review local preparation only. Publication and uploads remain unavailable.</p>
 
             <div className="space-y-4">
               {/* Battery Summary */}
@@ -504,7 +446,7 @@ export default function MarketplaceCreate() {
                   <div>
                     <div className="text-xs text-muted-foreground">Asking Price</div>
                     <div className="text-sm font-display font-bold">
-                      {askingPrice > 0 ? `${selectedCurrencyMeta?.symbol ?? ""}${askingPrice.toLocaleString()} ${currency}` : "Market Price"}
+                      {askingPrice > 0 ? `${selectedCurrencyMeta?.symbol ?? ""}${askingPrice.toLocaleString()} ${currency}` : "No asking price supplied"}
                     </div>
                   </div>
                 </div>
@@ -564,89 +506,16 @@ export default function MarketplaceCreate() {
             <div className="flex justify-between mt-6">
               <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
               <Button
-                onClick={handleSubmit}
-                disabled={createMutation.isPending}
+                disabled
                 className="bg-primary text-primary-foreground min-w-[160px]"
               >
-                {createMutation.isPending ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing...</>
-                ) : (
-                  <><Upload className="w-4 h-4 mr-2" /> Publish Listing</>
-                )}
+                Publication unavailable
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 5: Success */}
-        {step === 5 && (
-          <div className="bg-card border border-border rounded-xl p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="font-display text-2xl font-bold mb-2">Listing Published!</h2>
-            <p className="text-muted-foreground mb-6">
-              Your battery <span className="font-mono text-primary">{selectedBpan}</span> is now live on the marketplace.
-            </p>
-
-            {photos.length > 0 && (
-              <div className="mb-6">
-                <div className="text-sm text-muted-foreground mb-2">Photo Upload Status</div>
-                <div className="flex justify-center gap-2">
-                  {photos.map((p) => (
-                    <div key={p.id} className="flex items-center gap-1">
-                      {p.uploaded ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      ) : p.error ? (
-                        <AlertTriangle className="w-4 h-4 text-red-400" />
-                      ) : p.uploading ? (
-                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full border border-border" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => navigate("/marketplace")}>
-                View Marketplace
-              </Button>
-              <Button onClick={() => {
-                setStep(1);
-                setSelectedBatteryId(null);
-                setSelectedBpan("");
-                setListingType("second_life_pack");
-                setAskingPrice(0);
-                setDescription("");
-                setConditionGrade("");
-                setConditionNotes("");
-                setLocation("");
-                setPhotos([]);
-                setCreatedListingId(null);
-              }} className="bg-primary text-primary-foreground">
-                List Another Battery
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
-}
-
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
-      const base64 = result.split(",")[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }

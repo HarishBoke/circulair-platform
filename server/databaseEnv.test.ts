@@ -201,7 +201,7 @@ describe("Drizzle environment-only configuration", () => {
     vi.resetModules();
     const { default: config } = await import("../drizzle.config");
     expect(config).toEqual({
-      schema: "./drizzle/schema.ts",
+      schema: ["./drizzle/schema.ts", "./drizzle/pilotSchema.ts", "./drizzle/incidentSchema.ts"],
       out: "./drizzle",
       dialect: "postgresql",
       dbCredentials: { url: alternateUrl },
