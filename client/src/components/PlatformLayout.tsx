@@ -85,6 +85,7 @@ function useNavSections(isAdmin: boolean) {
         { icon: Network,  label: "MCP Server",       href: "/mcp-server" },
         { icon: Code2,    label: "Developer Portal", href: "/developer-portal" },
         { icon: Battery,  label: "Local Battery Pilot (gated)", href: "/local-battery-pilot" },
+        { icon: FlaskConical, label: "Cashfree Test (gated)", href: "/payments/test" },
         { icon: Database, label: "Data Integration", href: "/data-integration" },
         { icon: Radio,    label: "MQTT Tester",      href: "/mqtt-flow-tester" },
       ],

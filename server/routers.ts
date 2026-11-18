@@ -10,6 +10,7 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { localPilotRouter } from "./localPilotRouter";
 import { createIncidentRouter } from "./incidentRouter";
 import { createOpenSourceAlertingAdapter } from "./openSourceAlerting";
+import { createCashfreeSandboxRouter } from "./cashfreeSandboxRouter";
 import { incidentGate, incidentGateReady } from "./incidentOutbox";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
@@ -160,6 +161,7 @@ function denyDocumentPublishing(): void {
 export const appRouter = router({
   system: systemRouter,
   pilot: localPilotRouter,
+  paymentSandbox: createCashfreeSandboxRouter(),
   incidents: createIncidentRouter({
     // All native incident reads/commands share this gate. Default-off status is
     // metadata-only; disabled commands fail closed without resolving a DB URL.

@@ -10,6 +10,12 @@ import { isTrustedMutationOrigin } from "./requestSecurity";
 
 export function applySecurityMiddleware(app: Express): void {
   const isProd = process.env.NODE_ENV === "production";
+  // SDK v3 uses these sandbox checkout origins. Never allow a production or
+  // wildcard frame origin; the existing default remains frame-src 'none'.
+  const sandboxFrames = process.env.CASHFREE_SANDBOX_ENABLED === "true"
+    && process.env.CASHFREE_MODE === "sandbox"
+    ? ["https://payments-test.cashfree.com", "https://sandbox.cashfree.com"]
+    : ["'none'"];
   // ── Helmet: security headers ──────────────────────────────────────────────
   app.use(
     helmet({
@@ -26,7 +32,7 @@ export function applySecurityMiddleware(app: Express): void {
               fontSrc: ["'self'", "https:", "data:"],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'", "https:"],
-              frameSrc: ["'none'"],
+              frameSrc: sandboxFrames,
             },
           }
         : false,

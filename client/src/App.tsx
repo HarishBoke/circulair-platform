@@ -71,6 +71,7 @@ import HealthPortal from "./pages/HealthPortal";
 import UserProfile from "./pages/UserProfile";
 import DeveloperHub from "./pages/DeveloperHub";
 import LocalBatteryPilot from "./pages/LocalBatteryPilot";
+import PaymentSandbox from "./pages/PaymentSandbox";
 
 function Router() {
   return (
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/marketplace/payment-success" component={PaymentSuccess} />
       <Route path="/marketplace/orders" component={() => <PlatformLayout><MyOrders /></PlatformLayout>} />
       <Route path="/marketplace/:id" component={() => <PlatformLayout><MarketplaceDetail /></PlatformLayout>} />
+      <Route path="/payments/test" component={() => <PlatformLayout><PaymentSandbox /></PlatformLayout>} />
       <Route path="/logistics" component={() => <PlatformLayout><Logistics /></PlatformLayout>} />
       <Route path="/epr-compliance" component={() => <PlatformLayout><EprCompliance /></PlatformLayout>} />
       <Route path="/yield-verification" component={() => <PlatformLayout><YieldVerification /></PlatformLayout>} />
