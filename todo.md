@@ -1464,7 +1464,7 @@ These items supersede older email-complete claims above; they do not close full 
 - [x] Actually build both repaired images without production deployment; preserve nonroot users and existing capability/setuid reductions
 - [x] Verify hosted e94f7de0 application/build/portable reset and both image jobs; preserve overall CI failure from two user-namespace QA fixture checks, not a green-run claim
 - [x] Add explicit four-job hosted CI, patched source-native tests and normal-Docker image UID/integrity/capability/default-OFF checks; source publication alone is not a Render release
-- [ ] Verify complete hosted CI after repairing the two portable mount-namespace QA launchers; retain failure history
+- [x] Verify complete hosted CI after repairing the two portable mount-namespace QA launchers:90f8bd25085ba355b45ea48c65b24471964fa3bd/run44291706726, allfourjobsSUCCESS; retain failed first run
 - [ ] Obtain approved controlled TEST inbox, authorized sender and actual Zoho account Server Configuration Details; configure SMTP password securely on Render
 - [ ] Demonstrate actual Zoho inbox receipt, firing/resolved delivery and controlled genuine outage/recovery on the approved five-service Render stack
 - [ ] Perform controlled Render release and actual disk/network/memory/readiness acceptance only after remaining release gates
