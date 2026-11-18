@@ -62,6 +62,24 @@ def wait_for(predicate, seconds=12):
     raise AssertionError('bounded local condition not reached')
 
 
+def private_mount_run(directory, command, environment):
+    # Ubuntu hosted runners may deny unprivileged user namespaces. Use only a
+    # child mount namespace, then drop back to the calling numeric UID/GID before
+    # the validator/launcher runs. No host mount, policy or sysctl is changed.
+    if os.geteuid() == 0:
+        raise RuntimeError('Private mount QA requires a nonroot caller')
+    script='''set -eu
+mount --make-rprivate /
+mount --bind "$1" /etc
+uid=$2; gid=$3; shift 3
+exec setpriv --reuid "$uid" --regid "$gid" --clear-groups "$@"
+'''
+    args=['sudo','-n','unshare','--mount','--','sh','-c',script,'qa',str(directory),
+        str(os.getuid()),str(os.getgid()),'env','-i']
+    args += [key+'='+value for key,value in environment.items()]
+    return subprocess.run(args+command,env={'PATH':os.environ['PATH']},capture_output=True,timeout=8)
+
+
 class ApprovalChecks(unittest.TestCase):
     def test_generator_native_schema_and_no_inline_password(self):
         config=receiver.generate(approved()); parsed=yaml.safe_load(config)
@@ -100,25 +118,20 @@ class ApprovalChecks(unittest.TestCase):
         self.assertEqual(r.returncode,78);self.assertNotIn(b'qa-sender@yopmail.com',r.stderr)
 
     def test_exact_validator_under_private_fixed_mounts(self):
-        # Only this child mount namespace masks /etc; no host /etc or root privileges change.
-        mount_script='''set -eu
-mount --make-rprivate /
-mount -t tmpfs tmpfs /etc
-mkdir /etc/secrets
-mount --bind "$1" /etc/secrets
-shift
-exec sh -c '. "$1"; validate_approved_config' sh "$1"
-'''
+        # Only a child mount namespace masks /etc with an owned synthetic folder.
+        # The validator itself runs as the original nonroot user, not namespace root.
         with tempfile.TemporaryDirectory() as td:
-            d=Path(td);cfg=d/'alertmanager-approved.yml';key=d/'zoho-smtp-app-password'
+            etc=Path(td)/'etc';etc.mkdir(mode=0o700)
+            d=etc/'secrets';d.mkdir(mode=0o700)
+            cfg=d/'alertmanager-approved.yml';key=d/'zoho-smtp-app-password'
             config=receiver.generate(approved());secret=secrets.token_urlsafe(24)
             def run(env=None,text=config,password=secret+'\n',mode=0o600,link=False):
                 cfg.unlink(missing_ok=True);cfg.write_text(text);cfg.chmod(0o600)
                 key.unlink(missing_ok=True);key.write_text(password);key.chmod(mode)
                 if link:
                     real=d/'other';real.write_text(password);real.chmod(0o600);key.unlink();key.symlink_to(real)
-                r=subprocess.run(['unshare','-Ur','-m','sh','-c',mount_script,'sh',td,str(HERE/'alertmanager/approved-config.sh')],
-                    env={'PATH':os.environ['PATH'],**(env or approved())},capture_output=True,timeout=8)
+                r=private_mount_run(etc,['sh','-c','. "$1"; validate_approved_config','sh',str(HERE/'alertmanager/approved-config.sh')],
+                    {'PATH':os.environ['PATH'],**(env or approved())})
                 self.assertNotIn(secret.encode(),r.stdout+r.stderr); return r.returncode
             self.assertEqual(run(),0)
             self.assertEqual(run(password=secret),0)
@@ -158,14 +171,14 @@ exec sh -c '. "$1"; validate_approved_config' sh "$1"
                 {'INCIDENT_OUTBOX_ENABLED':'true'},{'PORT':'80'}]:
                 r=subprocess.run(['sh',str(launch)],env={**env,**extra},capture_output=True)
                 self.assertEqual(r.returncode,78);self.assertEqual(r.stdout,b'')
-            private=d/'secrets';private.mkdir()
+            etc=d/'etc';etc.mkdir(mode=0o700)
+            private=etc/'secrets';private.mkdir(mode=0o700)
             (private/'alertmanager-approved.yml').write_text(receiver.generate(approved()))
             (private/'zoho-smtp-app-password').write_text(secrets.token_urlsafe(24)+'\n')
             for secret_file in private.iterdir():secret_file.chmod(0o600)
-            mount_script='mount --make-rprivate /; mount -t tmpfs tmpfs /etc; mkdir /etc/secrets; mount --bind "$1" /etc/secrets; exec sh "$2"'
             enabled_env={**env,**approved(),'ALERT_NOTIFICATIONS_ENABLED':'true','SSL_CERT_FILE':'/tmp/untrusted-ca',
                 'SMTP_PASSWORD_CANARY':'not-a-real-key'}
-            r=subprocess.run(['unshare','-Ur','-m','sh','-c',mount_script,'sh',str(private),str(launch)],env=enabled_env,capture_output=True,timeout=8)
+            r=private_mount_run(etc,['sh',str(launch)],enabled_env)
             self.assertEqual(r.returncode,0)
             reported=json.loads(r.stdout)
             self.assertEqual(reported['argv'][0],'--config.file=/etc/secrets/alertmanager-approved.yml')

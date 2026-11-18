@@ -1449,3 +1449,23 @@ MQTT_USERNAME, MQTT_PASSWORD, RENDER_API_KEY, RENDER_SERVICE_ID
 - [ ] Retire old exposed database login and rotate deploy hook after separate approval/client checks
 - [ ] Download/secure backup and exercise restore to isolated instance
 - [ ] Recruit consenting real-user reviewers and collect evidence-linked feedback (seven profiles are fictional composites)
+
+## November 18: Implemented native email/SMTP repair — scoped acceptance
+
+These items supersede older email-complete claims above; they do not close full product, physical battery or production launch acceptance.
+
+- [x] Repair direct Zoho ZeptoMail recovery and actual owner mail with a10s complete budget, bounded/cancelled bodies, redirect refusal, validated documented acceptance and static errors
+- [x] Remove plaintext API keys from the unused onboarding email helper; retain contact unavailable and no live onboarding caller
+- [x] Repair reset token race with atomic unused/unexpired token claim and password write/rollback in existing PostgreSQL; no migration
+- [x] Pass affected real private Unix-socket PostgreSQL/email130tests and portable recovery10tests with cleanup
+- [x] Implement source-built pinned Alertmanager30s whole-attempt deadline/cancellation before SMTP greeting/TLS and acknowledgement-safe QUIT cleanup
+- [x] Demonstrate actual SMTP EOF at30.001s and same-process finalDATA250 at30.730s with production1mgroup interval; native email10/SMTP9/monitoring9 andGo15top-level tests pass
+- [x] Implement actual pinned Kuma/Nodemailer15s whole-send socket ownership/cleanup and required verifiedTLS; native28plus2bad-certificate tests pass
+- [x] Actually build both repaired images without production deployment; preserve nonroot users and existing capability/setuid reductions
+- [x] Verify hosted e94f7de0 application/build/portable reset and both image jobs; preserve overall CI failure from two user-namespace QA fixture checks, not a green-run claim
+- [x] Add explicit four-job hosted CI, patched source-native tests and normal-Docker image UID/integrity/capability/default-OFF checks; source publication alone is not a Render release
+- [ ] Verify complete hosted CI after repairing the two portable mount-namespace QA launchers; retain failure history
+- [ ] Obtain approved controlled TEST inbox, authorized sender and actual Zoho account Server Configuration Details; configure SMTP password securely on Render
+- [ ] Demonstrate actual Zoho inbox receipt, firing/resolved delivery and controlled genuine outage/recovery on the approved five-service Render stack
+- [ ] Perform controlled Render release and actual disk/network/memory/readiness acceptance only after remaining release gates
+- [ ] Enable contact or onboarding only after their separate business/destination/consent acceptance; do not claim these flows working now
