@@ -10,6 +10,8 @@
 !kuma/Caddyfile
 !kuma/entrypoint.sh
 !kuma/readiness.cjs
+!kuma/smtp-bounded.cjs
+!kuma/patch-smtp.cjs
 !ntfy/
 !ntfy/Dockerfile
 !ntfy/server.yml
@@ -18,3 +20,7 @@
 !alertmanager/Dockerfile
 !alertmanager/alertmanager.yml
 !alertmanager/entrypoint.sh
+!alertmanager/approved-config.sh
+!alertmanager/smtp-transport.patch
+!alertmanager/smtp_transport_test.go
+!alertmanager/source-pins.json

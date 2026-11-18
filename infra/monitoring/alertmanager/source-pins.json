@@ -1,0 +1,14 @@
+{
+  "upstream_version": "v0.35.0",
+  "tag_object": "f3b525da0c84bd38fb19e0541746763fcb6ff284",
+  "source_commit": "8cf67a8e75004bad6c3c6bacc829945cf8a3ee65",
+  "archive_url": "https://codeload.github.com/prometheus/alertmanager/tar.gz/8cf67a8e75004bad6c3c6bacc829945cf8a3ee65",
+  "archive_sha256": "8d83e7d2bfeae6f74966fdb42d29ffdc1c2f343ebffd7aa29ac24080e923230d",
+  "go_version": "go1.26.11",
+  "go_archive_sha256": "9849f4e04ee35303714e34fbc3ac8ab44ea3e448a95aa182f91e3b9b79c710ec",
+  "go_archive_url": "https://go.dev/dl/go1.26.11.linux-amd64.tar.gz",
+  "builder_image": "docker.io/library/golang:1.26.11-bookworm@sha256:79ecd0a7157c7a4cf3b281ced8465350591bf54fedab540e75374a003e1fde7e",
+  "runtime_base": "docker.io/prom/alertmanager:v0.35.0@sha256:0f6727a39ff00b6cf95e8a5ebaf7442c55af855b79c689fb9a060e2bada1ecbf",
+  "ui_archive_url": "https://github.com/prometheus/alertmanager/releases/download/v0.35.0/alertmanager-web-ui-0.35.0.tar.gz",
+  "ui_archive_sha256": "c6af197ce7dbd85be0ac62b50e031eb17945385f782d12039d37f71b752b63db"
+}

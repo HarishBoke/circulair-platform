@@ -91,6 +91,16 @@ class StaticChecks(unittest.TestCase):
         self.assertEqual({k: v['tag'] for k,v in pins['images'].items()},
                          {'kuma': '2.5.12', 'ntfy': 'v2.38.1', 'alertmanager': 'v0.35.0', 'caddy': '2.11.9'})
         refs = {v['reference'] for v in pins['images'].values()}
+        source_pins = json.loads((HERE/'alertmanager/source-pins.json').read_text())
+        refs.add(source_pins['builder_image'])
+        self.assertEqual(source_pins['source_commit'], '8cf67a8e75004bad6c3c6bacc829945cf8a3ee65')
+        dockerfile = (HERE/'alertmanager/Dockerfile').read_text()
+        self.assertIn('ADD '+source_pins['archive_url']+' /tmp/upstream.tar.gz', dockerfile)
+        self.assertIn(source_pins['archive_sha256']+"  /tmp/upstream.tar.gz' | sha256sum -c - && tar", dockerfile)
+        self.assertIn(source_pins['ui_archive_sha256']+"  /tmp/ui.tar.gz' | sha256sum -c - && tar", dockerfile)
+        self.assertIn('COPY --from=smtp-build /out/alertmanager /bin/alertmanager', dockerfile)
+        self.assertIn('COPY --from=smtp-build /out/amtool /bin/amtool', dockerfile)
+        self.assertIn('USER 65534:65534', dockerfile)
         count = 0
         for f in HERE.glob('*/Dockerfile'):
             for line in f.read_text().splitlines():
@@ -100,7 +110,7 @@ class StaticChecks(unittest.TestCase):
                     self.assertIn(ref, refs)
                     self.assertRegex(ref, r':[^@]+@sha256:[a-f0-9]{64}$')
                     count += 1
-        self.assertEqual(count, 5)
+        self.assertEqual(count, 6) # Five runtime inputs plus the pinned Go builder stage.
 
     def test_shell_and_python_and_js_syntax(self):
         for f in HERE.rglob('*.sh'):

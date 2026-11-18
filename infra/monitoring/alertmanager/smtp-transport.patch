@@ -1,0 +1,122 @@
+--- a/notify/email/email.go
++++ b/notify/email/email.go
+@@ -121,8 +121,14 @@
+ 	return nil, errs
+ }
+ 
++// smtpAttemptTimeout bounds the whole exchange, not each individual command.
++// An earlier parent deadline still wins. No production YAML override is added.
++const smtpAttemptTimeout = 30 * time.Second
++
+ // Notify implements the Notifier interface.
+ func (n *Email) Notify(ctx context.Context, as ...*alert.Alert) notify.NotifyVerdict {
++	ctx, cancel := context.WithTimeout(ctx, smtpAttemptTimeout)
++	defer cancel()
+ 	var (
+ 		c       *smtp.Client
+ 		conn    net.Conn
+@@ -138,6 +144,31 @@
+ 		useImplicitTLS = n.conf.Smarthost.Port == "465"
+ 	}
+ 
++	// Dial with the attempt context for both explicit and implicit TLS. Install
++	// the deadline and cancellation cleanup before any SMTP greeting or TLS read.
++	conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", n.conf.Smarthost.String())
++	if err != nil {
++		return notify.Retry(0, fmt.Errorf("establish connection to server: %w", err), notify.DefaultReason)
++	}
++	rawConn := conn // Stable underlying socket, also closes any TLS wrapper.
++	defer rawConn.Close()
++	deadline, _ := ctx.Deadline() // WithTimeout always supplies a deadline.
++	if err := rawConn.SetDeadline(deadline); err != nil {
++		return notify.Retry(0, fmt.Errorf("set SMTP attempt deadline: %w", err), notify.DefaultReason)
++	}
++	closed := make(chan struct{})
++	stop := context.AfterFunc(ctx, func() {
++		_ = rawConn.Close()
++		close(closed)
++	})
++	defer func() {
++		// Join a started callback; never leave a blocked notifier goroutine behind.
++		if !stop() {
++			_ = rawConn.Close()
++			<-closed
++		}
++	}()
++
+ 	if useImplicitTLS {
+ 		tlsConfig, err := commoncfg.NewTLSConfig(n.conf.TLSConfig)
+ 		if err != nil {
+@@ -146,30 +177,30 @@
+ 		if tlsConfig.ServerName == "" {
+ 			tlsConfig.ServerName = n.conf.Smarthost.Host
+ 		}
+-
+-		conn, err = tls.Dial("tcp", n.conf.Smarthost.String(), tlsConfig)
+-		if err != nil {
++		tlsConn := tls.Client(rawConn, tlsConfig)
++		if err := tlsConn.HandshakeContext(ctx); err != nil {
+ 			return notify.Retry(0, fmt.Errorf("establish TLS connection to server: %w", err), notify.DefaultReason)
+ 		}
+-	} else {
+-		var (
+-			d   = net.Dialer{}
+-			err error
+-		)
+-		conn, err = d.DialContext(ctx, "tcp", n.conf.Smarthost.String())
+-		if err != nil {
+-			return notify.Retry(0, fmt.Errorf("establish connection to server: %w", err), notify.DefaultReason)
+-		}
++		conn = tlsConn
+ 	}
+ 	c, err = smtp.NewClient(conn, n.conf.Smarthost.Host)
+ 	if err != nil {
+-		conn.Close()
+ 		return notify.Retry(0, fmt.Errorf("create SMTP client: %w", err), notify.DefaultReason)
+ 	}
+ 	defer func() {
+-		// Try to clean up after ourselves but don't log anything if something has failed.
+-		if err := c.Quit(); success && err != nil {
+-			n.logger.Warn("failed to close SMTP connection", "err", err)
++		// Only attempt QUIT after final DATA acknowledgement. QUIT is best-effort
++		// cleanup, never evidence that the already accepted message failed.
++		// A shorter cleanup deadline must not extend the complete attempt budget.
++		if success {
++			quitDeadline := time.Now().Add(time.Second)
++			if deadline.Before(quitDeadline) {
++				quitDeadline = deadline
++			}
++			if err := rawConn.SetDeadline(quitDeadline); err == nil {
++				if err := c.Quit(); err != nil {
++					n.logger.Warn("SMTP message accepted; best-effort QUIT failed")
++				}
++			}
+ 		}
+ 	}()
+ 
+@@ -309,7 +340,7 @@
+ 	// and active/resolved.
+ 	_, err = message.Write(buffer.Bytes())
+ 	if err != nil {
+-		return notify.Unrecoverable(fmt.Errorf("write headers: %w", err), notify.DefaultReason)
++		return notify.Retry(0, fmt.Errorf("write headers: %w", err), notify.DefaultReason)
+ 	}
+ 
+ 	if len(n.conf.Text) > 0 {
+@@ -369,12 +400,14 @@
+ 
+ 	_, err = message.Write(multipartBuffer.Bytes())
+ 	if err != nil {
+-		return notify.Unrecoverable(fmt.Errorf("write body buffer: %w", err), notify.DefaultReason)
++		return notify.Retry(0, fmt.Errorf("write body buffer: %w", err), notify.DefaultReason)
+ 	}
+ 
+ 	// Complete the message and await response.
+ 	if err = closeOnce(); err != nil {
+-		return notify.Retry(0, fmt.Errorf("delivery failure: %w", err), notify.DefaultReason)
++		// The server may have accepted DATA without its final reply reaching us.
++		// Retry is at-least-once; do not report success or promise exactly once.
++		return notify.Retry(0, fmt.Errorf("delivery acknowledgement failed (outcome may be ambiguous): %w", err), notify.DefaultReason)
+ 	}
+ 
+ 	success = true

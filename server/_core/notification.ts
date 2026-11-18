@@ -6,6 +6,7 @@
 
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
+import { escapeEmailHtml, safeEmailError, sendViaZeptoAPI } from "./zeptomail";
 
 export type NotificationPayload = {
   title: string;
@@ -14,17 +15,16 @@ export type NotificationPayload = {
 
 const TITLE_MAX_LENGTH = 1200;
 const CONTENT_MAX_LENGTH = 20000;
-const ZEPTO_API_URL = "https://api.zeptomail.in/v1.1/email";
 
 // Circul-AI-r logo as base64 data URI — inlined for email client compatibility
 const LOGO_DATA_URI =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTc4IiBoZWlnaHQ9IjE3OCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBmaWxsPSJub25lIj4KCiA8Zz4KICA8dGl0bGU+TGF5ZXIgMTwvdGl0bGU+CiAgPHBhdGggaWQ9InN2Z18xIiBmaWxsPSIjMDBjNTg5IiBkPSJtMTIwLjUsMTIxLjVjLTguNTcyLDguNTcxIC0xOSwxMi43MTQgLTMyLjAwMDEsMTIuNzE0Yy0xMywwIC0yMy40Mjg2LC00LjE0MyAtMzIuMDAwMSwtMTIuNzE0Yy01Ljc4NTcsLTUuNzg2IC05LjM1NzEsLTEzIC0xMS4yODU3LC0yMWwtNDQuNzE0MjIsMGMyLjIxNDI4LDIxLjIxNCAxMC40OTk5MiwzOC42NDMgMjQuODU3MTIsNTIuNDI5YzE3LjM1NzEsMTYuNTcxIDM4LjM1NzEsMjQuODU3IDYzLjE0MjksMjQuODU3YzI0Ljc4NjEsMCA0NS41MDAxLC04LjI4NiA2Mi45MjgxLC0yNC44NTdjMTQuNjQzLC0xMy43ODYgMjIuOTI5LC0zMS40MjkgMjUuMDcyLC01Mi40MjlsLTQ0LjcxNCwwYy0xLjkyOSw4IC01LjUsMTUuMTQzIC0xMS4yODYsMjF6Ii8+CiAgPHBhdGggaWQ9InN2Z18yIiBmaWxsPSJ3aGl0ZSIgZD0ibTU2Ljc4NTYsNTYuNjQzYzguNTcxNCwtOC4yODU4IDE5LC0xMi43MTQzIDMxLjcxNDIsLTEyLjcxNDNjMTIuNzE0MiwwIDIzLjE0MzIsNC4xNDI4IDMxLjcxNDIsMTIuNzE0M2M3LjcxNCw3LjcxNDIgMTIuMTQzLDE3LjM1NzEgMTIuNzE0LDI4LjcxNDJsNDQuMTQzLDBjLTAuNTcxLC0yNC41NzE0IC05LjA3MSwtNDUgLTI1LjY0MywtNjAuNzE0MmMtMTcuMDcxLC0xNi4yODU3NiAtMzcuNzg1LC0yNC41NzE0NyAtNjIuOTI4MiwtMjQuNTcxNDdjLTI1LjE0MjgsMCAtNDYuMDcxNCw4LjI4NTcxIC02My4xNDI4LDI0LjU3MTQ3Yy0xNi4yODU3MywxNS43MTQyIC0yNC44NTcxMiwzNS44NTcxIC0yNS4zNTcxMiw2MC43MTQybDQ0LjE0MjgyLDBjMC41NzE1LC0xMS4yODU3IDQuNzE0MywtMjEgMTIuNzE0MywtMjguNzE0MmwtMC4wNzE0LDB6Ii8+CiA8L2c+Cjwvc3ZnPg==";
 
 function validatePayload(input: NotificationPayload): NotificationPayload {
-  if (!input.title?.trim()) {
+  if (typeof input?.title !== "string" || !input.title.trim()) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Notification title is required." });
   }
-  if (!input.content?.trim()) {
+  if (typeof input?.content !== "string" || !input.content.trim()) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Notification content is required." });
   }
   const title = input.title.trim();
@@ -35,11 +35,15 @@ function validatePayload(input: NotificationPayload): NotificationPayload {
   if (content.length > CONTENT_MAX_LENGTH) {
     throw new TRPCError({ code: "BAD_REQUEST", message: `Content must be at most ${CONTENT_MAX_LENGTH} characters.` });
   }
+  if (/[\u0000-\u001f\u007f\u2028\u2029]/.test(input.title)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Notification title must be a single line." });
+  }
   return { title, content };
 }
 
 function buildNotificationHtml(title: string, content: string): string {
   const year = new Date().getFullYear();
+  title = escapeEmailHtml(title);
   const contentHtml = content
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -100,11 +104,7 @@ function buildNotificationHtml(title: string, content: string): string {
       </div>
       <div class="footer">
         <p>Sent by Circul-AI-r Platform notification system &nbsp;·&nbsp; <a href="https://circulair.energy/">circulair.energy</a></p>
-        <div style="margin-top:12px;">
-          <span class="badge">Encrypted</span>
-          <span class="badge">ISO 27001</span>
-          <span class="badge">GDPR</span>
-        </div>
+        <p>Pilot platform — no certification implied.</p>
         <p style="margin-top:10px;">© ${year} Circul-AI-r</p>
       </div>
     </div>
@@ -122,37 +122,17 @@ async function notifyViaZeptoMail(payload: NotificationPayload): Promise<boolean
     return false;
   }
   try {
-    const response = await fetch(ZEPTO_API_URL, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        // Token already contains the full "Zoho-enczapikey ..." prefix — pass as-is
-        "Authorization": ENV.zeptomailToken,
-      },
-      body: JSON.stringify({
-        from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
-        to: [{ email_address: { address: ownerEmail, name: ENV.ownerName || "Platform Owner" } }],
-        subject: `[Platform Alert] ${payload.title}`,
-        htmlbody: buildNotificationHtml(payload.title, payload.content),
-        textbody: `${payload.title}\n\n${payload.content}`,
-      }),
+    await sendViaZeptoAPI({
+      from: { address: ENV.fromEmail, name: "Circul-AI-r Platform" },
+      to: [{ email_address: { address: ownerEmail, name: ENV.ownerName || "Platform Owner" } }],
+      subject: `[Platform Alert] ${payload.title}`,
+      htmlbody: buildNotificationHtml(payload.title, payload.content),
+      textbody: `${payload.title}\n\n${payload.content}`,
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      const errMsg = (data as any)?.error?.details?.[0]?.message
-        ?? (data as any)?.error?.message
-        ?? `HTTP ${response.status}`;
-      console.warn(`[Notification] ZeptoMail API error: ${errMsg}`);
-      return false;
-    }
-
-    console.log(`[Notification] ZeptoMail email sent to ${ownerEmail} (request_id: ${(data as any)?.request_id ?? ""})`);
+    console.log("[Notification] Owner email accepted by provider");
     return true;
   } catch (err) {
-    console.warn("[Notification] ZeptoMail exception:", err);
+    console.warn("[Notification] ZeptoMail request failed:", safeEmailError(err));
     return false;
   }
 }

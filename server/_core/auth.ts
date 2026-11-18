@@ -277,7 +277,7 @@ export function registerPasswordResetRoutes(app: Express) {
       const origin = getApplicationOrigin();
       const resetUrl = `${origin}/reset-password?token=${token}`;
 
-      // Send the reset email via Resend (best-effort — failure must not block the response)
+      // Send the reset email via Zoho ZeptoMail (best-effort — failure must not block the response)
       const recipientEmail: string = user.email ?? email; // email is already validated above
       try {
         const emailResult = await sendPasswordResetEmail(
@@ -287,18 +287,18 @@ export function registerPasswordResetRoutes(app: Express) {
           15
         );
         if (!emailResult.success) {
-          console.warn(`[Auth] Resend delivery failed for ${user.email}:`, emailResult.error);
+          console.warn("[Auth] ZeptoMail recovery email acceptance not confirmed");
         }
       } catch (emailErr) {
-        console.error("[Auth] Unexpected error sending reset email:", emailErr);
+        console.error("[Auth] Unexpected recovery email failure");
       }
 
       // Also notify the owner as a secondary audit trail (best-effort)
       try {
         const { notifyOwner } = await import("./notification");
         await notifyOwner({
-          title: `[Circul-AI-r] Password reset requested for ${user.email}`,
-          content: `A password reset was requested for ${user.email}. No recovery token is included in this audit notification.`,
+          title: "[Circul-AI-r] Password reset requested",
+          content: "An account password reset was requested. No account identity or recovery credential is included in this audit notification.",
         });
       } catch {
         // Notification failure must not block the response
@@ -310,7 +310,7 @@ export function registerPasswordResetRoutes(app: Express) {
         message: "If that email exists, a reset link has been sent.",
       });
     } catch (error) {
-      console.error("[Auth] Forgot password failed:", error);
+      console.error("[Auth] Forgot password request failed");
       return res.status(500).json({ error: "Failed to process request" });
     }
   });
@@ -340,14 +340,14 @@ export function registerPasswordResetRoutes(app: Express) {
 
       // Hash the new password and update the user
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-      await db.updateUserPassword(resetToken.userId, passwordHash);
-
-      // Mark token as used
-      await db.markPasswordResetTokenUsed(token);
+      // Recheck expiry/unused state under the same transaction as the password write.
+      if (!await db.completePasswordReset(token, passwordHash)) {
+        return res.status(400).json({ error: "Invalid, expired or already-used reset token" });
+      }
 
       return res.json({ success: true, message: "Password updated successfully. You can now log in." });
     } catch (error) {
-      console.error("[Auth] Reset password failed:", error);
+      console.error("[Auth] Reset password failed");
       return res.status(500).json({ error: "Failed to reset password" });
     }
   });

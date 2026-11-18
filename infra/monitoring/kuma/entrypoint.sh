@@ -14,6 +14,7 @@ unset NOTIFICATION_PROXY UPTIME_KUMA_CLOUDFLARED_TOKEN
 export UPTIME_KUMA_WS_ORIGIN_CHECK=cors-like
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || fail
 cd /app
+node /opt/monitoring/patch-smtp.cjs --check || fail
 node server/server.js &
 kuma=$!
 node /opt/monitoring/readiness.cjs &

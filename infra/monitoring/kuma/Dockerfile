@@ -5,6 +5,8 @@ COPY --from=guard /usr/bin/caddy /usr/local/bin/caddy
 COPY tools/guards.sh /opt/monitoring/guards.sh
 COPY kuma/Caddyfile /etc/caddy/Caddyfile
 COPY kuma/readiness.cjs /opt/monitoring/readiness.cjs
+COPY kuma/smtp-bounded.cjs kuma/patch-smtp.cjs /opt/monitoring/
+RUN node /opt/monitoring/patch-smtp.cjs --install
 COPY --chmod=0555 kuma/entrypoint.sh /opt/monitoring/entrypoint.sh
 # Guarded high ports do not need Caddy's optional low-port capability.
 RUN test -f /usr/local/bin/caddy && test -x /usr/local/bin/caddy && test "$(stat -c '%a' /usr/local/bin/caddy)" = 755 && setcap -r /usr/local/bin/caddy

@@ -11,8 +11,7 @@
  *   validateEmailConfig()                       → boolean
  */
 import { ENV } from "./_core/env";
-
-const ZEPTO_API_URL = "https://api.zeptomail.in/v1.1/email";
+import { EmailFailure, escapeEmailHtml, safeEmailError, sendViaZeptoAPI, validateEmailHeader, validateEmailUrl, validateZeptoMailConfig } from "./_core/zeptomail";
 
 // Circul-AI-r logo as base64 data URI (SVG) — inlined so it works in all email clients
 const LOGO_DATA_URI =
@@ -28,7 +27,7 @@ function emailWrapper(bodyContent: string, previewText = ""): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="x-apple-disable-message-reformatting" />
-  ${previewText ? `<meta name="description" content="${previewText}" />` : ""}
+  ${previewText ? `<meta name="description" content="${escapeEmailHtml(previewText)}" />` : ""}
   <title>Circul-AI-r Battery Intelligence Platform</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
@@ -123,13 +122,7 @@ function emailWrapper(bodyContent: string, previewText = ""): string {
       <div class="email-footer">
         <p class="footer-p">This email was sent by Circul-AI-r Battery Intelligence Platform.</p>
         <p class="footer-p">Questions? <a href="mailto:support@circulair.energy">support@circulair.energy</a> &nbsp;·&nbsp; <a href="https://circulair.energy/">circulair.energy</a></p>
-        <div class="badge-row">
-          <span class="badge">Encrypted</span>
-          <span class="badge">ISO 27001</span>
-          <span class="badge">SOC 2</span>
-          <span class="badge">GDPR</span>
-          <span class="badge">EU Battery Reg</span>
-        </div>
+        <p class="footer-p">Pilot platform — no certification implied.</p>
       </div>
     </div>
     <!-- Outer footer -->
@@ -142,46 +135,9 @@ function emailWrapper(bodyContent: string, previewText = ""): string {
 }
 
 // ─── Core send helper ─────────────────────────────────────────────────────────
-interface ZeptoMailPayload {
-  from: { address: string; name: string };
-  to: { email_address: { address: string; name: string } }[];
-  reply_to?: { address: string; name: string }[];
-  subject: string;
-  htmlbody?: string;
-  textbody?: string;
-}
-
-async function sendViaZeptoAPI(payload: ZeptoMailPayload): Promise<{ request_id?: string }> {
-  if (!ENV.zeptomailToken) {
-    throw new Error("ZEPTOMAIL_TOKEN is not configured");
-  }
-  const response = await fetch(ZEPTO_API_URL, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      // Token already contains the full "Zoho-enczapikey ..." prefix — pass as-is
-      "Authorization": ENV.zeptomailToken,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const errCode = (data as any)?.error?.details?.[0]?.code ?? response.status;
-    const errMsg = (data as any)?.error?.details?.[0]?.message
-      ?? (data as any)?.error?.message
-      ?? `HTTP ${response.status}`;
-    throw new Error(`ZeptoMail API error [${errCode}]: ${errMsg}`);
-  }
-
-  return data as { request_id?: string };
-}
-
 // ─── Config validation ────────────────────────────────────────────────────────
 export function validateEmailConfig(): boolean {
-  return Boolean(ENV.zeptomailToken && ENV.fromEmail);
+  return validateZeptoMailConfig();
 }
 
 /** @deprecated Use validateEmailConfig() */
@@ -192,7 +148,8 @@ export function validateResendConfig(): boolean {
 // ─── Password Reset Email ─────────────────────────────────────────────────────
 
 function buildPasswordResetHtml(resetUrl: string, name: string, expiryMinutes = 15): string {
-  const displayName = name || "there";
+  const displayName = escapeEmailHtml(name || "there");
+  resetUrl = escapeEmailHtml(resetUrl);
   const body = `
     <div class="email-body">
       <h1 class="email-h1">Reset your password</h1>
@@ -202,7 +159,7 @@ function buildPasswordResetHtml(resetUrl: string, name: string, expiryMinutes = 
         <a href="${resetUrl}" class="cta-btn">Reset Password &rarr;</a>
       </div>
       <div class="warning-box">
-        <p>&#9888; This link expires in <strong>${expiryMinutes} minutes</strong> and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
+        <p>&#9888; This link expires in <strong>${expiryMinutes} minutes</strong>. If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
       </div>
       <hr class="divider" />
       <p class="email-p-muted">If the button above doesn't work, copy and paste this URL into your browser:</p>
@@ -223,7 +180,7 @@ We received a request to reset the password for your Circul-AI-r account.
 Reset your password here:
 ${resetUrl}
 
-This link expires in ${expiryMinutes} minutes and can only be used once.
+This link expires in ${expiryMinutes} minutes.
 
 If you didn't request a password reset, you can safely ignore this email.
 
@@ -244,6 +201,8 @@ export async function sendPasswordResetEmail(
   expiryMinutes = 15
 ): Promise<SendPasswordResetEmailResult> {
   try {
+    resetUrl = validateEmailUrl(resetUrl);
+    if (!Number.isInteger(expiryMinutes) || expiryMinutes < 1 || expiryMinutes > 1440) throw new EmailFailure("Invalid email expiry");
     const response = await sendViaZeptoAPI({
       from: { address: ENV.fromEmail, name: "Circul-AI-r" },
       to: [{ email_address: { address: to, name: name ?? to } }],
@@ -252,11 +211,11 @@ export async function sendPasswordResetEmail(
       htmlbody: buildPasswordResetHtml(resetUrl, name ?? "", expiryMinutes),
       textbody: buildPasswordResetText(resetUrl, name ?? "", expiryMinutes),
     });
-    const requestId = response?.request_id ?? "";
-    console.log(`[ZeptoMail] Password reset email sent to ${to} (request_id: ${requestId})`);
+    const requestId = response.request_id;
+    console.log("[ZeptoMail] Password reset email accepted by provider");
     return { success: true, messageId: requestId };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = safeEmailError(err);
     console.error("[ZeptoMail] Exception sending password reset email:", message);
     return { success: false, error: message };
   }
@@ -273,74 +232,36 @@ export interface DeveloperOnboardingEmailParams {
   origin: string;
 }
 
+// The exported helper remains compatible, but never transports the plaintext API key.
+// Key issuance returns it only to the authenticated issuer; this helper has no live caller.
 function buildDeveloperOnboardingHtml(p: DeveloperOnboardingEmailParams): string {
-  const { name, apiKey, keyName, permissions, origin } = p;
-  const scopeItems = permissions.map(s => `<li>${s}</li>`).join("");
-  const jsSnippet = `const res = await fetch("${origin}/api/v1/batteries", {\n  headers: { Authorization: "Bearer ${apiKey}" }\n});\nconst data = await res.json();`;
-  const curlSnippet = `curl -X POST ${origin}/api/mcp \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'`;
-
-  const body = `
-    <div class="email-body">
-      <h1 class="email-h1">Welcome to the API, ${name || "Developer"}!</h1>
-      <p class="email-p">Your API key <strong>"${keyName}"</strong> has been issued. This is the only time the full key will be shown — store it securely in your secrets manager or vault.</p>
-
-      <div class="section-heading">Your API Key</div>
-      <div class="info-box">
-        <div class="info-box-label">Bearer Token</div>
-        <div class="info-box-value">${apiKey}</div>
-      </div>
-      <div class="warning-box">
-        <p>&#9888; Never commit this key to source control. Rotate it immediately from the Developer Portal if it is ever exposed.</p>
-      </div>
-
-      <div class="section-heading">Granted Scopes</div>
-      <ul class="scope-list">${scopeItems}</ul>
-
-      <div class="section-heading">Quickstart — REST API</div>
-      <div class="code-block">${jsSnippet}</div>
-
-      <div class="section-heading">Quickstart — MCP (Claude / Cursor)</div>
-      <div class="code-block">${curlSnippet}</div>
-
-      <hr class="divider" />
-      <div class="section-heading">Next Steps</div>
-      <div class="btn-group">
-        <a href="${origin}/api-reference" class="btn-primary">API Reference</a>
-        <a href="${origin}/mcp-server" class="btn-secondary">MCP Server Docs</a>
-        <a href="${origin}/developer-portal" class="btn-secondary">Developer Portal</a>
-      </div>
-    </div>`;
-  return emailWrapper(body, `Your Circul-AI-r API key "${keyName}" is ready`);
+  const scopes = p.permissions.map(scope => `<li>${escapeEmailHtml(scope)}</li>`).join("");
+  return emailWrapper(`<div class="email-body">
+    <h1 class="email-h1">Developer access notice</h1>
+    <p class="email-p">Hi ${escapeEmailHtml(p.name || "Developer")},</p>
+    <p class="email-p">Your API key <strong>${escapeEmailHtml(p.keyName)}</strong> has been issued. For security, API keys are never included in email. Save the key shown in your authenticated session securely.</p>
+    <ul class="scope-list">${scopes}</ul>
+    <a href="${escapeEmailHtml(p.origin)}/developer-portal" class="btn-primary">Developer Portal</a>
+  </div>`, "Developer access notice — credentials are not included");
 }
 
 function buildDeveloperOnboardingText(p: DeveloperOnboardingEmailParams): string {
-  return `Welcome to the Circul-AI-r Developer Platform, ${p.name || "Developer"}!
-
-Your API key "${p.keyName}" has been issued. Store it securely — this is the only time it will be shown.
-
-API KEY: ${p.apiKey}
-
-GRANTED SCOPES: ${p.permissions.join(", ")}
-
-QUICKSTART:
-curl -X POST ${p.origin}/api/mcp \\
-  -H "Authorization: Bearer ${p.apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'
-
-NEXT STEPS:
-- API Reference: ${p.origin}/api-reference
-- MCP Server Docs: ${p.origin}/mcp-server
-- Developer Portal: ${p.origin}/developer-portal
-
-— Circul-AI-r Battery Intelligence Platform
-https://circulair.energy/`;
+  return `Hi ${p.name || "Developer"},
+Your API key "${p.keyName}" has been issued. API keys are never included in email.
+Save the key shown in your authenticated session securely.
+Granted scopes: ${p.permissions.join(", ")}
+Developer Portal: ${p.origin}/developer-portal`;
 }
 
 export async function sendDeveloperOnboardingEmail(
   params: DeveloperOnboardingEmailParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    validateEmailHeader(params.keyName, 128);
+    validateEmailHeader(params.name);
+    if (!Array.isArray(params.permissions) || params.permissions.length > 100) throw new EmailFailure("Invalid email scopes");
+    for (const permission of params.permissions) validateEmailHeader(permission);
+    params = { ...params, origin: validateEmailUrl(params.origin, true) };
     const response = await sendViaZeptoAPI({
       from: { address: ENV.fromEmail, name: "Circul-AI-r Developer Platform" },
       to: [{ email_address: { address: params.to, name: params.name || params.to } }],
@@ -349,11 +270,11 @@ export async function sendDeveloperOnboardingEmail(
       htmlbody: buildDeveloperOnboardingHtml(params),
       textbody: buildDeveloperOnboardingText(params),
     });
-    const requestId = response?.request_id ?? "";
-    console.log(`[ZeptoMail] Developer onboarding email sent to ${params.to} (request_id: ${requestId})`);
+    const requestId = response.request_id;
+    console.log("[ZeptoMail] Developer access email accepted by provider");
     return { success: true, messageId: requestId };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = safeEmailError(err);
     console.error("[ZeptoMail] Exception sending developer onboarding email:", message);
     return { success: false, error: message };
   }

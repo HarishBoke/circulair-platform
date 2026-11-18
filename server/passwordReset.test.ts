@@ -15,6 +15,7 @@ vi.mock("./db", () => ({
   getPasswordResetToken: vi.fn(),
   updateUserPassword: vi.fn(),
   markPasswordResetTokenUsed: vi.fn(),
+  completePasswordReset: vi.fn(),
 }));
 
 vi.mock("./_core/notification", () => ({
@@ -45,20 +46,20 @@ describe("POST /api/auth/forgot-password", () => {
     const app = buildApp();
     const res = await request(app)
       .post("/api/auth/forgot-password")
-      .send({ email: "nobody@example.com" });
+      .send({ email: "aimbim@yopmail.com" });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toMatch(/if that email exists/i);
   });
 
   it("creates a reset token when email is found", async () => {
-    const mockUser = { id: 42, email: "user@example.com", name: "Test User" };
+    const mockUser = { id: 42, email: "aimbim@yopmail.com", name: "Test User" };
     vi.mocked(db.getUserByEmail).mockResolvedValue(mockUser as any);
     vi.mocked(db.createPasswordResetToken).mockResolvedValue(undefined as any);
     const app = buildApp();
     const res = await request(app)
       .post("/api/auth/forgot-password")
-      .send({ email: "user@example.com" });
+      .send({ email: "aimbim@yopmail.com" });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(db.createPasswordResetToken).toHaveBeenCalledWith(
@@ -78,13 +79,13 @@ describe("POST /api/auth/forgot-password", () => {
   it("never exposes reset credentials in development mode", async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "development";
-    const mockUser = { id: 7, email: "dev@example.com", name: "Dev" };
+    const mockUser = { id: 7, email: "aimbim@yopmail.com", name: "Dev" };
     vi.mocked(db.getUserByEmail).mockResolvedValue(mockUser as any);
     vi.mocked(db.createPasswordResetToken).mockResolvedValue(undefined as any);
     const app = buildApp();
     const res = await request(app)
       .post("/api/auth/forgot-password")
-      .send({ email: "dev@example.com" });
+      .send({ email: "aimbim@yopmail.com" });
     expect(res.body.token).toBeUndefined();
     expect(res.body.resetUrl).toBeUndefined();
     expect(res.body.success).toBe(true);
@@ -94,7 +95,32 @@ describe("POST /api/auth/forgot-password", () => {
 
 // ─── Reset Password ───────────────────────────────────────────────────────────
 describe("POST /api/auth/reset-password", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(db.completePasswordReset).mockReset().mockResolvedValue(true);
+  });
+
+  it("allows only the successful atomic claim when two route readers saw an unused token", async () => {
+    vi.mocked(db.getPasswordResetToken).mockResolvedValue({
+      id: 1, userId: 42, token: "synthetic-race-token",
+      expiresAt: new Date(Date.now() + 60000), usedAt: null, createdAt: new Date(),
+    } as any);
+    let claimed = false;
+    vi.mocked(db.completePasswordReset).mockImplementation(async () => {
+      if (claimed) return false;
+      claimed = true;
+      return true;
+    });
+    const app = buildApp();
+    const responses = await Promise.all([
+      request(app).post("/api/auth/reset-password").send({ token: "synthetic-race-token", password: "SyntheticPassword1!" }),
+      request(app).post("/api/auth/reset-password").send({ token: "synthetic-race-token", password: "SyntheticPassword2!" }),
+    ]);
+    expect(responses.map(response => response.status).sort()).toEqual([200, 400]);
+    expect(db.completePasswordReset).toHaveBeenCalledTimes(2);
+    expect(db.updateUserPassword).not.toHaveBeenCalled();
+    expect(db.markPasswordResetTokenUsed).not.toHaveBeenCalled();
+  });
 
   it("resets password successfully with a valid token", async () => {
     const futureDate = new Date(Date.now() + 10 * 60 * 1000);
@@ -106,16 +132,34 @@ describe("POST /api/auth/reset-password", () => {
       usedAt: null,
       createdAt: new Date(),
     } as any);
-    vi.mocked(db.updateUserPassword).mockResolvedValue(undefined as any);
-    vi.mocked(db.markPasswordResetTokenUsed).mockResolvedValue(undefined as any);
     const app = buildApp();
     const res = await request(app)
       .post("/api/auth/reset-password")
       .send({ token: "validtoken", password: "NewSecurePass1!" });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(db.updateUserPassword).toHaveBeenCalledWith(42, expect.any(String));
-    expect(db.markPasswordResetTokenUsed).toHaveBeenCalledWith("validtoken");
+    expect(db.completePasswordReset).toHaveBeenCalledWith("validtoken", expect.stringMatching(/^\$2[aby]\$/));
+    expect(db.updateUserPassword).not.toHaveBeenCalled();
+    expect(db.markPasswordResetTokenUsed).not.toHaveBeenCalled();
+  });
+
+  it("rejects a token that expires or is consumed after the preliminary lookup", async () => {
+    vi.mocked(db.getPasswordResetToken).mockResolvedValue({ userId: 42, expiresAt: new Date(Date.now() + 60000), usedAt: null } as any);
+    vi.mocked(db.completePasswordReset).mockResolvedValue(false);
+    const res = await request(buildApp()).post('/api/auth/reset-password').send({ token: 'raced-token', password: 'NewSecurePass1!' });
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBeUndefined();
+  });
+
+  it("fails closed without logging a token or raw transaction error", async () => {
+    vi.mocked(db.getPasswordResetToken).mockResolvedValue({ userId: 42, expiresAt: new Date(Date.now() + 60000), usedAt: null } as any);
+    vi.mocked(db.completePasswordReset).mockRejectedValue(new Error('synthetic-private-token'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await request(buildApp()).post('/api/auth/reset-password').send({ token: 'synthetic-private-token', password: 'NewSecurePass1!' });
+      expect(res.status).toBe(500);
+      expect(JSON.stringify(log.mock.calls)).not.toContain('synthetic-private-token');
+    } finally { log.mockRestore(); }
   });
 
   it("returns 400 for an expired token", async () => {

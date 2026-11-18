@@ -1,194 +1,34 @@
-/**
- * email.test.ts
- *
- * Tests for the ZeptoMail email helper (server/email.ts).
- * The global fetch is mocked so no real network calls are made.
- */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-// ─── Mock ENV so ZEPTOMAIL_TOKEN and FROM_EMAIL are always present ─────────────
-vi.mock("./_core/env", () => ({
-  ENV: {
-    zeptomailToken: "Zoho-enczapikey PHtE6r0_test_token",
-    fromEmail: "noreply@circulair.energy",
-    ownerEmail: "owner@circulair.energy",
-    ownerName: "Platform Owner",
-  },
-}));
-
-// ─── Mock global fetch ────────────────────────────────────────────────────────
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
-
-function makeOkResponse(body: object) {
-  return Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve(body),
-  } as Response);
-}
-
-function makeErrorResponse(status: number, errorMsg: string) {
-  return Promise.resolve({
-    ok: false,
-    status,
-    json: () => Promise.resolve({ error: { details: [{ message: errorMsg }] } }),
-  } as Response);
-}
-
-import { sendPasswordResetEmail, sendDeveloperOnboardingEmail, validateEmailConfig } from "./email";
-
-// ─── validateEmailConfig ──────────────────────────────────────────────────────
-describe("validateEmailConfig", () => {
-  it("returns true when both ZEPTOMAIL_TOKEN and FROM_EMAIL are set", () => {
-    expect(validateEmailConfig()).toBe(true);
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('./_core/env', () => ({ ENV: { zeptomailToken: 'Zoho-enczapikey synthetic-local-token', fromEmail: 'qa-sender@yopmail.com', ownerEmail: 'aimbim@yopmail.com', ownerName: 'QA Owner', isProduction: false } }));
+import { ENV } from './_core/env';
+import { sendPasswordResetEmail, sendDeveloperOnboardingEmail, validateEmailConfig, validateResendConfig } from './email';
+const fetchMock = vi.fn();
+const accepted = () => new Response(JSON.stringify({ data: [{ code: 'EM_104', message: 'OK' }], message: 'OK', request_id: 'req-local-123' }), { headers: { 'content-type': 'application/json' } });
+const reset = (url = 'https://circulair.energy/reset-password?token=synthetic-local-token&mode=reset', name = 'QA') => sendPasswordResetEmail('aimbim@yopmail.com', url, name);
+const onboarding = { to: 'aimbim@yopmail.com', name: 'QA', apiKey: 'synthetic-secret-never-send', keyName: 'QA Key', permissions: ['telemetry_read'], origin: 'https://circulair.energy' };
+beforeEach(() => { fetchMock.mockReset().mockImplementation(() => { throw new Error('UNEXPECTED_PROVIDER_FETCH'); }); vi.stubGlobal('fetch', fetchMock); vi.spyOn(console, 'log').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {}); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+describe('native reset email', () => {
+  it('requires acceptance and preserves REST fields and escaped URL', async () => {
+    fetchMock.mockResolvedValueOnce(accepted()); expect(await reset()).toEqual({ success: true, messageId: 'req-local-123' }); expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, options] = fetchMock.mock.calls[0]; expect(url).toBe('https://api.zeptomail.in/v1.1/email'); expect(options).toMatchObject({ method: 'POST', redirect: 'error', headers: { Authorization: 'Zoho-enczapikey synthetic-local-token' } }); expect(options.signal).toBeInstanceOf(AbortSignal);
+    const body = JSON.parse(options.body); expect(body).toMatchObject({ from: { address: 'qa-sender@yopmail.com' }, to: [{ email_address: { address: 'aimbim@yopmail.com' } }], reply_to: [{ address: 'qa-sender@yopmail.com' }] });
+    expect(body.subject).toMatch(/reset.*password/i); expect(body.textbody).toContain('Hi QA'); expect(body.htmlbody).toContain('&amp;mode=reset'); expect(body.textbody).toContain('&mode=reset'); expect(body.htmlbody).not.toMatch(/ISO 27001|SOC 2|GDPR|can only be used once/); expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(/yopmail|req-local|synthetic/);
   });
+  it('escapes hostile names and retains unnamed fallback', async () => {
+    fetchMock.mockResolvedValueOnce(accepted()); await reset(undefined, '<img src=x onerror=alert(1)>'); const body = JSON.parse(fetchMock.mock.calls[0][1].body); expect(body.htmlbody).toContain('&lt;img'); expect(body.htmlbody).not.toContain('<img src=x');
+    fetchMock.mockResolvedValueOnce(accepted()); await reset(undefined, ''); expect(JSON.parse(fetchMock.mock.calls[1][1].body).textbody).toContain('Hi there');
+  });
+  it('honors expiry duration', async () => { fetchMock.mockResolvedValueOnce(accepted()); await sendPasswordResetEmail('aimbim@yopmail.com', 'https://circulair.energy/reset', 'QA', 30); expect(JSON.parse(fetchMock.mock.calls[0][1].body).textbody).toContain('30 minutes'); });
+  it.each(['javascript:alert(1)', 'https://user:password@circulair.energy/reset', 'http://circulair.energy/reset', 'https://circulair.energy/reset" onclick="alert(1)', 'https://circulair.energy/reset\nInjected', '//circulair.energy/reset', 'https://circulair.energy/reset#credential'])('rejects explicitly negative URL %s before fetch', async url => { expect(await reset(url)).toMatchObject({ success: false }); expect(fetchMock).not.toHaveBeenCalled(); });
+  it.each(['not-an-address', 'aimbim@yopmail.com\r\nBcc:bad', 'a..b@yopmail.com', 'a@-bad.com', 'a@localhost'])('rejects explicitly negative recipient %s', async to => { expect(await sendPasswordResetEmail(to, 'https://circulair.energy/reset')).toMatchObject({ success: false }); expect(fetchMock).not.toHaveBeenCalled(); });
+  it('rejects header injection and invalid expiry before fetch', async () => { expect(await reset(undefined, 'QA\r\nBcc: injected')).toMatchObject({ success: false }); expect(await sendPasswordResetEmail('aimbim@yopmail.com', 'https://circulair.energy/reset', 'QA', NaN)).toMatchObject({ success: false }); expect(fetchMock).not.toHaveBeenCalled(); });
+  it('sanitizes arbitrary exceptions and never resends', async () => { fetchMock.mockRejectedValueOnce(new Error('synthetic-secret-never-send https://circulair.energy/reset?token=secret aimbim@yopmail.com')); expect(await reset()).toMatchObject({ success: false, error: 'Email request failed; acceptance is unknown' }); expect(fetchMock).toHaveBeenCalledOnce(); expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toMatch(/synthetic-secret|token=|yopmail/); });
+  it('handles disabled and malformed config without network', async () => { const token = ENV.zeptomailToken; try { ENV.zeptomailToken = ''; expect(validateEmailConfig()).toBe(false); expect(await reset()).toMatchObject({ success: false }); ENV.zeptomailToken = 'Zoho-enczapikey synthetic\r\nInjected'; expect(validateEmailConfig()).toBe(false); expect(await reset()).toMatchObject({ success: false }); } finally { ENV.zeptomailToken = token; } expect(fetchMock).not.toHaveBeenCalled(); expect(validateResendConfig()).toBe(validateEmailConfig()); });
 });
-
-// ─── sendPasswordResetEmail ───────────────────────────────────────────────────
-describe("sendPasswordResetEmail", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("calls ZeptoMail with correct to, from, subject, htmlbody, and textbody fields", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_abc123" }));
-
-    const result = await sendPasswordResetEmail(
-      "user@example.com",
-      "https://circulair.energy/reset-password?token=abc",
-      "Alice",
-      15
-    );
-
-    expect(result.success).toBe(true);
-    expect(result.messageId).toBe("req_abc123");
-
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("zeptomail.in");
-    const body = JSON.parse(opts.body);
-    expect(body.to[0].email_address.address).toBe("user@example.com");
-    expect(body.from.address).toBe("noreply@circulair.energy");
-    expect(body.subject).toMatch(/reset.*password/i);
-    expect(body.htmlbody).toContain("https://circulair.energy/reset-password?token=abc");
-    expect(body.textbody).toContain("https://circulair.energy/reset-password?token=abc");
-  });
-
-  it("includes the user name in the email body", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_xyz" }));
-
-    await sendPasswordResetEmail(
-      "bob@example.com",
-      "https://example.com/reset?token=xyz",
-      "Bob",
-      15
-    );
-
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.htmlbody).toContain("Bob");
-    expect(body.textbody).toContain("Bob");
-  });
-
-  it("uses 'there' as fallback when name is empty", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_noname" }));
-
-    await sendPasswordResetEmail(
-      "anon@example.com",
-      "https://example.com/reset?token=noname",
-      "",
-      15
-    );
-
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.textbody).toContain("Hi there");
-  });
-
-  it("returns success: false when fetch throws an exception", async () => {
-    mockFetch.mockRejectedValue(new Error("Network timeout"));
-
-    const result = await sendPasswordResetEmail(
-      "user@example.com",
-      "https://example.com/reset?token=throw",
-      "User",
-      15
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/network timeout/i);
-  });
-
-  it("includes the expiry duration in the email body", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_expiry" }));
-
-    await sendPasswordResetEmail(
-      "user@example.com",
-      "https://example.com/reset?token=expiry",
-      "User",
-      30
-    );
-
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.htmlbody).toContain("30");
-    expect(body.textbody).toContain("30 minutes");
-  });
-
-  it("includes both HTML and plain-text versions", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_both" }));
-
-    await sendPasswordResetEmail(
-      "user@example.com",
-      "https://example.com/reset?token=both",
-      "User",
-      15
-    );
-
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.htmlbody).toBeTruthy();
-    expect(body.textbody).toBeTruthy();
-    expect(body.htmlbody).not.toBe(body.textbody);
-  });
-
-  it("returns success: false when ZeptoMail returns a non-OK HTTP status", async () => {
-    mockFetch.mockReturnValue(makeErrorResponse(401, "Invalid API Token"));
-
-    const result = await sendPasswordResetEmail(
-      "user@example.com",
-      "https://example.com/reset?token=err",
-      "User",
-      15
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("Invalid API Token");
-  });
-});
-
-// ─── sendDeveloperOnboardingEmail ─────────────────────────────────────────────
-describe("sendDeveloperOnboardingEmail", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("sends email with API key in body", async () => {
-    mockFetch.mockReturnValue(makeOkResponse({ request_id: "req_dev_123" }));
-
-    const result = await sendDeveloperOnboardingEmail({
-      to: "dev@example.com",
-      name: "Bob",
-      apiKey: "sk-test-key-xyz",
-      keyName: "Production Key",
-      permissions: ["batteries:read", "telemetry:write"],
-      origin: "https://circulair.energy",
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.messageId).toBe("req_dev_123");
-
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.to[0].email_address.address).toBe("dev@example.com");
-    expect(body.htmlbody).toContain("sk-test-key-xyz");
-    expect(body.htmlbody).toContain("Production Key");
-    expect(body.subject).toContain("Production Key");
-  });
+describe('retained currently uncalled onboarding helper', () => {
+  it('sends credential-free notice without unsupported SDK/API examples', async () => { fetchMock.mockResolvedValueOnce(accepted()); expect(await sendDeveloperOnboardingEmail(onboarding)).toEqual({ success: true, messageId: 'req-local-123' }); const body = JSON.parse(fetchMock.mock.calls[0][1].body); expect(body.subject).toContain('QA Key'); expect(body.htmlbody).toContain('/developer-portal'); expect(body.textbody).toContain('telemetry_read'); expect(fetchMock.mock.calls[0][1].body).not.toContain(onboarding.apiKey); expect(body.htmlbody).not.toMatch(/api\/v1|api\/mcp|ISO 27001|SOC 2/); });
+  it('escapes key names scopes and preview metadata', async () => { fetchMock.mockResolvedValueOnce(accepted()); await sendDeveloperOnboardingEmail({ ...onboarding, keyName: 'QA <img>', name: '<b>QA</b>', permissions: ['<svg onload=alert(1)>'] }); const body = JSON.parse(fetchMock.mock.calls[0][1].body); expect(body.htmlbody).toContain('&lt;svg'); expect(body.htmlbody).not.toContain('<b>QA</b>'); expect(body.htmlbody).not.toContain('<img>'); });
+  it.each([{ keyName: 'QA\nBcc: injected' }, { origin: 'https://circulair.energy/path' }, { origin: 'https://credential:secret@circulair.energy' }])('rejects explicitly negative onboarding input %j', async change => { expect(await sendDeveloperOnboardingEmail({ ...onboarding, ...change })).toMatchObject({ success: false }); expect(fetchMock).not.toHaveBeenCalled(); });
+  it('returns failure without resend after ambiguous disconnect', async () => { fetchMock.mockRejectedValueOnce(new Error('accepted-then-disconnected')); expect(await sendDeveloperOnboardingEmail(onboarding)).toMatchObject({ success: false }); expect(fetchMock).toHaveBeenCalledOnce(); });
 });

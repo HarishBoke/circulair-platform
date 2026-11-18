@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { resolvePostgresConnectionUrl } from "../shared/databaseEnv.cjs";
 import { createOpenSourceAlertingAdapter } from "./openSourceAlerting";
 import { enqueueIncidentForAlert, incidentGate, type LiveCriticalContext } from "./incidentOutbox";
+import { consumePasswordReset } from "./passwordRecovery";
 import {
   InsertUser, users,
   batteries, InsertBattery,
@@ -894,6 +895,12 @@ export async function listUserBatteries(userId: number) {
 }
 
 // ─── PASSWORD RESET TOKEN HELPERS ─────────────────────────────────────────────
+
+export async function completePasswordReset(token: string, passwordHash: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return consumePasswordReset(db, token, passwordHash);
+}
 
 export async function createPasswordResetToken(data: {
   userId: number;
